@@ -1,0 +1,34 @@
+# C++ compiler #
+################
+*.lib
+*.obj
+*.dll
+*.exe
+*.o
+*.a
+*.so
+*.out
+
+# OS generated #
+################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Visual Studio Code #
+######################
+.vscode/
+
+# clangd #
+##########
+.cache/
+
+# CMake #
+#########
+/*.cmake
+build/
+documentation/

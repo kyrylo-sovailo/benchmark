@@ -1,1 +1,1 @@
-Proving that C++ is not slow
+Proving that C++ is not slow, it's just a skill issue
