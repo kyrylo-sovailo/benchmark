@@ -4,34 +4,48 @@ BUILD="$SOURCE/build"
 if [ ! -d "$BUILD" ]; then mkdir "$BUILD"; fi
 cd "$BUILD"
 
-# COMPILE
-if [ "$SOURCE/create_dijkstra.cpp" -nt "$BUILD/create_dijkstra" ]; then
-    echo 'g++ "$SOURCE/create_dijkstra.cpp" -o "$BUILD/create_dijkstra"'
-    g++ "$SOURCE/create_dijkstra.cpp" -o "$BUILD/create_dijkstra" || exit 1
-fi
-if [ "$SOURCE/create_dijkstra.cpp" -nt "$BUILD/dijkstra.txt" ]; then
-    echo '"$BUILD/create_dijkstra"'
-    "$BUILD/create_dijkstra" || exit 1
-fi
-if [ "$SOURCE/dijkstra_cpp.cpp" -nt "$BUILD/dijkstra_cpp_debug" ]; then
-    echo 'g++ -std=c++11 "$SOURCE/dijkstra_cpp.cpp" -o "$BUILD/dijkstra_cpp_debug"'
-    g++ "$SOURCE/dijkstra_cpp.cpp" -std=c++11 -o "$BUILD/dijkstra_cpp_debug" || exit 1
-fi
-if [ "$SOURCE/dijkstra_cpp.cpp" -nt "$BUILD/dijkstra_cpp_release" ]; then
-    echo 'g++ -std=c++11 -O3 -DNDEBUG -fno-rtti "$SOURCE/dijkstra_cpp.cpp" -o "$BUILD/dijkstra_cpp_release"'
-    g++ -std=c++11 -O3 -DNDEBUG -fno-rtti "$SOURCE/dijkstra_cpp.cpp" -o "$BUILD/dijkstra_cpp_release" || exit 1
-fi
+#compile_debug(source, destination)
+compile_debug()
+{
+    if [ "$1" -nt "$2" ]; then
+        echo g++ -std=c++11 "$1" -o "$2"
+        g++ -std=c++11 "$1" -o "$2" || exit 1
+    fi
+}
 
-# TEST
-if [ "$BUILD/dijkstra_cpp_debug" -nt "$BUILD/dijkstra_cpp_debug.txt" ]; then
-    echo '{ time "$BUILD/dijkstra_cpp_debug"; } 2>&1 | grep -v -e "^$" > "$BUILD/dijkstra_cpp_debug.txt"'
-    { time "$BUILD/dijkstra_cpp_debug"; } 2>&1 | grep -v -e "^$" > "$BUILD/dijkstra_cpp_debug.txt"
-fi
-if [ "$BUILD/dijkstra_cpp_release" -nt "$BUILD/dijkstra_cpp_release.txt" ]; then
-    echo '{ time "$BUILD/dijkstra_cpp_release"; } 2>&1 | grep -v -e "^$" > "$BUILD/dijkstra_cpp_release.txt"'
-    { time "$BUILD/dijkstra_cpp_release"; } 2>&1 | grep -v -e "^$" > "$BUILD/dijkstra_cpp_release.txt"
-fi
-if [ "$SOURCE/dijkstra_python.py" -nt "$BUILD/dijkstra_python.txt" ]; then
-    echo '{ time "$SOURCE/dijkstra_python.py"; } 2>&1 | grep -v -e "^$" > "$BUILD/dijkstra_python.txt"'
-    { time "$SOURCE/dijkstra_python.py"; } 2>&1 | grep -v -e "^$" > "$BUILD/dijkstra_python.txt"
-fi
+#compile_release(source, destination)
+compile_release()
+{
+    if [ "$1" -nt "$2" ]; then
+        echo g++ -std=c++11 -O3 -DNDEBUG -fno-rtti "$1" -o "$2"
+        g++ -std=c++11 -O3 -DNDEBUG -fno-rtti "$1" -o "$2" || exit 1
+    fi
+}
+
+#create_benchmark(executable, benchmark)
+create_benchmark()
+{
+    if [ "$1" -nt "$2" ]; then
+        echo "$1"
+        "$1" || exit 1
+    fi    
+}
+
+#run_benchmark(executable, log)
+run_benchmark()
+{
+    if [ "$1" -nt "$2" ]; then
+        echo "{ { time $1; } 3>&2 2>&1 1>&3 | grep -v -e "^$" > $2; } 2>&1"
+        { { time "$1"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" > "$2"; } 2>&1 || exit 1
+    fi
+}
+
+compile_release "$SOURCE/create_dijkstra.cpp" "$BUILD/create_dijkstra" || exit 1
+create_benchmark "$BUILD/create_dijkstra" "$BUILD/dijkstra.txt" || exit 1
+
+compile_debug "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_debug" || exit 1
+compile_release "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_release" || exit 1
+
+run_benchmark "$BUILD/dijkstra_cpp_debug" "$BUILD/dijkstra_cpp_debug.txt" || exit 1
+run_benchmark "$BUILD/dijkstra_cpp_release" "$BUILD/dijkstra_cpp_release.txt" || exit 1
+run_benchmark "$SOURCE/dijkstra_python.py" "$BUILD/dijkstra_python.txt" || exit 1

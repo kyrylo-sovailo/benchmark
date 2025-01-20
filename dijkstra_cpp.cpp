@@ -1,30 +1,19 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
-#include <stdexcept>
-#include <string>
 #include <map>
-#include <vector>
 #include <queue>
 #include <set>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
-struct Candidate
-{
-    unsigned int node;
-    unsigned int int_distance;
-    float distance;
-    bool operator<(const Candidate &other) const { return this->distance < other.distance; }
-    bool operator>(const Candidate &other) const { return this->distance > other.distance; }
-    Candidate(unsigned int node, unsigned int int_distance, float distance) : node(node), int_distance(int_distance), distance(distance) {}
-};
-
-int _main()
+void parse(std::map<unsigned int, std::map<unsigned int, float>> *graph, std::vector<std::pair<unsigned int, unsigned int>> *benchmarks)
 {
     std::ifstream file("dijkstra.txt");
     if (!file.is_open()) throw std::runtime_error("std::ifstream::ifstream() failed");
     std::string string;
 
-    std::map<unsigned int, std::map<unsigned int, float>> graph;
     file >> string;
     while (true)
     {
@@ -33,15 +22,14 @@ int _main()
         file >> source >> destination >> weight;
         if (!file.good()) { file.clear(); break; }
         
-        auto source_connections = graph.find(source);
-        if (source_connections == graph.cend()) source_connections = graph.insert({ source, std::map<unsigned int, float>() }).first;
+        auto source_connections = graph->find(source);
+        if (source_connections == graph->cend()) source_connections = graph->insert({ source, std::map<unsigned int, float>() }).first;
         source_connections->second.insert({ destination, weight });
-        auto destination_connections = graph.find(destination);
-        if (destination_connections == graph.cend()) destination_connections = graph.insert({ destination, std::map<unsigned int, float>() }).first;
+        auto destination_connections = graph->find(destination);
+        if (destination_connections == graph->cend()) destination_connections = graph->insert({ destination, std::map<unsigned int, float>() }).first;
         destination_connections->second.insert({ source, weight });
     }    
 
-    std::vector<std::pair<unsigned int, unsigned int>> benchmarks;
     file >> string;
     while (true)
     {
@@ -49,9 +37,22 @@ int _main()
         file >> source >> destination;
         if (!file.good()) break;
 
-        benchmarks.push_back({ source, destination });
-    }    
-    
+        benchmarks->push_back({ source, destination });
+    }
+}
+
+void solve(const std::map<unsigned int, std::map<unsigned int, float>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
+{
+    struct Candidate
+    {
+        unsigned int node;
+        unsigned int int_distance;
+        float distance;
+        bool operator<(const Candidate &other) const { return this->distance < other.distance; }
+        bool operator>(const Candidate &other) const { return this->distance > other.distance; }
+        Candidate(unsigned int node, unsigned int int_distance, float distance) : node(node), int_distance(int_distance), distance(distance) {}
+    };
+
     for (const auto &benchmark : benchmarks)
     {
         unsigned int source = benchmark.first;
@@ -78,6 +79,14 @@ int _main()
         }
         std::cout << source << ' ' << destination << ' ' << int_distance << ' ' << distance << '\n';
     }
+}
+
+int _main()
+{
+    std::map<unsigned int, std::map<unsigned int, float>> graph;
+    std::vector<std::pair<unsigned int, unsigned int>> benchmarks;
+    parse(&graph, &benchmarks);
+    solve(graph, benchmarks);
     return 0;
 }
 
