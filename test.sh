@@ -15,6 +15,9 @@ compile_debug()
         elif [ $( echo "$2" | grep -e '.*.c$' | wc -l) -gt 0 ]; then #C
             echo $1 -std=c11 -g "$2" -o "$3"
             $1 -std=c11 -g "$2" -o "$3" || exit 1
+        elif [ $( echo "$2" | grep -e '.*.cs$' | wc -l) -gt 0 ]; then #C#
+            echo $1 -g -platform:x64 "$2" -out:"$3"
+            $1 -debug -platform:x64 "$2" -out:"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.f90$' | wc -l) -gt 0 ]; then #Fortran
             echo $1 -std=f95 -g -fcheck=all "$2" -o "$3"
             $1 -std=f95 -g -fcheck=all "$2" -o "$3" || exit 1
@@ -37,6 +40,9 @@ compile_release()
         elif [ $( echo "$2" | grep -e '.*.c$' | wc -l) -gt 0 ]; then #C
             echo $1 -std=c11 -O3 -DNDEBUG -flto -march=native "$2" -o "$3"
             $1 -std=c11 -O3 -DNDEBUG -flto -march=native "$2" -o "$3" || exit 1
+        elif [ $( echo "$2" | grep -e '.*.cs$' | wc -l) -gt 0 ]; then #C#
+            echo $1 -optimize+ -platform:x64 "$2" -out:"$3"
+            $1 -optimize+ -platform:x64 "$2" -out:"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.f90$' | wc -l) -gt 0 ]; then #Fortran
             echo $1 -std=f95 -O3 -flto -march=native "$2" -o "$3"
             $1 -std=f95 -O3 -flto -march=native "$2" -o "$3" || exit 1
@@ -62,8 +68,13 @@ create_benchmark()
 run_benchmark()
 {
     if [ "$1" -nt "$3" -o "$2" -nt "$3" ]; then
-        echo "{ { taskset -c 1 sh -c \"time \\\"$1\\\"\"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee \"$3\"; } 2>&1"
-        { { taskset -c 1 sh -c "time \"$1\""; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
+        if [ $( echo "$1" | grep -e '.*.exe$' | wc -l) -gt 0 ]; then
+            LAUNCH="mono"
+        else
+            LAUNCH=""
+        fi
+        echo "{ { taskset -c 1 sh -c \"time ${LAUNCH} \\\"$1\\\"\"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee \"$3\"; } 2>&1"
+        { { taskset -c 1 sh -c "time ${LAUNCH} \"$1\""; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
     fi
 }
 
@@ -89,8 +100,13 @@ compile_release gcc "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_gcc_release" || ex
 compile_debug clang "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_clang_debug" || exit 1
 compile_release clang "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_clang_release" || exit 1
 
-compile_debug gfortran "$SOURCE/dijkstra_fortran.f90" "$BUILD/dijkstra_fortran_gcc_debug" || exit 1
-compile_release gfortran "$SOURCE/dijkstra_fortran.f90" "$BUILD/dijkstra_fortran_gcc_release" || exit 1
+copy "$SOURCE/dijkstra_csharp.cs" "$BUILD/dijkstra_csharp_debug.cs" || exit 1
+compile_debug mcs "$BUILD/dijkstra_csharp_debug.cs" "$BUILD/dijkstra_csharp_mcs_debug.exe" || exit 1
+copy "$SOURCE/dijkstra_csharp.cs" "$BUILD/dijkstra_csharp_release.cs" || exit 1
+compile_release mcs "$BUILD/dijkstra_csharp_release.cs" "$BUILD/dijkstra_csharp_mcs_release.exe" || exit 1
+
+compile_debug gfortran "$SOURCE/dijkstra_fortran.f90" "$BUILD/dijkstra_fortran_gfortran_debug" || exit 1
+compile_release gfortran "$SOURCE/dijkstra_fortran.f90" "$BUILD/dijkstra_fortran_gfortran_release" || exit 1
 
 copy "$SOURCE/dijkstra_haskell.hs" "$BUILD/dijkstra_haskell_debug.hs" || exit 1
 compile_debug ghc "$BUILD/dijkstra_haskell_debug.hs" "$BUILD/dijkstra_haskell_ghc_debug" || exit 1
@@ -105,8 +121,10 @@ run_benchmark "$BUILD/dijkstra_c_gcc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkst
 run_benchmark "$BUILD/dijkstra_c_gcc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_gcc_release.txt" || exit 1
 run_benchmark "$BUILD/dijkstra_c_clang_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_debug.txt" || exit 1
 run_benchmark "$BUILD/dijkstra_c_clang_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_release.txt" || exit 1
-run_benchmark "$BUILD/dijkstra_fortran_gcc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_fortran_gcc_debug.txt" || exit 1
-run_benchmark "$BUILD/dijkstra_fortran_gcc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_fortran_gcc_release.txt" || exit 1
-#run_benchmark "$BUILD/dijkstra_haskell_ghc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_debug.txt" || exit 1
-#run_benchmark "$BUILD/dijkstra_haskell_ghc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_release.txt" || exit 1
+run_benchmark "$BUILD/dijkstra_csharp_mcs_debug.exe" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_csharp_mcs_debug.txt" || exit 1
+run_benchmark "$BUILD/dijkstra_csharp_mcs_release.exe" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_csharp_mcs_release.txt" || exit 1
+run_benchmark "$BUILD/dijkstra_fortran_gfortran_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_fortran_gfortran_debug.txt" || exit 1
+run_benchmark "$BUILD/dijkstra_fortran_gfortran_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_fortran_gfortran_release.txt" || exit 1
+run_benchmark "$BUILD/dijkstra_haskell_ghc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_debug.txt" || exit 1
+run_benchmark "$BUILD/dijkstra_haskell_ghc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_release.txt" || exit 1
 run_benchmark "$SOURCE/dijkstra_python.py" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_python.txt" || exit 1

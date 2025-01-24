@@ -18,10 +18,10 @@ def parse_ver1():
         benchmarks = []
         read_benchmarks = False
         for line in file:
-            if line == "GRAPH\n":
+            if "GRAPH" in line:
                 read_benchmarks = False
                 continue
-            if line == "BENCHMARK\n":
+            if "BENCHMARK" in line:
                 read_benchmarks = True
                 continue
             split = line.split()
@@ -49,10 +49,10 @@ def parse_ver2():
         benchmarks = []
         read_benchmarks = False
         for line in file:
-            if line == "GRAPH\n":
+            if "GRAPH" in line:
                 read_benchmarks = False
                 continue
-            if line == "BENCHMARK\n":
+            if "BENCHMARK" in line:
                 read_benchmarks = True
                 continue
             split = line.split()
@@ -78,10 +78,10 @@ def parse_ver4():
         benchmarks = []
         read_benchmarks = False
         for line in file:
-            if line == "GRAPH\n":
+            if "GRAPH" in line:
                 read_benchmarks = False
                 continue
-            if line == "BENCHMARK\n":
+            if "BENCHMARK" in line:
                 read_benchmarks = True
                 continue
             split = line.split()
