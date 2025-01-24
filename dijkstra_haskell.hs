@@ -88,8 +88,14 @@ parse_space (c:rest)
 -------------
 data Solution = Solution Word32 Float deriving (Show)
 --solve (graph, benchmarks) -> solutions
-solve :: (Map Word32 [Connection]) -> [Benchmark] -> [Solution]
-solve graph benchmarks = map (solve_one graph) benchmarks
+solve :: (Map Word32 [Connection]) -> [Benchmark] -> IO ()
+solve graph benchmarks = case benchmarks of
+    [] -> return ()
+    (benchmark:benchmarks') -> do
+        let (Solution i f) = solve_one graph benchmark
+        let (Benchmark s d) = benchmark
+        solve graph benchmarks'
+        putStrLn (show s ++ " " ++ show d ++ " " ++ show i ++ " " ++ show f)
 
 --solve_one (graph, benchmark) -> solution
 solve_one :: (Map Word32 [Connection]) -> Benchmark -> Solution
@@ -120,7 +126,7 @@ solve_recursive graph destination queue mask
         else let
             (Just connections) = M.lookup id graph
             mask' = S.insert id mask
-            queue'' = L.foldl' (\q c -> explore_connection q mask candidate c) queue' connections
+            queue'' = L.foldl' (\q c -> q `seq` c `seq` explore_connection q mask candidate c) queue' connections
             in queue'' `seq` solve_recursive graph destination queue'' mask'
 
 --explore_connection (queue, mask, candidate, connection) -> queue
@@ -143,8 +149,5 @@ main = do
         Left exception ->
             putStrLn "readFile() failed"
         Right content -> let
-            format = (\(Benchmark s d, Solution i f) -> show s ++ " " ++ show d ++ " " ++ show i ++ " " ++ show f ++ "\n" )
             (graph, benchmarks) = parse content
-            solutions = graph `seq` benchmarks `seq` solve graph benchmarks
-            output = solutions `seq` L.foldl' (++) "" (map format (zip benchmarks solutions))
-            in putStr output
+            in graph `seq` benchmarks `seq` solve graph benchmarks

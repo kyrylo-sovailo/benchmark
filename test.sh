@@ -10,20 +10,25 @@ compile_debug()
 {
     if [ "$2" -nt "$3" ]; then
         if [ $( echo "$2" | grep -e '.*.cpp$' | wc -l) -gt 0 ]; then #C++
-            echo $1 -std=c++11 -g "$2" -o "$3"
-            $1 -std=c++11 -g "$2" -o "$3" || exit 1
+            FLAGS="-std=c++11 -g -Wall -Wextra -pedantic"
+            echo $1 $FLAGS "$2" -o "$3"
+            $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.c$' | wc -l) -gt 0 ]; then #C
-            echo $1 -std=c11 -g "$2" -o "$3"
-            $1 -std=c11 -g "$2" -o "$3" || exit 1
+            FLAGS="-std=c11 -g -Wall -Wextra -pedantic"
+            echo $1 $FLAGS "$2" -o "$3"
+            $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.cs$' | wc -l) -gt 0 ]; then #C#
-            echo $1 -g -platform:x64 "$2" -out:"$3"
-            $1 -debug -platform:x64 "$2" -out:"$3" || exit 1
+            FLAGS="-debug -platform:x64"
+            echo $1 $FLAGS "$2" -out:"$3"
+            $1 $FLAGS "$2" -out:"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.f90$' | wc -l) -gt 0 ]; then #Fortran
-            echo $1 -std=f95 -g -fcheck=all "$2" -o "$3"
-            $1 -std=f95 -g -fcheck=all "$2" -o "$3" || exit 1
+            FLAGS="-std=f95 -g -fcheck=all"
+            echo $1  "$2" -o "$3"
+            $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.hs$' | wc -l) -gt 0 ]; then #Haskell
-            echo $1 -rtsopts "$2" -o "$3"
-            $1 -rtsopts "$2" -o "$3" || exit 1
+            FLAGS="-rtsopts"
+            echo $1 $FLAGS "$2" -o "$3"
+            $1 $FLAGS "$2" -o "$3" || exit 1
         else
             exit 1
         fi
@@ -35,20 +40,25 @@ compile_release()
 {
     if [ "$2" -nt "$3" ]; then
         if [ $( echo "$2" | grep -e '.*.cpp$' | wc -l) -gt 0 ]; then #C++
-            echo $1 -std=c++11 -O3 -DNDEBUG -fno-rtti -flto -march=native "$2" -o "$3"
-            $1 -std=c++11 -O3 -DNDEBUG -fno-rtti -flto -march=native "$2" -o "$3" || exit 1
+            FLAGS="-std=c++11 -O3 -DNDEBUG -fno-rtti -flto -march=native"
+            echo $1 $FLAGS "$2" -o "$3"
+            $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.c$' | wc -l) -gt 0 ]; then #C
-            echo $1 -std=c11 -O3 -DNDEBUG -flto -march=native "$2" -o "$3"
-            $1 -std=c11 -O3 -DNDEBUG -flto -march=native "$2" -o "$3" || exit 1
+            FLAGS="-std=c11 -O3 -DNDEBUG -flto -march=native"
+            echo $1 $FLAGS "$2" -o "$3"
+            $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.cs$' | wc -l) -gt 0 ]; then #C#
-            echo $1 -optimize+ -platform:x64 "$2" -out:"$3"
-            $1 -optimize+ -platform:x64 "$2" -out:"$3" || exit 1
+            FLAGS="-optimize+ -platform:x64"
+            echo $1 $FLAGS "$2" -out:"$3"
+            $1 $FLAGS "$2" -out:"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.f90$' | wc -l) -gt 0 ]; then #Fortran
-            echo $1 -std=f95 -O3 -flto -march=native "$2" -o "$3"
-            $1 -std=f95 -O3 -flto -march=native "$2" -o "$3" || exit 1
+            FLAGS="-std=f95 -O3 -flto -march=native"
+            echo $1  "$2" -o "$3"
+            $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.hs$' | wc -l) -gt 0 ]; then #Haskell
-            echo $1 -O2 -optc-O3 "$2" -o "$3"
-            $1 -O2 -optc-O3 "$2" -o "$3" || exit 1
+            FLAGS="-O2 -optc-O3"
+            echo $1 $FLAGS "$2" -o "$3"
+            $1 $FLAGS "$2" -o "$3" || exit 1
         else
             exit 1
         fi

@@ -5,24 +5,32 @@
 #include <map>
 #include <queue>
 #include <set>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
-#define VERSION 4
+/*
+VERSION 1 - naive implementation, graph represented as double map
+VERSION 2 - naive implementation, graph represented as vector of maps
+VERSION 3 - naive implementation, graph represented as vector of vectors
+VERSION 4 - indexed optimization, graph represented as vector of maps
+VERSION 5 - indexed optimization, graph represented as vector of vectors
+*/
+#define VERSION 5
 
 struct Candidate
 {
     unsigned int id;
     unsigned int int_distance;
     float distance;
-    constexpr Candidate(unsigned int id, unsigned int int_distance, float distance) : id(id), int_distance(int_distance), distance(distance) {}
-    inline bool constexpr operator<(const Candidate &other) const { return this->distance < other.distance; }
-    inline bool constexpr operator>(const Candidate &other) const { return this->distance > other.distance; }
+    constexpr Candidate(unsigned int id, unsigned int int_distance, float distance) noexcept : id(id), int_distance(int_distance), distance(distance) {}
+    inline bool constexpr operator<(const Candidate &other) const noexcept { return this->distance < other.distance; }
+    inline bool constexpr operator>(const Candidate &other) const noexcept { return this->distance > other.distance; }
 };
 
-#if VERSION == 3 || VERSION == 4
+#if VERSION == 4 || VERSION == 5
 template<typename T> struct indexed_priority_queue
 {
     std::vector<T> data;
@@ -118,101 +126,116 @@ template<typename T> struct indexed_priority_queue
 #endif
 
 #if VERSION == 1
-void parse_ver1(std::map<unsigned int, std::map<unsigned int, float>> *graph, std::vector<std::pair<unsigned int, unsigned int>> *benchmarks)
+std::pair<std::map<unsigned int, std::map<unsigned int, float>>, std::vector<std::pair<unsigned int, unsigned int>>> parse_ver1()
 {
+    std::map<unsigned int, std::map<unsigned int, float>> graph;
+    std::vector<std::pair<unsigned int, unsigned int>> benchmarks;
     std::ifstream file("dijkstra.txt");
     if (!file.is_open()) throw std::runtime_error("std::ifstream::ifstream() failed");
+    
+    bool read_benchmarks = false;
     std::string string;
-
-    file >> string;
-    while (true)
+    while (std::getline(file, string))
     {
-        unsigned int source, destination;
-        float distance;
-        file >> source >> destination >> distance;
-        if (!file.good()) { file.clear(); break; }
-        
-        auto source_connections = graph->find(source);
-        if (source_connections == graph->cend()) source_connections = graph->insert({ source, std::map<unsigned int, float>() }).first;
-        source_connections->second.insert({ destination, distance });
-        auto destination_connections = graph->find(destination);
-        if (destination_connections == graph->cend()) destination_connections = graph->insert({ destination, std::map<unsigned int, float>() }).first;
-        destination_connections->second.insert({ source, distance });
-    }    
-
-    file >> string;
-    while (true)
-    {
-        unsigned int source, destination;
-        file >> source >> destination;
-        if (!file.good()) break;
-
-        benchmarks->push_back({ source, destination });
+        if (string.find("GRAPH") != std::string::npos) { read_benchmarks = false; continue; }
+        if (string.find("BENCHMARK") != std::string::npos) { read_benchmarks = true; continue; }
+        std::istringstream stream(string);
+        if (read_benchmarks)
+        {
+            unsigned int source, destination;
+            stream >> source >> destination;
+            if (stream.bad()) break;
+            benchmarks.push_back({ source, destination });
+        }
+        else
+        {
+            unsigned int source, destination;
+            float distance;
+            stream >> source >> destination >> distance;
+            if (stream.bad()) break;
+            auto source_connections = graph.find(source);
+            if (source_connections == graph.cend()) source_connections = graph.insert({ source, std::map<unsigned int, float>() }).first;
+            source_connections->second.insert({ destination, distance });
+            auto destination_connections = graph.find(destination);
+            if (destination_connections == graph.cend()) destination_connections = graph.insert({ destination, std::map<unsigned int, float>() }).first;
+            destination_connections->second.insert({ source, distance });
+        }
     }
+    return { graph, benchmarks };
 }
 #endif
 
-#if VERSION == 2 || VERSION == 3
-void parse_ver2(std::vector<std::map<unsigned int, float>> *graph, std::vector<std::pair<unsigned int, unsigned int>> *benchmarks)
+#if VERSION == 2 || VERSION == 4
+std::pair<std::vector<std::map<unsigned int, float>>, std::vector<std::pair<unsigned int, unsigned int>>> parse_ver2()
 {
+    std::vector<std::map<unsigned int, float>> graph;
+    std::vector<std::pair<unsigned int, unsigned int>> benchmarks;
     std::ifstream file("dijkstra.txt");
     if (!file.is_open()) throw std::runtime_error("std::ifstream::ifstream() failed");
+    
+    bool read_benchmarks = false;
     std::string string;
-
-    file >> string;
-    while (true)
+    while (std::getline(file, string))
     {
-        unsigned int source, destination;
-        float distance;
-        file >> source >> destination >> distance;
-        if (!file.good()) { file.clear(); break; }
-        if (std::max(source, destination) >= graph->size()) graph->resize(std::max(source, destination) + 1);
-        
-        (*graph)[source].insert({ destination, distance });
-        (*graph)[destination].insert({ source, distance });
-    }    
-
-    file >> string;
-    while (true)
-    {
-        unsigned int source, destination;
-        file >> source >> destination;
-        if (!file.good()) break;
-
-        benchmarks->push_back({ source, destination });
+        if (string.find("GRAPH") != std::string::npos) { read_benchmarks = false; continue; }
+        if (string.find("BENCHMARK") != std::string::npos) { read_benchmarks = true; continue; }
+        std::istringstream stream(string);
+        if (read_benchmarks)
+        {
+            unsigned int source, destination;
+            stream >> source >> destination;
+            if (stream.bad()) break;
+            benchmarks.push_back({ source, destination });
+        }
+        else
+        {
+            unsigned int source, destination;
+            float distance;
+            stream >> source >> destination >> distance;
+            if (stream.bad()) break;
+            if (std::max(source, destination) >= graph.size()) graph.resize(std::max(source, destination) + 1);
+            graph[source].insert({ destination, distance });
+            graph[destination].insert({ source, distance });
+        }
     }
+    return { graph, benchmarks };
 }
 #endif
 
-#if VERSION == 4
-void parse_ver4(std::vector<std::vector<std::pair<unsigned int, float>>> *graph, std::vector<std::pair<unsigned int, unsigned int>> *benchmarks)
+#if VERSION == 3 || VERSION == 5
+std::pair<std::vector<std::vector<std::pair<unsigned int, float>>>, std::vector<std::pair<unsigned int, unsigned int>>> parse_ver3()
 {
+    std::vector<std::vector<std::pair<unsigned int, float>>> graph;
+    std::vector<std::pair<unsigned int, unsigned int>> benchmarks;
     std::ifstream file("dijkstra.txt");
     if (!file.is_open()) throw std::runtime_error("std::ifstream::ifstream() failed");
+
+    bool read_benchmarks = false;
     std::string string;
-
-    file >> string;
-    while (true)
+    while (std::getline(file, string))
     {
-        unsigned int source, destination;
-        float distance;
-        file >> source >> destination >> distance;
-        if (!file.good()) { file.clear(); break; }
-        if (std::max(source, destination) >= graph->size()) graph->resize(std::max(source, destination) + 1);
-        
-        (*graph)[source].push_back({ destination, distance });
-        (*graph)[destination].push_back({ source, distance });
+        if (string.find("GRAPH") != std::string::npos) { read_benchmarks = false; continue; }
+        if (string.find("BENCHMARK") != std::string::npos) { read_benchmarks = true; continue; }
+        std::istringstream stream(string);
+        if (read_benchmarks)
+        {
+            unsigned int source, destination;
+            stream >> source >> destination;
+            if (stream.bad()) break;
+            benchmarks.push_back({ source, destination });
+        }
+        else
+        {
+            unsigned int source, destination;
+            float distance;
+            stream >> source >> destination >> distance;
+            if (stream.bad()) break;
+            if (std::max(source, destination) >= graph.size()) graph.resize(std::max(source, destination) + 1);
+            graph[source].push_back({ destination, distance });
+            graph[destination].push_back({ source, distance });
+        }
     }
-
-    file >> string;
-    while (true)
-    {
-        unsigned int source, destination;
-        file >> source >> destination;
-        if (!file.good()) break;
-
-        benchmarks->push_back({ source, destination });
-    }
+    return { graph, benchmarks };
 }
 #endif
 
@@ -281,7 +304,39 @@ void solve_ver2(const std::vector<std::map<unsigned int, float>> &graph, const s
 #endif
 
 #if VERSION == 3
-void solve_ver3(const std::vector<std::map<unsigned int, float>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
+void solve_ver3(const std::vector<std::vector<std::pair<unsigned int, float>>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
+{
+    for (const auto &benchmark : benchmarks)
+    {
+        const unsigned int source = benchmark.first;
+        const unsigned int destination = benchmark.second;
+        std::priority_queue<Candidate, std::vector<Candidate>, std::greater<Candidate>> candidates;
+        std::vector<bool> explored(graph.size());
+        candidates.push({ source, 0, 0.0 });
+        unsigned int int_distance = 0;
+        float distance = std::numeric_limits<float>::infinity();
+        while (!candidates.empty())
+        {
+            Candidate candidate = candidates.top();
+            if (candidate.id == destination) { int_distance = candidate.int_distance; distance = candidate.distance; break; }
+            candidates.pop();
+            if (explored[candidate.id]) continue;
+            explored[candidate.id] = true;
+            const auto &connections = graph[candidate.id];
+
+            for (const auto &connection : connections)
+            {
+                if (explored[destination]) continue;
+                candidates.push({ connection.first, candidate.int_distance + 1, candidate.distance + connection.second });
+            }
+        }
+        std::cout << source << ' ' << destination << ' ' << int_distance << ' ' << distance << '\n';
+    }
+}
+#endif
+
+#if VERSION == 4
+void solve_ver4(const std::vector<std::map<unsigned int, float>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
 {
     indexed_priority_queue<Candidate> candidates(graph.size());
 
@@ -310,8 +365,8 @@ void solve_ver3(const std::vector<std::map<unsigned int, float>> &graph, const s
 }
 #endif
 
-#if VERSION == 4
-void solve_ver4(const std::vector<std::vector<std::pair<unsigned int, float>>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
+#if VERSION == 5
+void solve_ver5(const std::vector<std::vector<std::pair<unsigned int, float>>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
 {
     indexed_priority_queue<Candidate> candidates(graph.size());
 
@@ -343,10 +398,8 @@ void solve_ver4(const std::vector<std::vector<std::pair<unsigned int, float>>> &
 #if VERSION == 1
 int main_ver1()
 {
-    std::map<unsigned int, std::map<unsigned int, float>> graph;
-    std::vector<std::pair<unsigned int, unsigned int>> benchmarks;
-    parse_ver1(&graph, &benchmarks);
-    solve_ver1(graph, benchmarks);
+    auto graph_and_benchmarks = parse_ver1();
+    solve_ver1(graph_and_benchmarks.first, graph_and_benchmarks.second);
     return 0;
 }
 #endif
@@ -354,10 +407,8 @@ int main_ver1()
 #if VERSION == 2
 int main_ver2()
 {
-    std::vector<std::map<unsigned int, float>> graph;
-    std::vector<std::pair<unsigned int, unsigned int>> benchmarks;
-    parse_ver2(&graph, &benchmarks);
-    solve_ver2(graph, benchmarks);
+    auto graph_and_benchmarks = parse_ver2();
+    solve_ver2(graph_and_benchmarks.first, graph_and_benchmarks.second);
     return 0;
 }
 #endif
@@ -365,10 +416,8 @@ int main_ver2()
 #if VERSION == 3
 int main_ver3()
 {
-    std::vector<std::map<unsigned int, float>> graph;
-    std::vector<std::pair<unsigned int, unsigned int>> benchmarks;
-    parse_ver2(&graph, &benchmarks);
-    solve_ver3(graph, benchmarks);
+    auto graph_and_benchmarks = parse_ver3();
+    solve_ver3(graph_and_benchmarks.first, graph_and_benchmarks.second);
     return 0;
 }
 #endif
@@ -376,10 +425,17 @@ int main_ver3()
 #if VERSION == 4
 int main_ver4()
 {
-    std::vector<std::vector<std::pair<unsigned int, float>>> graph;
-    std::vector<std::pair<unsigned int, unsigned int>> benchmarks;
-    parse_ver4(&graph, &benchmarks);
-    solve_ver4(graph, benchmarks);
+    auto graph_and_benchmarks = parse_ver2();
+    solve_ver4(graph_and_benchmarks.first, graph_and_benchmarks.second);
+    return 0;
+}
+#endif
+
+#if VERSION == 5
+int main_ver5()
+{
+    auto graph_and_benchmarks = parse_ver3();
+    solve_ver5(graph_and_benchmarks.first, graph_and_benchmarks.second);
     return 0;
 }
 #endif
@@ -396,6 +452,8 @@ int main()
             return main_ver3();
         #elif VERSION == 4
             return main_ver4();
+        #elif VERSION == 5
+            return main_ver5();
         #endif
     }
     catch (std::exception &e)

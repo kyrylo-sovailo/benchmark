@@ -72,7 +72,7 @@ def parse_ver2():
                 graph[destination][source] = distance
         return graph, benchmarks
 
-def parse_ver4():
+def parse_ver3():
     with open("dijkstra.txt", 'r') as file:
         graph = []
         benchmarks = []
@@ -145,7 +145,7 @@ def solve_ver2(graph, benchmarks):
 
         print(source, destination, int_distance, distance)
 
-def solve_ver4(graph, benchmarks):
+def solve_ver3(graph, benchmarks):
     for source, destination in benchmarks:
         candidates = []
         explored = [ False for _ in range(len(graph)) ]
@@ -175,9 +175,9 @@ def main_ver2():
     graph, benchmarks = parse_ver2()
     solve_ver2(graph, benchmarks)
 
-def main_ver4():
-    graph, benchmarks = parse_ver4()
-    solve_ver4(graph, benchmarks)
+def main_ver3():
+    graph, benchmarks = parse_ver3()
+    solve_ver3(graph, benchmarks)
 
 if __name__ == "__main__":
     try:

@@ -40,7 +40,7 @@ program dijkstra
         integer :: length = 0
     end type ConnectionVectorVector
 
-    call main_ver4()
+    call main_ver5()
 
 contains
 
@@ -243,7 +243,7 @@ contains
         end do
     end function pop_indexed_heap
 
-    subroutine parse_ver4(graph, benchmarks)
+    subroutine parse_ver5(graph, benchmarks)
         type(ConnectionVectorVector), intent(out) :: graph
         type(BenchmarkVector), intent(out) :: benchmarks
 
@@ -281,9 +281,9 @@ contains
         end do
 
         close(10)
-    end subroutine parse_ver4
+    end subroutine parse_ver5
 
-    subroutine solve_ver4(graph, benchmarks)
+    subroutine solve_ver5(graph, benchmarks)
         type(ConnectionVectorVector), intent(in) :: graph
         type(BenchmarkVector), intent(in) :: benchmarks
 
@@ -333,21 +333,21 @@ contains
         
         deallocate(candidate_indices)
         deallocate(candidates%array)
-    end subroutine solve_ver4
+    end subroutine solve_ver5
 
-    subroutine main_ver4()
+    subroutine main_ver5()
         type(ConnectionVectorVector) :: graph
         type(BenchmarkVector) :: benchmarks
         integer :: node_i
 
-        call parse_ver4(graph, benchmarks)
-        call solve_ver4(graph, benchmarks)
+        call parse_ver5(graph, benchmarks)
+        call solve_ver5(graph, benchmarks)
 
         do node_i = 1, graph%length
             deallocate(graph%array(node_i)%array)
         end do
         deallocate(graph%array)
         deallocate(benchmarks%array)
-    end subroutine main_ver4
+    end subroutine main_ver5
 
 end program dijkstra
