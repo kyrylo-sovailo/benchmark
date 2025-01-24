@@ -35,7 +35,7 @@ parse_graph (graph, benchmarks) input = let postspace = parse_space input in
         postspace4 = parse_space postdistance
         graph' = M.insertWith (++) source ([Connection destination distance]) graph
         graph'' = M.insertWith (++) destination ([Connection source distance]) graph'
-        in parse_graph (graph'', benchmarks) postspace4
+        in graph'' `seq` parse_graph (graph'', benchmarks) postspace4
     else error "Invalid symbol"
 
 parse_benchmarks :: ((Map Word32 [Connection]), [Benchmark]) -> String -> ((Map Word32 [Connection]), [Benchmark])
@@ -51,8 +51,8 @@ parse_benchmarks (graph, benchmarks) input = let postspace = parse_space input i
         postspace2 = parse_space postsource
         (destination, postdestination) = parse_integer (0, postspace2)
         postspace3 = parse_space postdestination
-        benchmarks' = benchmarks ++ [Benchmark source destination]
-        in parse_benchmarks (graph, benchmarks') postspace3
+        benchmarks' = (Benchmark source destination):benchmarks
+        in benchmarks' `seq` parse_benchmarks (graph, benchmarks') postspace3
     else error "Invalid symbol"
 
 --parse_integer (number, input) -> (number, input)
@@ -121,7 +121,7 @@ solve_recursive graph destination queue mask
             (Just connections) = M.lookup id graph
             mask' = S.insert id mask
             queue'' = L.foldl' (\q c -> explore_connection q mask candidate c) queue' connections
-            in solve_recursive graph destination queue'' mask'
+            in queue'' `seq` solve_recursive graph destination queue'' mask'
 
 --explore_connection (queue, mask, candidate, connection) -> queue
 explore_connection :: (Set Candidate) -> (Set Word32) -> Candidate -> Connection -> (Set Candidate)
@@ -143,7 +143,8 @@ main = do
         Left exception ->
             putStrLn "readFile() failed"
         Right content -> let
-            (graph, benchmarks) = parse content
-            solutions = solve graph benchmarks
             format = (\(Benchmark s d, Solution i f) -> show s ++ " " ++ show d ++ " " ++ show i ++ " " ++ show f ++ "\n" )
-            in putStr $ concat $ Prelude.map format (zip benchmarks solutions)
+            (graph, benchmarks) = parse content
+            solutions = graph `seq` benchmarks `seq` solve graph benchmarks
+            output = solutions `seq` L.foldl' (++) "" (map format (zip benchmarks solutions))
+            in putStr output
