@@ -4,8 +4,8 @@ import sys
 from typing import List, Tuple
 
 class Candidate:
-    def __init__(self, node, int_distance, distance):
-        self.node = node
+    def __init__(self, id, int_distance, distance):
+        self.id = id
         self.int_distance = int_distance
         self.distance = distance
 
@@ -32,15 +32,15 @@ def parse_ver1():
             else:
                 source = int(split[0])
                 destination = int(split[1])
-                weight = float(split[2])
+                distance = float(split[2])
 
                 if source in graph: source_dict = graph[source]
                 else: source_dict = graph[source] = dict()
                 if destination in graph: destination_dict = graph[destination]
                 else: destination_dict = graph[destination] = dict()
 
-                source_dict[destination] = weight
-                destination_dict[source] = weight
+                source_dict[destination] = distance
+                destination_dict[source] = distance
         return graph, benchmarks
 
 def parse_ver2():
@@ -63,13 +63,13 @@ def parse_ver2():
             else:
                 source = int(split[0])
                 destination = int(split[1])
-                weight = float(split[2])
+                distance = float(split[2])
 
                 extension = max(source, destination) - len(graph) + 1
                 if extension > 0: graph += [ dict() for _ in range(extension) ]
 
-                graph[source][destination] = weight
-                graph[destination][source] = weight
+                graph[source][destination] = distance
+                graph[destination][source] = distance
         return graph, benchmarks
 
 def parse_ver4():
@@ -92,13 +92,13 @@ def parse_ver4():
             else:
                 source = int(split[0])
                 destination = int(split[1])
-                weight = float(split[2])
+                distance = float(split[2])
 
                 extension = max(source, destination) - len(graph) + 1
                 if extension > 0: graph += [ [] for _ in range(extension) ]
 
-                graph[source].append((destination, weight))
-                graph[destination].append((source, weight))
+                graph[source].append((destination, distance))
+                graph[destination].append((source, distance))
         return graph, benchmarks
 
 def solve_ver1(graph, benchmarks):
@@ -111,15 +111,15 @@ def solve_ver1(graph, benchmarks):
 
         while candidates:
             candidate = heapq.heappop(candidates)
-            if candidate.node == destination:
+            if candidate.id == destination:
                 int_distance = candidate.int_distance
                 distance = candidate.distance
                 break
-            if candidate.node in explored: continue
-            explored.add(candidate.node)
-            for neighbor, weight in graph[candidate.node].items():
+            if candidate.id in explored: continue
+            explored.add(candidate.id)
+            for neighbor, neighbor_distance in graph[candidate.id].items():
                 if destination in explored: continue
-                heapq.heappush(candidates, Candidate(neighbor, candidate.int_distance + 1, candidate.distance + weight))
+                heapq.heappush(candidates, Candidate(neighbor, candidate.int_distance + 1, candidate.distance + neighbor_distance))
 
         print(source, destination, int_distance, distance)
 
@@ -133,15 +133,15 @@ def solve_ver2(graph, benchmarks):
 
         while candidates:
             candidate = heapq.heappop(candidates)
-            if candidate.node == destination:
+            if candidate.id == destination:
                 int_distance = candidate.int_distance
                 distance = candidate.distance
                 break
-            if explored[candidate.node]: continue
-            explored[candidate.node] = True
-            for neighbor, weight in graph[candidate.node].items():
+            if explored[candidate.id]: continue
+            explored[candidate.id] = True
+            for neighbor, neighbor_distance in graph[candidate.id].items():
                 if explored[destination]: continue
-                heapq.heappush(candidates, Candidate(neighbor, candidate.int_distance + 1, candidate.distance + weight))
+                heapq.heappush(candidates, Candidate(neighbor, candidate.int_distance + 1, candidate.distance + neighbor_distance))
 
         print(source, destination, int_distance, distance)
 
@@ -155,15 +155,15 @@ def solve_ver4(graph, benchmarks):
 
         while candidates:
             candidate = heapq.heappop(candidates)
-            if candidate.node == destination:
+            if candidate.id == destination:
                 int_distance = candidate.int_distance
                 distance = candidate.distance
                 break
-            if explored[candidate.node]: continue
-            explored[candidate.node] = True
-            for neighbor, weight in graph[candidate.node]:
+            if explored[candidate.id]: continue
+            explored[candidate.id] = True
+            for neighbor, neighbor_distance in graph[candidate.id]:
                 if explored[destination]: continue
-                heapq.heappush(candidates, Candidate(neighbor, candidate.int_distance + 1, candidate.distance + weight))
+                heapq.heappush(candidates, Candidate(neighbor, candidate.int_distance + 1, candidate.distance + neighbor_distance))
 
         print(source, destination, int_distance, distance)
 

@@ -211,13 +211,13 @@ void solve_ver4(const ConnectionVectorVector *graph, const BenchmarkVector *benc
         {
             candidate = pop_indexed_heap(&candidates, candidate_indices);
             if (candidate.id == destination) { int_distance = candidate.int_distance; distance = candidate.distance; break; }
-            ConnectionVector *candidate_neighbors = &graph->begin[candidate.id];
+            ConnectionVector *connections = &graph->begin[candidate.id];
 
-            for (const Connection *candidate_neighbor = candidate_neighbors->begin;
-                candidate_neighbor < &candidate_neighbors->begin[candidate_neighbors->length];
-                candidate_neighbor++)
+            for (const Connection *connection = connections->begin;
+                connection < &connections->begin[connections->length];
+                connection++)
             {
-                Candidate new_candidate = { .id = candidate_neighbor->destination, .int_distance = candidate.int_distance + 1, .distance = candidate.distance + candidate_neighbor->distance };
+                Candidate new_candidate = { .id = connection->destination, .int_distance = candidate.int_distance + 1, .distance = candidate.distance + connection->distance };
                 push_indexed_heap(&candidates, candidate_indices, new_candidate);
             }
         }
@@ -236,7 +236,7 @@ int main_ver4()
     parse_ver4(&graph, &benchmarks);
     solve_ver4(&graph, &benchmarks);
     
-    for (const ConnectionVector *neighbors = graph.begin; neighbors < &graph.begin[graph.length]; neighbors++) free(neighbors->begin);
+    for (const ConnectionVector *connections = graph.begin; connections < &graph.begin[graph.length]; connections++) free(connections->begin);
     free(graph.begin);
     free(benchmarks.begin);
     return 0;

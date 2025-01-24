@@ -31,8 +31,14 @@ template<typename T> struct indexed_priority_queue
     inline indexed_priority_queue(size_t size)
     {
         data.reserve(size);
-        indices.resize(size, static_cast<unsigned int>(-1));
-    };
+        indices.resize(size);
+    }
+
+    inline void reset()
+    {
+        data.clear();
+        for (auto &index : indices) index = static_cast<unsigned int>(-1);
+    }
 
     inline constexpr const T &top() const
     {
@@ -111,7 +117,7 @@ template<typename T> struct indexed_priority_queue
 };
 #endif
 
-#if VERSION == 2
+#if VERSION == 1
 void parse_ver1(std::map<unsigned int, std::map<unsigned int, float>> *graph, std::vector<std::pair<unsigned int, unsigned int>> *benchmarks)
 {
     std::ifstream file("dijkstra.txt");
@@ -229,12 +235,12 @@ void solve_ver1(const std::map<unsigned int, std::map<unsigned int, float>> &gra
             candidates.pop();
             if (explored.count(candidate.id) > 0) continue;
             explored.insert(candidate.id);
-            const auto candidate_neighbors = graph.find(candidate.id);
+            const auto connections = graph.find(candidate.id);
 
-            for (const auto &candidate_neighbor : candidate_neighbors->second)
+            for (const auto &connection : connections->second)
             {
                 if (explored.count(destination) > 0) continue;
-                candidates.push({ candidate_neighbor.first, candidate.int_distance + 1, candidate.distance + candidate_neighbor.second });
+                candidates.push({ connection.first, candidate.int_distance + 1, candidate.distance + connection.second });
             }
         }
         std::cout << source << ' ' << destination << ' ' << int_distance << ' ' << distance << '\n';
@@ -261,12 +267,12 @@ void solve_ver2(const std::vector<std::map<unsigned int, float>> &graph, const s
             candidates.pop();
             if (explored[candidate.id]) continue;
             explored[candidate.id] = true;
-            const auto &candidate_neighbors = graph[candidate.id];
+            const auto &connections = graph[candidate.id];
 
-            for (const auto &candidate_neighbor : candidate_neighbors)
+            for (const auto &connection : connections)
             {
                 if (explored[destination]) continue;
-                candidates.push({ candidate_neighbor.first, candidate.int_distance + 1, candidate.distance + candidate_neighbor.second });
+                candidates.push({ connection.first, candidate.int_distance + 1, candidate.distance + connection.second });
             }
         }
         std::cout << source << ' ' << destination << ' ' << int_distance << ' ' << distance << '\n';
@@ -277,12 +283,13 @@ void solve_ver2(const std::vector<std::map<unsigned int, float>> &graph, const s
 #if VERSION == 3
 void solve_ver3(const std::vector<std::map<unsigned int, float>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
 {
+    indexed_priority_queue<Candidate> candidates(graph.size());
 
     for (const auto &benchmark : benchmarks)
     {
         const unsigned int source = benchmark.first;
         const unsigned int destination = benchmark.second;
-        indexed_priority_queue<Candidate> candidates(graph.size());
+        candidates.reset();
         candidates.push({ source, 0, 0.0 });
         unsigned int int_distance = 0;
         float distance = std::numeric_limits<float>::infinity();
@@ -291,11 +298,11 @@ void solve_ver3(const std::vector<std::map<unsigned int, float>> &graph, const s
             Candidate candidate = candidates.top();
             if (candidate.id == destination) { int_distance = candidate.int_distance; distance = candidate.distance; break; }
             candidates.pop();
-            const auto &candidate_neighbors = graph[candidate.id];
+            const auto &connections = graph[candidate.id];
 
-            for (const auto &candidate_neighbor : candidate_neighbors)
+            for (const auto &connection : connections)
             {
-                candidates.push({ candidate_neighbor.first, candidate.int_distance + 1, candidate.distance + candidate_neighbor.second });
+                candidates.push({ connection.first, candidate.int_distance + 1, candidate.distance + connection.second });
             }
         }
         std::cout << source << ' ' << destination << ' ' << int_distance << ' ' << distance << '\n';
@@ -306,11 +313,13 @@ void solve_ver3(const std::vector<std::map<unsigned int, float>> &graph, const s
 #if VERSION == 4
 void solve_ver4(const std::vector<std::vector<std::pair<unsigned int, float>>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
 {
+    indexed_priority_queue<Candidate> candidates(graph.size());
+
     for (const auto &benchmark : benchmarks)
     {
         const unsigned int source = benchmark.first;
         const unsigned int destination = benchmark.second;
-        indexed_priority_queue<Candidate> candidates(graph.size());
+        candidates.reset();
         candidates.push({ source, 0, 0.0 });
         unsigned int int_distance = 0;
         float distance = std::numeric_limits<float>::infinity();
@@ -319,11 +328,11 @@ void solve_ver4(const std::vector<std::vector<std::pair<unsigned int, float>>> &
             Candidate candidate = candidates.top();
             if (candidate.id == destination) { int_distance = candidate.int_distance; distance = candidate.distance; break; }
             candidates.pop();
-            const auto &candidate_neighbors = graph[candidate.id];
+            const auto &connections = graph[candidate.id];
 
-            for (const auto &candidate_neighbor : candidate_neighbors)
+            for (const auto &connection : connections)
             {
-                candidates.push({ candidate_neighbor.first, candidate.int_distance + 1, candidate.distance + candidate_neighbor.second });
+                candidates.push({ connection.first, candidate.int_distance + 1, candidate.distance + connection.second });
             }
         }
         std::cout << source << ' ' << destination << ' ' << int_distance << ' ' << distance << '\n';

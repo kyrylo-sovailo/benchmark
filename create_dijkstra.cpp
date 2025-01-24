@@ -14,12 +14,12 @@ void write(std::ofstream *file, const std::string &string)
 
 int _main()
 {
-    const unsigned int node_count = 1000000;
+    const unsigned int node_count = 100000;
     const unsigned int min_node_connections = 5;
     const unsigned int max_node_connections = 10;
     const float min_weight = 1;
     const float max_weight = 100;
-    const unsigned int benchmark_count = 10;
+    const unsigned int benchmark_count = 1;
 
     std::default_random_engine engine(1234);
     std::uniform_int_distribution<unsigned int> node_distribution(0, node_count-1);

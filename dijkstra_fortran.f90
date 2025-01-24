@@ -11,7 +11,7 @@ program dijkstra
     end type Candidate
 
     type :: CandidateVector
-        type(Candidate), dimension(:), allocatable :: array
+        type(Candidate), dimension(:), pointer :: array => null()
         integer :: length = 0
     end type CandidateVector
 
@@ -21,7 +21,7 @@ program dijkstra
     end type Benchmark
 
     type :: BenchmarkVector
-        type(Benchmark), dimension(:), allocatable :: array
+        type(Benchmark), dimension(:), pointer :: array => null()
         integer :: length = 0
     end type BenchmarkVector
 
@@ -31,12 +31,12 @@ program dijkstra
     end type Connection
 
     type :: ConnectionVector
-        type(Connection), dimension(:), allocatable :: array
+        type(Connection), dimension(:), pointer :: array => null()
         integer :: length = 0
     end type ConnectionVector
 
     type :: ConnectionVectorVector
-        type(ConnectionVector), dimension(:), allocatable :: array
+        type(ConnectionVector), dimension(:), pointer :: array => null()
         integer :: length = 0
     end type ConnectionVectorVector
 
@@ -47,10 +47,10 @@ contains
     subroutine push_CandidateVector(vector, element)
         type(CandidateVector), intent(inout) :: vector
         type(Candidate), intent(in) :: element
-        type(Candidate), dimension(:), allocatable :: new_array
+        type(Candidate), dimension(:), pointer :: new_array
         integer :: old_capacity, new_capacity
         vector%length = vector%length + 1
-        if (allocated(vector%array)) then
+        if (associated(vector%array)) then
             old_capacity = size(vector%array)
         else
             old_capacity = 0
@@ -63,7 +63,7 @@ contains
             end if
             allocate(new_array(new_capacity))
             if (old_capacity /= 0) new_array(1:old_capacity) = vector%array
-            call move_alloc(new_array, vector%array)
+            vector%array => new_array
         end if
         vector%array(vector%length) = element
     end subroutine push_CandidateVector
@@ -71,10 +71,10 @@ contains
     subroutine push_BenchmarkVector(vector, element)
         type(BenchmarkVector), intent(inout) :: vector
         type(Benchmark), intent(in) :: element
-        type(Benchmark), dimension(:), allocatable :: new_array
+        type(Benchmark), dimension(:), pointer :: new_array
         integer :: old_capacity, new_capacity
         vector%length = vector%length + 1
-        if (allocated(vector%array)) then
+        if (associated(vector%array)) then
             old_capacity = size(vector%array)
         else
             old_capacity = 0
@@ -87,7 +87,7 @@ contains
             end if
             allocate(new_array(new_capacity))
             if (old_capacity /= 0) new_array(1:old_capacity) = vector%array
-            call move_alloc(new_array, vector%array)
+            vector%array => new_array
         end if
         vector%array(vector%length) = element
     end subroutine push_BenchmarkVector
@@ -95,10 +95,10 @@ contains
     subroutine push_ConnectionVector(vector, element)
         type(ConnectionVector), intent(inout) :: vector
         type(Connection), intent(in) :: element
-        type(Connection), dimension(:), allocatable :: new_array
+        type(Connection), dimension(:), pointer :: new_array
         integer :: old_capacity, new_capacity
         vector%length = vector%length + 1
-        if (allocated(vector%array)) then
+        if (associated(vector%array)) then
             old_capacity = size(vector%array)
         else
             old_capacity = 0
@@ -111,7 +111,7 @@ contains
             end if
             allocate(new_array(new_capacity))
             if (old_capacity /= 0) new_array(1:old_capacity) = vector%array
-            call move_alloc(new_array, vector%array)
+            vector%array => new_array
         end if
         vector%array(vector%length) = element
     end subroutine push_ConnectionVector
@@ -119,10 +119,10 @@ contains
     subroutine grow_ConnectionVectorVector(vector, length)
         type(ConnectionVectorVector), intent(inout) :: vector
         integer, intent(in) :: length
-        type(ConnectionVector), dimension(:), allocatable :: new_array
+        type(ConnectionVector), dimension(:), pointer :: new_array
         integer :: old_capacity, new_capacity
         if (length <= vector%length) return
-        if (allocated(vector%array)) then
+        if (associated(vector%array)) then
             old_capacity = size(vector%array)
         else
             old_capacity = 0
@@ -138,7 +138,7 @@ contains
             end do
             allocate(new_array(new_capacity))
             if (old_capacity /= 0) new_array(1:old_capacity) = vector%array
-            call move_alloc(new_array, vector%array)
+            vector%array => new_array
         end if
         vector%length = length
     end subroutine grow_ConnectionVectorVector
@@ -160,7 +160,7 @@ contains
 
     subroutine push_indexed_heap(data, indices, element)
         type(CandidateVector), intent(inout) :: data
-        integer, dimension(:), allocatable :: indices
+        integer, intent(inout), dimension(:) :: indices !TODO: pointer?
         type(Candidate), intent(in) :: element
         integer :: i, parent_i
 
@@ -193,7 +193,7 @@ contains
 
     function pop_indexed_heap(data, indices) result(top)
         type(CandidateVector), intent(inout) :: data
-        integer, dimension(:), allocatable :: indices
+        integer, intent(inout), dimension(:) :: indices !TODO: pointer?
         type(Candidate) :: top
         integer :: i, left_i, right_i
         logical :: left_exists, right_exists
@@ -288,15 +288,16 @@ contains
         type(BenchmarkVector), intent(in) :: benchmarks
 
         type(CandidateVector) :: candidates
-        integer, dimension(:), allocatable :: candidate_indices
-        integer :: benchmark_i, neighbor_i
+        integer, dimension(:), pointer :: candidate_indices
+        integer :: benchmark_i, connection_i
         type(Candidate) :: current_candidate, new_candidate
-        type(ConnectionVector) :: current_neighbors
+        type(ConnectionVector), pointer :: connections
         integer :: source, destination
         integer :: int_distance
         real :: distance
 
         allocate(candidate_indices(graph%length))
+        allocate(candidates%array(graph%length))
 
         do benchmark_i = 1, benchmarks%length
             source = benchmarks%array(benchmark_i)%source
@@ -315,28 +316,38 @@ contains
                     exit
                 end if
 
-                current_neighbors = graph%array(current_candidate%id)
-                do neighbor_i = 1, current_neighbors%length
-                    new_candidate = Candidate(current_neighbors%array(neighbor_i)%destination, current_candidate%int_distance + 1, &
-                        current_candidate%distance + current_neighbors%array(neighbor_i)%distance)
+                connections => graph%array(current_candidate%id)
+                do connection_i = 1, connections%length
+                    new_candidate = Candidate(connections%array(connection_i)%destination, current_candidate%int_distance + 1, &
+                        current_candidate%distance + connections%array(connection_i)%distance)
                     call push_indexed_heap(candidates, candidate_indices, new_candidate)
                 end do
             end do
 
             if (distance /= huge(1.0)) then
-                write (*,'(I0.1, A, I0.1, A, F0.4)') destination-1, ' ', int_distance, ' ', distance
+                write (*,'(I0.1, A, I0.1, A, I0.1, A, F0.4)') source-1, ' ', destination-1, ' ', int_distance, ' ', distance
             else
-                write (*,'(I0.1, A, I0.1, A, A)') destination-1, ' ', int_distance, ' ', 'inf'
+                write (*,'(I0.1, A, I0.1, A, I0.1, A, A)') source-1, ' ', destination-1, ' ', int_distance, ' ', 'inf'
             end if
         end do
+        
+        deallocate(candidate_indices)
+        deallocate(candidates%array)
     end subroutine solve_ver4
 
     subroutine main_ver4()
         type(ConnectionVectorVector) :: graph
         type(BenchmarkVector) :: benchmarks
+        integer :: node_i
 
         call parse_ver4(graph, benchmarks)
         call solve_ver4(graph, benchmarks)
+
+        do node_i = 1, graph%length
+            deallocate(graph%array(node_i)%array)
+        end do
+        deallocate(graph%array)
+        deallocate(benchmarks%array)
     end subroutine main_ver4
 
 end program dijkstra
