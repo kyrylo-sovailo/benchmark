@@ -14,8 +14,8 @@ def read_time(filename):
     raise Exception(f"No time found in {filename}")
 
 def get_color(label):
-    if "C++" in label: return "red"
-    elif "C#" in label: return "blue"
+    if "++" in label: return "red"
+    elif "#" in label: return "blue"
     elif "C" in label: return "orange"
     elif "Haskell" in label: return "purple"
     elif "Fortran" in label: return "green"
@@ -40,6 +40,7 @@ def main():
         "Python 3.12" : "dijkstra_python.txt",
 
         "C, clang, I/O + threads" : "dijkstra_c_clang_release_opt.txt",
+        "C, clang++, release" : "dijkstra_c_clang_release_cpp.txt",
     }
     label_to_time = []
     for label, filename in label_to_filename.items(): label_to_time.append((label, read_time(filename)))

@@ -33,10 +33,10 @@ void grow_ ## T ## Vector(T ## Vector *vector, unsigned int length) \
     { \
         if (vector->capacity == 0) vector->capacity = 1; \
         while (vector->capacity < length) vector->capacity = (vector->capacity << 1); \
-        vector->begin = realloc(vector->begin, vector->capacity * sizeof(*vector->begin)); \
+        vector->begin = (T*)realloc(vector->begin, vector->capacity * sizeof(T)); \
         if (vector->begin == NULL) { printf("realloc() failed"); exit(1); } \
     } \
-    memset(vector->begin + vector->length, 0, (length - vector->length) * sizeof(*vector->begin)); \
+    memset(vector->begin + vector->length, 0, (length - vector->length) * sizeof(T)); \
     vector->length = length; \
 }
 
@@ -48,7 +48,7 @@ void push_ ## T ## Vector(T ## Vector *vector, T item) \
     { \
         if (vector->capacity == 0) vector->capacity = 1; \
         else vector->capacity = vector->capacity << 1; \
-        vector->begin = realloc(vector->begin, vector->capacity * sizeof(*vector->begin)); \
+        vector->begin = (T*)realloc(vector->begin, vector->capacity * sizeof(T)); \
         if (vector->begin == NULL) { printf("realloc() failed"); exit(2); } \
     } \
     vector->begin[vector->length - 1] = item; \
@@ -408,7 +408,7 @@ void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benc
 void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benchmarks)
 {
     CandidateVector candidates; memset(&candidates, 0, sizeof(candidates));
-    unsigned int *candidate_indices = malloc(graph->length * sizeof(unsigned int));
+    unsigned int *candidate_indices = (unsigned int*)malloc(graph->length * sizeof(unsigned int));
 
     for (const Benchmark *benchmark = benchmarks->begin;
         benchmark < &benchmarks->begin[benchmarks->length];
