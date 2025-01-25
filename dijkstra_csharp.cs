@@ -1,8 +1,9 @@
 #define VERSION5
 
-using System.Collections.Generic;
-using System.IO;
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 
 class Connection
 {
@@ -246,6 +247,9 @@ class Program
         graph = new List<List<Connection>>();
         benchmarks = new List<Benchmark>();
 
+        NumberStyles integral = NumberStyles.None;
+        NumberStyles real = NumberStyles.AllowDecimalPoint;
+        IFormatProvider format = CultureInfo.InvariantCulture;
         StreamReader file = new StreamReader("dijkstra.txt");
         if (file == null) throw new IOException("StreamReader() failed");
         bool read_benchmarks = false;
@@ -258,15 +262,15 @@ class Program
             string[] split = line.Split(' ');
             if (read_benchmarks)
             {
-                if (!int.TryParse(split[0], out int source)) break;
-                if (!int.TryParse(split[1], out int destination)) break;
+                if (!int.TryParse(split[0], integral, format, out int source)) break;
+                if (!int.TryParse(split[1], integral, format, out int destination)) break;
                 benchmarks.Add(new Benchmark(source, destination));
             }
             else
             {
-                if (!int.TryParse(split[0], out int source)) break;
-                if (!int.TryParse(split[1], out int destination)) break;
-                if (!float.TryParse(split[2], out float distance)) break;
+                if (!int.TryParse(split[0], integral, format, out int source)) break;
+                if (!int.TryParse(split[1], integral, format, out int destination)) break;
+                if (!float.TryParse(split[2], real, format, out float distance)) break;
                 int extension = Math.Max(source, destination) - graph.Count + 1;
                 if (extension > 0) { for (int i = 0; i < extension; i++) graph.Add(new List<Connection>()); }
                 graph[source].Add(new Connection(destination, distance));
@@ -329,7 +333,7 @@ class Program
                     candidates.Enqueue(new Candidate(connection.destination, candidate.int_distance + 1, candidate.distance + connection.distance));
                 }
             }
-            Console.WriteLine("{0} {1} {2} {3}", source, destination, int_distance, distance);
+            Console.WriteLine("{0} {1} {2} {3}", source, destination, int_distance, distance.ToString(CultureInfo.InvariantCulture));
         }
     }
     #endif
