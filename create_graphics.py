@@ -46,8 +46,10 @@ def main():
     labels = [ pair[0] for pair in label_to_time ]
     times = [ pair[1] for pair in label_to_time ]
     colors = [ get_color(label) for label in labels ]
+
     plt.bar(labels, times, color=colors)
-    plt.xticks(rotation=30)
+    for i, time in enumerate(times): plt.text(i, time + max(times) / 100, f"{time:0.3f}", ha="center")
+    plt.xticks(rotation=15)
     plt.title("Execution times")
     plt.xlabel("Language/compiler")
     plt.ylabel("Time")
