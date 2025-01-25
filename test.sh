@@ -35,16 +35,22 @@ compile_debug()
     fi
 }
 
-#compile_release(compiler, source, destination)
+#compile_release(compiler, source, destination, optimizations)
 compile_release()
 {
     if [ "$2" -nt "$3" ]; then
         if [ $( echo "$2" | grep -e '.*.cpp$' | wc -l) -gt 0 ]; then #C++
             FLAGS="-std=c++11 -O3 -DNDEBUG -fno-rtti -flto -march=native"
+            if [ ! -z "$4" ]; then
+                FLAGS="${FLAGS} -DENABLE_MAPPING -DENABLE_MULTITHREADING"
+            fi
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.c$' | wc -l) -gt 0 ]; then #C
             FLAGS="-std=c11 -O3 -DNDEBUG -flto -march=native"
+            if [ ! -z "$4" ]; then
+                FLAGS="${FLAGS} -DENABLE_MAPPING -DENABLE_MULTITHREADING"
+            fi
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.cs$' | wc -l) -gt 0 ]; then #C#
@@ -100,29 +106,37 @@ copy()
 compile_release g++ "$SOURCE/create_dijkstra.cpp" "$BUILD/create_dijkstra" || exit 1
 create_benchmark "$BUILD/create_dijkstra" "$BUILD/dijkstra.txt" || exit 1
 
+# C++
 compile_debug g++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_gcc_debug" || exit 1
 compile_release g++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_gcc_release" || exit 1
 compile_debug clang++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_clang_debug" || exit 1
 compile_release clang++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_clang_release" || exit 1
 
+# C
 compile_debug gcc "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_gcc_debug" || exit 1
 compile_release gcc "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_gcc_release" || exit 1
 compile_debug clang "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_clang_debug" || exit 1
 compile_release clang "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_clang_release" || exit 1
 
+compile_release clang "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_clang_release_opt" yes || exit 1 #Cheating
+
+# C#
 copy "$SOURCE/dijkstra_csharp.cs" "$BUILD/dijkstra_csharp_debug.cs" || exit 1
 compile_debug mcs "$BUILD/dijkstra_csharp_debug.cs" "$BUILD/dijkstra_csharp_mcs_debug.exe" || exit 1
 copy "$SOURCE/dijkstra_csharp.cs" "$BUILD/dijkstra_csharp_release.cs" || exit 1
 compile_release mcs "$BUILD/dijkstra_csharp_release.cs" "$BUILD/dijkstra_csharp_mcs_release.exe" || exit 1
 
+# Fortran
 compile_debug gfortran "$SOURCE/dijkstra_fortran.f90" "$BUILD/dijkstra_fortran_gfortran_debug" || exit 1
 compile_release gfortran "$SOURCE/dijkstra_fortran.f90" "$BUILD/dijkstra_fortran_gfortran_release" || exit 1
 
+# Haskell
 copy "$SOURCE/dijkstra_haskell.hs" "$BUILD/dijkstra_haskell_debug.hs" || exit 1
 compile_debug ghc "$BUILD/dijkstra_haskell_debug.hs" "$BUILD/dijkstra_haskell_ghc_debug" || exit 1
 copy "$SOURCE/dijkstra_haskell.hs" "$BUILD/dijkstra_haskell_release.hs" || exit 1
 compile_release ghc "$BUILD/dijkstra_haskell_release.hs" "$BUILD/dijkstra_haskell_ghc_release" || exit 1
 
+# Testing
 run_benchmark "$BUILD/dijkstra_cpp_gcc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_gcc_debug.txt" || exit 1
 run_benchmark "$BUILD/dijkstra_cpp_gcc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_gcc_release.txt" || exit 1
 run_benchmark "$BUILD/dijkstra_cpp_clang_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_clang_debug.txt" || exit 1
@@ -138,3 +152,5 @@ run_benchmark "$BUILD/dijkstra_fortran_gfortran_release" "$BUILD/dijkstra.txt" "
 run_benchmark "$BUILD/dijkstra_haskell_ghc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_debug.txt" || exit 1
 run_benchmark "$BUILD/dijkstra_haskell_ghc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_release.txt" || exit 1
 run_benchmark "$SOURCE/dijkstra_python.py" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_python.txt" || exit 1
+
+run_benchmark "$BUILD/dijkstra_c_clang_release_opt" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_release_opt.txt" || exit 1 #Cheating

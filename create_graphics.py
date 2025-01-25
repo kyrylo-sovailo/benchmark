@@ -37,7 +37,9 @@ def main():
         "Fortran, gfortran, release" : "dijkstra_fortran_gfortran_release.txt",
         "Haskell, ghc, debug" : "dijkstra_haskell_ghc_debug.txt",
         "Haskell, ghc, release" : "dijkstra_haskell_ghc_release.txt",
-        "Python 3.12" : "dijkstra_python.txt"
+        "Python 3.12" : "dijkstra_python.txt",
+
+        "C, clang, I/O + threads" : "dijkstra_c_clang_release_opt.txt",
     }
     label_to_time = []
     for label, filename in label_to_filename.items(): label_to_time.append((label, read_time(filename)))
