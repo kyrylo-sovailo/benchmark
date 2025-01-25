@@ -80,7 +80,7 @@ create_benchmark()
     fi    
 }
 
-#run_benchmark(executable, benchmark, log)
+#run_benchmark(executable, benchmark, log, cores)
 run_benchmark()
 {
     if [ "$1" -nt "$3" -o "$2" -nt "$3" ]; then
@@ -89,8 +89,15 @@ run_benchmark()
         else
             LAUNCH=""
         fi
-        echo "{ { taskset -c 1 sh -c \"time ${LAUNCH} \\\"$1\\\"\"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee \"$3\"; } 2>&1"
-        { { taskset -c 1 sh -c "time ${LAUNCH} \"$1\""; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
+        if [ "$4" == "all" ]; then
+            CORES="1,2,3,4"
+        elif [ "$4" == "one_physical" ]; then
+            CORES="1,2"
+        else
+            CORES="1"
+        fi
+        echo "{ { taskset -c ${CORES} sh -c \"time ${LAUNCH} \\\"$1\\\"\"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee \"$3\"; } 2>&1"
+        { { taskset -c ${CORES} sh -c "time ${LAUNCH} \"$1\""; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
     fi
 }
 
@@ -102,9 +109,6 @@ copy()
         cp "$1" "$2" || exit 1
     fi
 }
-
-compile_release g++ "$SOURCE/create_dijkstra.cpp" "$BUILD/create_dijkstra" || exit 1
-create_benchmark "$BUILD/create_dijkstra" "$BUILD/dijkstra.txt" || exit 1
 
 # C++
 compile_debug g++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_gcc_debug" || exit 1
@@ -139,6 +143,9 @@ copy "$SOURCE/dijkstra_haskell.hs" "$BUILD/dijkstra_haskell_release.hs" || exit 
 compile_release ghc "$BUILD/dijkstra_haskell_release.hs" "$BUILD/dijkstra_haskell_ghc_release" || exit 1
 
 # Testing
+compile_release g++ "$SOURCE/create_dijkstra.cpp" "$BUILD/create_dijkstra" || exit 1
+create_benchmark "$BUILD/create_dijkstra" "$BUILD/dijkstra.txt" || exit 1
+
 run_benchmark "$BUILD/dijkstra_cpp_gcc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_gcc_debug.txt" || exit 1
 run_benchmark "$BUILD/dijkstra_cpp_gcc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_gcc_release.txt" || exit 1
 run_benchmark "$BUILD/dijkstra_cpp_clang_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_clang_debug.txt" || exit 1
@@ -153,7 +160,7 @@ run_benchmark "$BUILD/dijkstra_fortran_gfortran_debug" "$BUILD/dijkstra.txt" "$B
 run_benchmark "$BUILD/dijkstra_fortran_gfortran_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_fortran_gfortran_release.txt" || exit 1
 
 # Testing extras
-run_benchmark "$BUILD/dijkstra_c_clang_release_opt" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_release_opt.txt" || exit 1
+run_benchmark "$BUILD/dijkstra_c_clang_release_opt" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_release_opt.txt" "all" || exit 1
 run_benchmark "$BUILD/dijkstra_c_clang_release_cpp" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_release_cpp.txt" || exit 1
 
 # Testing slow programs
