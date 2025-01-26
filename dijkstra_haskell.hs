@@ -1,7 +1,6 @@
 import qualified Control.Exception as E (try)
 import qualified Data.Char as C (isDigit, digitToInt)
 import qualified Data.List as L (null, isPrefixOf, foldl')
-import qualified Data.Map.Strict as M (empty, insertWith, lookup)
 import qualified Data.Set as S (empty, singleton, member, insert, deleteFindMin)
 import qualified System.IO as I (hSetBuffering, stdin, stdout)
 
@@ -38,7 +37,7 @@ m_empty = RandomMapEmpty
 
 m_lookup :: Word32 -> RandomMap a -> Maybe a
 m_lookup key mp = let (bit_key, bit_mask) = internal_bit_key key
-    in m_internal_lookup bit_key bit_mask mp
+    in key `seq` mp `seq` m_internal_lookup bit_key bit_mask mp
 
 m_internal_lookup :: Word32 -> Word32 -> RandomMap a -> Maybe a
 m_internal_lookup _ _ RandomMapEmpty = Nothing
@@ -51,7 +50,7 @@ m_internal_lookup bit_key bit_mask (RandomMapNode left old_value right) =
 
 m_insert :: Word32 -> a -> RandomMap a -> RandomMap a
 m_insert key new_value mp = let (bit_key, bit_mask) = internal_bit_key key
-    in m_internal_insert bit_key bit_mask new_value mp
+    in key `seq` new_value `seq` mp `seq` m_internal_insert bit_key bit_mask new_value mp
 
 m_internal_insert :: Word32 -> Word32 -> a -> RandomMap a -> RandomMap a
 m_internal_insert _ 0 new_value RandomMapEmpty = RandomMapNode RandomMapEmpty (Just new_value) RandomMapEmpty
@@ -69,7 +68,7 @@ m_internal_insert bit_key bit_mask new_value mp =
 
 m_insertWith :: (a -> a -> a) -> Word32 -> a -> RandomMap a -> RandomMap a
 m_insertWith f key new_value mp = let (bit_key, bit_mask) = internal_bit_key key
-    in m_internal_insertWith f bit_key bit_mask new_value mp
+    in key `seq` new_value `seq` mp `seq` m_internal_insertWith f bit_key bit_mask new_value mp
 
 m_internal_insertWith :: (a -> a -> a) -> Word32 -> Word32 -> a -> RandomMap a -> RandomMap a
 m_internal_insertWith _ _ 0 new_value RandomMapEmpty = RandomMapNode RandomMapEmpty (Just new_value) RandomMapEmpty
@@ -92,8 +91,8 @@ s_empty :: RandomSet
 s_empty = RandomSetEmpty
 
 s_member :: Word32 -> RandomSet -> Bool
-s_member key mp = let (bit_key, bit_mask) = internal_bit_key key
-    in s_internal_member bit_key bit_mask mp
+s_member key st = let (bit_key, bit_mask) = internal_bit_key key
+    in key `seq` st `seq` s_internal_member bit_key bit_mask st
 
 s_internal_member :: Word32 -> Word32 -> RandomSet -> Bool
 s_internal_member _ _ RandomSetEmpty = False
@@ -106,7 +105,7 @@ s_internal_member bit_key bit_mask (RandomSetNode left old_value right) =
 
 s_insert :: Word32 -> RandomSet -> RandomSet
 s_insert key st = let (bit_key, bit_mask) = internal_bit_key key
-    in s_internal_insert bit_key bit_mask st
+    in key `seq` st `seq` s_internal_insert bit_key bit_mask st
 
 s_internal_insert :: Word32 -> Word32 -> RandomSet -> RandomSet
 s_internal_insert _ 0 RandomSetEmpty = RandomSetNode RandomSetEmpty True RandomSetEmpty
@@ -123,7 +122,8 @@ s_internal_insert bit_key bit_mask st =
             RandomSetNode left old_value right -> RandomSetNode left old_value (partial_insert right)
 
 s_delete :: Word32 -> RandomSet -> RandomSet
-s_delete _ RandomSetEmpty = RandomSetEmpty
+s_delete key st = let (bit_key, bit_mask) = internal_bit_key key
+    in key `seq` st `seq` s_internal_delete bit_key bit_mask st
 
 s_internal_delete :: Word32 -> Word32 -> RandomSet -> RandomSet
 s_internal_delete _ _ RandomSetEmpty = RandomSetEmpty
@@ -142,10 +142,10 @@ s_internal_delete bit_key bit_mask (RandomSetNode left old_value right) =
 -------------
 data Benchmark = Benchmark Word32 Word32 deriving (Show)
 data Connection = Connection Word32 Float deriving (Show)
-parse :: String -> ((Map Word32 [Connection]), [Benchmark])
-parse input = parse_graph (M.empty, []) input
+parse :: String -> ((RandomMap [Connection]), [Benchmark])
+parse input = parse_graph (m_empty, []) input
 
-parse_graph :: ((Map Word32 [Connection]), [Benchmark]) -> String -> ((Map Word32 [Connection]), [Benchmark])
+parse_graph :: ((RandomMap [Connection]), [Benchmark]) -> String -> ((RandomMap [Connection]), [Benchmark])
 parse_graph (graph, benchmarks) input = let postspace = parse_space input in
     if L.null postspace then
         (graph, benchmarks)
@@ -160,12 +160,12 @@ parse_graph (graph, benchmarks) input = let postspace = parse_space input in
         postspace3 = parse_space postdestination
         (distance, postdistance) = parse_real (0.0, postspace3)
         postspace4 = parse_space postdistance
-        graph' = M.insertWith (++) source ([Connection destination distance]) graph
-        graph'' = M.insertWith (++) destination ([Connection source distance]) graph'
+        graph' = m_insertWith (++) source ([Connection destination distance]) graph
+        graph'' = m_insertWith (++) destination ([Connection source distance]) graph'
         in graph'' `seq` parse_graph (graph'', benchmarks) postspace4
     else error "Invalid symbol"
 
-parse_benchmarks :: ((Map Word32 [Connection]), [Benchmark]) -> String -> ((Map Word32 [Connection]), [Benchmark])
+parse_benchmarks :: ((RandomMap [Connection]), [Benchmark]) -> String -> ((RandomMap [Connection]), [Benchmark])
 parse_benchmarks (graph, benchmarks) input = let postspace = parse_space input in
     if L.null postspace then
         (graph, benchmarks)
@@ -215,7 +215,7 @@ parse_space (c:rest)
 -------------
 data Solution = Solution Word32 Float deriving (Show)
 --solve (graph, benchmarks) -> solutions
-solve :: (Map Word32 [Connection]) -> [Benchmark] -> IO ()
+solve :: (RandomMap [Connection]) -> [Benchmark] -> IO ()
 solve graph benchmarks = case benchmarks of
     [] -> return ()
     (benchmark:benchmarks') -> do
@@ -225,8 +225,8 @@ solve graph benchmarks = case benchmarks of
         putStrLn (show s ++ " " ++ show d ++ " " ++ show i ++ " " ++ show f)
 
 --solve_one (graph, benchmark) -> solution
-solve_one :: (Map Word32 [Connection]) -> Benchmark -> Solution
-solve_one graph (Benchmark source destination) = solve_recursive graph destination (S.singleton $ Candidate source 0 0.0) S.empty
+solve_one :: (RandomMap [Connection]) -> Benchmark -> Solution
+solve_one graph (Benchmark source destination) = solve_recursive graph destination (S.singleton $ Candidate source 0 0.0) s_empty
 
 data Candidate = Candidate Word32 Word32 Float
 instance Eq Candidate where
@@ -240,7 +240,7 @@ instance Ord Candidate where
         | otherwise = EQ
 
 --solve_recursive (graph, destination, queue, mask) -> solution
-solve_recursive :: (Map Word32 [Connection]) -> Word32 -> (Set Candidate) -> (Set Word32) -> Solution
+solve_recursive :: (RandomMap [Connection]) -> Word32 -> (Set Candidate) -> RandomSet -> Solution
 solve_recursive graph destination queue mask
     | null queue = Solution 0 (1 / 0)
     | otherwise = let
@@ -248,18 +248,18 @@ solve_recursive graph destination queue mask
         (Candidate id int_distance distance) = candidate
         in if id == destination then
             Solution int_distance distance
-        else if S.member id mask then
+        else if s_member id mask then
             solve_recursive graph destination queue' mask
         else let
-            (Just connections) = M.lookup id graph
-            mask' = S.insert id mask
+            (Just connections) = m_lookup id graph
+            mask' = s_insert id mask
             queue'' = L.foldl' (\q c -> q `seq` c `seq` explore_connection q mask candidate c) queue' connections
             in queue'' `seq` solve_recursive graph destination queue'' mask'
 
 --explore_connection (queue, mask, candidate, connection) -> queue
-explore_connection :: (Set Candidate) -> (Set Word32) -> Candidate -> Connection -> (Set Candidate)
+explore_connection :: (Set Candidate) -> RandomSet -> Candidate -> Connection -> (Set Candidate)
 explore_connection queue mask candidate (Connection neighbor neighbor_distance) =
-    if S.member neighbor mask then
+    if s_member neighbor mask then
         queue
     else let
         (Candidate _ int_distance distance) = candidate
