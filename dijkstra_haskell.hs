@@ -19,18 +19,17 @@ import System.IO (BufferMode(NoBuffering))
 -- 2:      3           4          5            6
 -- 3:   7     8     9    10    11    12    13    14
 -- 4: 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30
-internal_is_left :: Word32 -> Bool
-internal_is_left key =
-    let level = (32 - countLeadingZeros (key + 1) - 1)
-        left_threshold = shiftL 3 (level - 1)
-        in key + 1 < left_threshold
+internal_bit_key :: Word32 -> (Word32, Word32)
+internal_bit_key key = internal_bit_key' key 0 1
 
-internal_shift_key :: Word32 -> Word32
-internal_shift_key key =
-    if key <= 2 then
-        0 --math breaks down
-    else
-        (((((key - 1) `shiftR` 1) - 1) `shiftR` 1) `shiftL` 1) + (2 - (key .&. 1)) -- two steps up, one step down, one step sideways
+internal_bit_key' :: Word32 -> Word32 -> Word32 -> (Word32, Word32)
+internal_bit_key' 0 bit_key bit_mask = (bit_key, bit_mask `shiftR` 1)
+internal_bit_key' key bit_key bit_mask = let
+    key_is_left = (key .&. 1) == 1
+    next_key = (key - 1) `shiftR` 1
+    next_bit_key = if key_is_left then bit_key else bit_key .|. bit_mask
+    next_bit_mask = bit_mask `shiftL` 1
+    in internal_bit_key' next_key next_bit_key next_bit_mask
 
 data RandomMap a = RandomMapEmpty | RandomMapNode (RandomMap a) (Maybe a) (RandomMap a) deriving (Show)
 
@@ -38,20 +37,30 @@ m_empty :: RandomMap a
 m_empty = RandomMapEmpty
 
 m_lookup :: Word32 -> RandomMap a -> Maybe a
-m_lookup _ RandomMapEmpty = Nothing
-m_lookup 0 (RandomMapNode _ old_value _) = old_value
-m_lookup key (RandomMapNode left old_value right) =
-    let next_key = internal_shift_key key
-        in if internal_is_left key then m_lookup next_key left
-        else m_lookup next_key right
+m_lookup key mp = let (bit_key, bit_mask) = internal_bit_key key
+    in m_internal_lookup bit_key bit_mask mp
+
+m_internal_lookup :: Word32 -> Word32 -> RandomMap a -> Maybe a
+m_internal_lookup _ _ RandomMapEmpty = Nothing
+m_internal_lookup _ 0 (RandomMapNode _ old_value _) = old_value
+m_internal_lookup bit_key bit_mask (RandomMapNode left old_value right) =
+    let next_bit_mask = bit_mask `shiftR` 1
+        go_left = bit_key .&. bit_mask == 0 
+        in if go_left then m_internal_lookup bit_key next_bit_mask left
+        else m_internal_lookup bit_key next_bit_mask right
 
 m_insert :: Word32 -> a -> RandomMap a -> RandomMap a
-m_insert 0 new_value RandomMapEmpty = RandomMapNode RandomMapEmpty (Just new_value) RandomMapEmpty
-m_insert 0 new_value (RandomMapNode left _ right) = RandomMapNode left (Just new_value) right
-m_insert key new_value mp =
-    let next_key = internal_shift_key key
-        partial_insert = m_insert next_key new_value
-        in if internal_is_left key then case mp of
+m_insert key new_value mp = let (bit_key, bit_mask) = internal_bit_key key
+    in m_internal_insert bit_key bit_mask new_value mp
+
+m_internal_insert :: Word32 -> Word32 -> a -> RandomMap a -> RandomMap a
+m_internal_insert _ 0 new_value RandomMapEmpty = RandomMapNode RandomMapEmpty (Just new_value) RandomMapEmpty
+m_internal_insert _ 0 new_value (RandomMapNode left _ right) = RandomMapNode left (Just new_value) right
+m_internal_insert bit_key bit_mask new_value mp =
+    let next_bit_mask = bit_mask `shiftR` 1
+        go_left = bit_key .&. bit_mask == 0
+        partial_insert = m_internal_insert bit_key next_bit_mask new_value
+        in if go_left then case mp of
             RandomMapEmpty -> RandomMapNode (partial_insert RandomMapEmpty) Nothing RandomMapEmpty
             RandomMapNode left old_value right -> RandomMapNode (partial_insert left) old_value right
         else case mp of
@@ -59,18 +68,23 @@ m_insert key new_value mp =
             RandomMapNode left old_value right -> RandomMapNode left old_value (partial_insert right)
 
 m_insertWith :: (a -> a -> a) -> Word32 -> a -> RandomMap a -> RandomMap a
-m_insertWith _ 0 new_value RandomMapEmpty = RandomMapNode RandomMapEmpty (Just new_value) RandomMapEmpty
-m_insertWith _ 0 new_value (RandomMapNode left Nothing right) = RandomMapNode left (Just new_value) right
-m_insertWith f 0 new_value (RandomMapNode left (Just old_value) right) = RandomMapNode left (Just $ f new_value old_value) right
-m_insertWith f key new_value mp =
-    let next_key = internal_shift_key key
-        partial_insertWith = m_insertWith f next_key new_value
-        in if internal_is_left key then case mp of
-            RandomMapEmpty -> RandomMapNode (partial_insertWith RandomMapEmpty) Nothing RandomMapEmpty
-            RandomMapNode left old_value right -> RandomMapNode (partial_insertWith left) old_value right
+m_insertWith f key new_value mp = let (bit_key, bit_mask) = internal_bit_key key
+    in m_internal_insertWith f bit_key bit_mask new_value mp
+
+m_internal_insertWith :: (a -> a -> a) -> Word32 -> Word32 -> a -> RandomMap a -> RandomMap a
+m_internal_insertWith _ _ 0 new_value RandomMapEmpty = RandomMapNode RandomMapEmpty (Just new_value) RandomMapEmpty
+m_internal_insertWith _ _ 0 new_value (RandomMapNode left Nothing right) = RandomMapNode left (Just new_value) right
+m_internal_insertWith f _ 0 new_value (RandomMapNode left (Just old_value) right) = RandomMapNode left (Just $ f new_value old_value) right
+m_internal_insertWith f bit_key bit_mask new_value mp =
+    let next_bit_mask = bit_mask `shiftR` 1
+        go_left = bit_key .&. bit_mask == 0
+        partial_insert = m_internal_insertWith f bit_key next_bit_mask new_value
+        in if go_left then case mp of
+            RandomMapEmpty -> RandomMapNode (partial_insert RandomMapEmpty) Nothing RandomMapEmpty
+            RandomMapNode left old_value right -> RandomMapNode (partial_insert left) old_value right
         else case mp of
-            RandomMapEmpty -> RandomMapNode RandomMapEmpty Nothing (partial_insertWith RandomMapEmpty)
-            RandomMapNode left old_value right -> RandomMapNode left old_value (partial_insertWith right)
+            RandomMapEmpty -> RandomMapNode RandomMapEmpty Nothing (partial_insert RandomMapEmpty)
+            RandomMapNode left old_value right -> RandomMapNode left old_value (partial_insert right)
 
 data RandomSet = RandomSetEmpty | RandomSetNode RandomSet Bool RandomSet deriving (Show)
 
@@ -78,20 +92,30 @@ s_empty :: RandomSet
 s_empty = RandomSetEmpty
 
 s_member :: Word32 -> RandomSet -> Bool
-s_member _ RandomSetEmpty = False
-s_member 0 (RandomSetNode _ old_value _) = old_value
-s_member key (RandomSetNode left old_value right) =
-    let next_key = internal_shift_key key
-        in if internal_is_left key then s_member next_key left
-        else s_member next_key right
+s_member key mp = let (bit_key, bit_mask) = internal_bit_key key
+    in s_internal_member bit_key bit_mask mp
+
+s_internal_member :: Word32 -> Word32 -> RandomSet -> Bool
+s_internal_member _ _ RandomSetEmpty = False
+s_internal_member _ 0 (RandomSetNode _ old_value _) = old_value
+s_internal_member bit_key bit_mask (RandomSetNode left old_value right) =
+    let next_bit_mask = bit_mask `shiftR` 1
+        go_left = bit_key .&. bit_mask == 0 
+        in if go_left then s_internal_member bit_key next_bit_mask left
+        else s_internal_member bit_key next_bit_mask right
 
 s_insert :: Word32 -> RandomSet -> RandomSet
-s_insert 0 RandomSetEmpty = RandomSetNode RandomSetEmpty True RandomSetEmpty
-s_insert 0 (RandomSetNode left _ right) = RandomSetNode left True right
-s_insert key st =
-    let next_key = internal_shift_key key
-        partial_insert = s_insert next_key
-        in if internal_is_left key then case st of
+s_insert key st = let (bit_key, bit_mask) = internal_bit_key key
+    in s_internal_insert bit_key bit_mask st
+
+s_internal_insert :: Word32 -> Word32 -> RandomSet -> RandomSet
+s_internal_insert _ 0 RandomSetEmpty = RandomSetNode RandomSetEmpty True RandomSetEmpty
+s_internal_insert _ 0 (RandomSetNode left _ right) = RandomSetNode left True right
+s_internal_insert bit_key bit_mask st =
+    let next_bit_mask = bit_mask `shiftR` 1
+        go_left = bit_key .&. bit_mask == 0
+        partial_insert = s_internal_insert bit_key next_bit_mask
+        in if go_left then case st of
             RandomSetEmpty -> RandomSetNode (partial_insert RandomSetEmpty) False RandomSetEmpty
             RandomSetNode left old_value right -> RandomSetNode (partial_insert left) old_value right
         else case st of
@@ -100,12 +124,16 @@ s_insert key st =
 
 s_delete :: Word32 -> RandomSet -> RandomSet
 s_delete _ RandomSetEmpty = RandomSetEmpty
-s_delete 0 (RandomSetNode RandomSetEmpty _ RandomSetEmpty) = RandomSetEmpty
-s_delete 0 (RandomSetNode left _ right) = RandomSetNode left False right
-s_delete key (RandomSetNode left old_value right) =
-    let next_key = internal_shift_key key
-        partial_delete = s_delete next_key
-        in if internal_is_left key then
+
+s_internal_delete :: Word32 -> Word32 -> RandomSet -> RandomSet
+s_internal_delete _ _ RandomSetEmpty = RandomSetEmpty
+s_internal_delete _ 0 (RandomSetNode RandomSetEmpty _ RandomSetEmpty) = RandomSetEmpty
+s_internal_delete _ 0 (RandomSetNode left _ right) = RandomSetNode left False right
+s_internal_delete bit_key bit_mask (RandomSetNode left old_value right) =
+    let next_bit_mask = bit_mask `shiftR` 1
+        go_left = bit_key .&. bit_mask == 0
+        partial_delete = s_internal_delete bit_key next_bit_mask
+        in if go_left then
             RandomSetNode (partial_delete left) old_value right
         else
             RandomSetNode left old_value (partial_delete right)
