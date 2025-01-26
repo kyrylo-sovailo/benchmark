@@ -14,11 +14,16 @@ import System.IO (BufferMode(NoBuffering))
 
 -- Random Access Map --
 -----------------------
-internal_left_threshold :: Word32 -> Word32
-internal_left_threshold key =
-    let level = (32 - countLeadingZeros (key + 1) - 1) --order of the number in the pyramid
-        left_threshold = shiftL 3 (level - 1) --to be compared with key + 1
-        in left_threshold
+-- 0:                        0
+-- 1:            1                       2
+-- 2:      3           4          5            6
+-- 3:   7     8     9    10    11    12    13    14
+-- 4: 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30
+internal_is_left :: Word32 -> Bool
+internal_is_left key =
+    let level = (32 - countLeadingZeros (key + 1) - 1)
+        left_threshold = shiftL 3 (level - 1)
+        in key + 1 < left_threshold
 
 internal_shift_key :: Word32 -> Word32
 internal_shift_key key =
@@ -27,110 +32,83 @@ internal_shift_key key =
     else
         (((((key - 1) `shiftR` 1) - 1) `shiftR` 1) `shiftL` 1) + (2 - (key .&. 1)) -- two steps up, one step down, one step sideways
 
-internal_shift_threshold :: Word32 -> Word32
-internal_shift_threshold left_threshold = shiftR left_threshold 1
-
 data RandomMap a = RandomMapEmpty | RandomMapNode (RandomMap a) (Maybe a) (RandomMap a) deriving (Show)
 
 m_empty :: RandomMap a
 m_empty = RandomMapEmpty
 
 m_lookup :: Word32 -> RandomMap a -> Maybe a
-m_lookup key mp = m_internal_lookup key mp (internal_left_threshold key)
-
-m_internal_lookup :: Word32 -> RandomMap a -> Word32 -> Maybe a
-m_internal_lookup _ RandomMapEmpty _ = Nothing
-m_internal_lookup 0 (RandomMapNode _ old_value _) _ = old_value
-m_internal_lookup key (RandomMapNode left old_value right) left_threshold =
+m_lookup _ RandomMapEmpty = Nothing
+m_lookup 0 (RandomMapNode _ old_value _) = old_value
+m_lookup key (RandomMapNode left old_value right) =
     let next_key = internal_shift_key key
-        next_left_threshold = internal_shift_threshold left_threshold
-        in if (key + 1) < left_threshold then m_internal_lookup next_key left next_left_threshold
-        else m_internal_lookup next_key right next_left_threshold
+        in if internal_is_left key then m_lookup next_key left
+        else m_lookup next_key right
 
 m_insert :: Word32 -> a -> RandomMap a -> RandomMap a
-m_insert key new_value mp = m_internal_insert key new_value mp (internal_left_threshold key)
-
-m_internal_insert :: Word32 -> a -> RandomMap a -> Word32 -> RandomMap a
-m_internal_insert 0 new_value RandomMapEmpty _ = RandomMapNode RandomMapEmpty (Just new_value) RandomMapEmpty
-m_internal_insert 0 new_value (RandomMapNode left _ right) _ = RandomMapNode left (Just new_value) right
-m_internal_insert key new_value mp left_threshold =
+m_insert 0 new_value RandomMapEmpty = RandomMapNode RandomMapEmpty (Just new_value) RandomMapEmpty
+m_insert 0 new_value (RandomMapNode left _ right) = RandomMapNode left (Just new_value) right
+m_insert key new_value mp =
     let next_key = internal_shift_key key
-        next_left_threshold = internal_shift_threshold left_threshold
-        partial_internal_insert = \sub -> m_internal_insert next_key new_value sub next_left_threshold
-        in if (key + 1) < left_threshold then case mp of
-            RandomMapEmpty -> RandomMapNode (partial_internal_insert RandomMapEmpty) Nothing RandomMapEmpty
-            RandomMapNode left old_value right -> RandomMapNode (partial_internal_insert left) old_value right
+        partial_insert = m_insert next_key new_value
+        in if internal_is_left key then case mp of
+            RandomMapEmpty -> RandomMapNode (partial_insert RandomMapEmpty) Nothing RandomMapEmpty
+            RandomMapNode left old_value right -> RandomMapNode (partial_insert left) old_value right
         else case mp of
-            RandomMapEmpty -> RandomMapNode RandomMapEmpty Nothing (partial_internal_insert RandomMapEmpty)
-            RandomMapNode left old_value right -> RandomMapNode left old_value (partial_internal_insert right)
+            RandomMapEmpty -> RandomMapNode RandomMapEmpty Nothing (partial_insert RandomMapEmpty)
+            RandomMapNode left old_value right -> RandomMapNode left old_value (partial_insert right)
 
 m_insertWith :: (a -> a -> a) -> Word32 -> a -> RandomMap a -> RandomMap a
-m_insertWith f key new_value mp = m_internal_insertWith f key new_value mp (internal_left_threshold key)
-
-m_internal_insertWith :: (a -> a -> a) -> Word32 -> a -> RandomMap a -> Word32 -> RandomMap a
-m_internal_insertWith _ 0 new_value RandomMapEmpty _ = RandomMapNode RandomMapEmpty (Just new_value) RandomMapEmpty
-m_internal_insertWith _ 0 new_value (RandomMapNode left Nothing right) _ = RandomMapNode left (Just new_value) right
-m_internal_insertWith f 0 new_value (RandomMapNode left (Just old_value) right) _ = RandomMapNode left (Just $ f new_value old_value) right
-m_internal_insertWith f key new_value mp left_threshold =
+m_insertWith _ 0 new_value RandomMapEmpty = RandomMapNode RandomMapEmpty (Just new_value) RandomMapEmpty
+m_insertWith _ 0 new_value (RandomMapNode left Nothing right) = RandomMapNode left (Just new_value) right
+m_insertWith f 0 new_value (RandomMapNode left (Just old_value) right) = RandomMapNode left (Just $ f new_value old_value) right
+m_insertWith f key new_value mp =
     let next_key = internal_shift_key key
-        next_left_threshold = internal_shift_threshold left_threshold
-        partial_internal_insertWith = \sub -> m_internal_insertWith f next_key new_value sub next_left_threshold
-        in if (key + 1) < left_threshold then case mp of
-            RandomMapEmpty -> RandomMapNode (partial_internal_insertWith RandomMapEmpty) Nothing RandomMapEmpty
-            RandomMapNode left old_value right -> RandomMapNode (partial_internal_insertWith left) old_value right
+        partial_insertWith = m_insertWith f next_key new_value
+        in if internal_is_left key then case mp of
+            RandomMapEmpty -> RandomMapNode (partial_insertWith RandomMapEmpty) Nothing RandomMapEmpty
+            RandomMapNode left old_value right -> RandomMapNode (partial_insertWith left) old_value right
         else case mp of
-            RandomMapEmpty -> RandomMapNode RandomMapEmpty Nothing (partial_internal_insertWith RandomMapEmpty)
-            RandomMapNode left old_value right -> RandomMapNode left old_value (partial_internal_insertWith right)
+            RandomMapEmpty -> RandomMapNode RandomMapEmpty Nothing (partial_insertWith RandomMapEmpty)
+            RandomMapNode left old_value right -> RandomMapNode left old_value (partial_insertWith right)
 
 data RandomSet = RandomSetEmpty | RandomSetNode RandomSet Bool RandomSet deriving (Show)
 
 s_empty :: RandomSet
 s_empty = RandomSetEmpty
 
-s_lookup :: Word32 -> RandomSet -> Bool
-s_lookup key st = s_internal_lookup key st (internal_left_threshold key)
-
-s_internal_lookup :: Word32 -> RandomSet -> Word32 -> Bool
-s_internal_lookup _ RandomSetEmpty _ = False
-s_internal_lookup 0 (RandomSetNode _ old_value _) _ = old_value
-s_internal_lookup key (RandomSetNode left old_value right) left_threshold =
+s_member :: Word32 -> RandomSet -> Bool
+s_member _ RandomSetEmpty = False
+s_member 0 (RandomSetNode _ old_value _) = old_value
+s_member key (RandomSetNode left old_value right) =
     let next_key = internal_shift_key key
-        next_left_threshold = internal_shift_threshold left_threshold
-        in if (key + 1) < left_threshold then s_internal_lookup next_key left next_left_threshold
-        else s_internal_lookup next_key right next_left_threshold
+        in if internal_is_left key then s_member next_key left
+        else s_member next_key right
 
 s_insert :: Word32 -> RandomSet -> RandomSet
-s_insert key st = s_internal_insert key st (internal_left_threshold key)
-
-s_internal_insert :: Word32 -> RandomSet -> Word32 -> RandomSet
-s_internal_insert 0 RandomSetEmpty _ = RandomSetNode RandomSetEmpty True RandomSetEmpty
-s_internal_insert 0 (RandomSetNode left _ right) _ = RandomSetNode left True right
-s_internal_insert key st left_threshold =
+s_insert 0 RandomSetEmpty = RandomSetNode RandomSetEmpty True RandomSetEmpty
+s_insert 0 (RandomSetNode left _ right) = RandomSetNode left True right
+s_insert key st =
     let next_key = internal_shift_key key
-        next_left_threshold = internal_shift_threshold left_threshold
-        partial_internal_insert = \sub -> s_internal_insert next_key sub next_left_threshold
-        in if (key + 1) < left_threshold then case st of
-            RandomSetEmpty -> RandomSetNode (partial_internal_insert RandomSetEmpty) False RandomSetEmpty
-            RandomSetNode left old_value right -> RandomSetNode (partial_internal_insert left) old_value right
+        partial_insert = s_insert next_key
+        in if internal_is_left key then case st of
+            RandomSetEmpty -> RandomSetNode (partial_insert RandomSetEmpty) False RandomSetEmpty
+            RandomSetNode left old_value right -> RandomSetNode (partial_insert left) old_value right
         else case st of
-            RandomSetEmpty -> RandomSetNode RandomSetEmpty False (partial_internal_insert RandomSetEmpty)
-            RandomSetNode left old_value right -> RandomSetNode left old_value (partial_internal_insert right)
+            RandomSetEmpty -> RandomSetNode RandomSetEmpty False (partial_insert RandomSetEmpty)
+            RandomSetNode left old_value right -> RandomSetNode left old_value (partial_insert right)
 
 s_delete :: Word32 -> RandomSet -> RandomSet
-s_delete key st = s_internal_delete key st (internal_left_threshold key)
-
-s_internal_delete :: Word32 -> RandomSet -> Word32 -> RandomSet
-s_internal_delete _ RandomSetEmpty _ = RandomSetEmpty
-s_internal_delete 0 (RandomSetNode RandomSetEmpty _ RandomSetEmpty) _ = RandomSetEmpty
-s_internal_delete 0 (RandomSetNode left _ right) _ = RandomSetNode left False right
-s_internal_delete key (RandomSetNode left old_value right) left_threshold =
+s_delete _ RandomSetEmpty = RandomSetEmpty
+s_delete 0 (RandomSetNode RandomSetEmpty _ RandomSetEmpty) = RandomSetEmpty
+s_delete 0 (RandomSetNode left _ right) = RandomSetNode left False right
+s_delete key (RandomSetNode left old_value right) =
     let next_key = internal_shift_key key
-        next_left_threshold = internal_shift_threshold left_threshold
-        partial_internal_delete = \sub -> s_internal_delete next_key sub next_left_threshold
-        in if (key + 1) < left_threshold then
-            RandomSetNode (partial_internal_delete left) old_value right
+        partial_delete = s_delete next_key
+        in if internal_is_left key then
+            RandomSetNode (partial_delete left) old_value right
         else
-            RandomSetNode left old_value (partial_internal_delete right)
+            RandomSetNode left old_value (partial_delete right)
 
 -- Parsing --
 -------------
