@@ -143,43 +143,43 @@ s_internal_delete bit_key bit_mask (RandomSetNode left old_value right) =
 data Benchmark = Benchmark Word32 Word32 deriving (Show)
 data Connection = Connection Word32 Float deriving (Show)
 parse :: String -> ((RandomMap [Connection]), [Benchmark])
-parse input = parse_graph (m_empty, []) input
+parse input = parse_graph input
 
-parse_graph :: ((RandomMap [Connection]), [Benchmark]) -> String -> ((RandomMap [Connection]), [Benchmark])
-parse_graph (graph, benchmarks) input = let postspace = parse_space input in
+parse_graph :: String -> ((RandomMap [Connection]), [Benchmark])
+parse_graph input = let postspace = parse_space input in
     if L.null postspace then
-        (graph, benchmarks)
+        (m_empty, [])
     else if L.isPrefixOf "GRAPH" postspace then
-        parse_graph (graph, benchmarks) (drop 5 postspace)
+        parse_graph (drop 5 postspace)
     else if L.isPrefixOf "BENCHMARK" postspace then
-        parse_benchmarks (graph, benchmarks) (drop 10 postspace)
+        parse_benchmarks (drop 10 postspace)
     else if C.isDigit $ head postspace then let
         (source, postsource) = parse_integer (0, postspace)
         postspace2 = parse_space postsource
         (destination, postdestination) = parse_integer (0, postspace2)
         postspace3 = parse_space postdestination
         (distance, postdistance) = parse_real (0.0, postspace3)
-        postspace4 = parse_space postdistance
+        (graph, benchmarks) = parse_graph postdistance
         graph' = m_insertWith (++) source ([Connection destination distance]) graph
         graph'' = m_insertWith (++) destination ([Connection source distance]) graph'
-        in graph'' `seq` parse_graph (graph'', benchmarks) postspace4
+        in (graph'', benchmarks)
     else error "Invalid symbol"
 
-parse_benchmarks :: ((RandomMap [Connection]), [Benchmark]) -> String -> ((RandomMap [Connection]), [Benchmark])
-parse_benchmarks (graph, benchmarks) input = let postspace = parse_space input in
+parse_benchmarks :: String -> ((RandomMap [Connection]), [Benchmark])
+parse_benchmarks input = let postspace = parse_space input in
     if L.null postspace then
-        (graph, benchmarks)
+        (m_empty, [])
     else if L.isPrefixOf "GRAPH" postspace then
-        parse_graph (graph, benchmarks) (drop 5 postspace)
+        parse_graph (drop 5 postspace)
     else if L.isPrefixOf "BENCHMARK" postspace then
-        parse_benchmarks (graph, benchmarks) (drop 10 postspace)
+        parse_benchmarks (drop 10 postspace)
     else if C.isDigit $ head postspace then let
         (source, postsource) = parse_integer (0, postspace)
         postspace2 = parse_space postsource
         (destination, postdestination) = parse_integer (0, postspace2)
-        postspace3 = parse_space postdestination
+        (graph, benchmarks) = parse_graph postdestination
         benchmarks' = (Benchmark source destination):benchmarks
-        in benchmarks' `seq` parse_benchmarks (graph, benchmarks') postspace3
+        in (graph, benchmarks')
     else error "Invalid symbol"
 
 --parse_integer (number, input) -> (number, input)
