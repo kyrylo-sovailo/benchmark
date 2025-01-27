@@ -1,6 +1,7 @@
 import qualified Control.Exception as E (try)
+import qualified Control.Monad as M (foldM)
 import qualified Data.Char as C (isDigit, digitToInt)
-import qualified Data.List as L (null, isPrefixOf, foldl')
+import qualified Data.List as L (null, isPrefixOf, foldl, foldl', find, map)
 import qualified Data.Set as S (empty, singleton, member, insert, deleteFindMin)
 import qualified System.IO as I (hSetBuffering, stdin, stdout)
 
@@ -177,7 +178,7 @@ parse_benchmarks input = let postspace = parse_space input in
         (source, postsource) = parse_integer (0, postspace)
         postspace2 = parse_space postsource
         (destination, postdestination) = parse_integer (0, postspace2)
-        (graph, benchmarks) = parse_graph postdestination
+        (graph, benchmarks) = parse_benchmarks postdestination
         benchmarks' = (Benchmark source destination):benchmarks
         in (graph, benchmarks')
     else error "Invalid symbol"
@@ -213,20 +214,18 @@ parse_space (c:rest)
 
 -- Solving --
 -------------
-data Solution = Solution Word32 Float deriving (Show)
 --solve (graph, benchmarks) -> solutions
 solve :: (RandomMap [Connection]) -> [Benchmark] -> IO ()
-solve graph benchmarks = case benchmarks of
-    [] -> return ()
-    (benchmark:benchmarks') -> do
-        let (Solution i f) = solve_one graph benchmark
-        let (Benchmark s d) = benchmark
-        solve graph benchmarks'
-        putStrLn (show s ++ " " ++ show d ++ " " ++ show i ++ " " ++ show f)
+solve graph benchmarks = M.foldM (\_ benchmark -> solve_one graph benchmark) () benchmarks
 
---solve_one (graph, benchmark) -> solution
-solve_one :: (RandomMap [Connection]) -> Benchmark -> Solution
-solve_one graph (Benchmark source destination) = solve_recursive graph destination (S.singleton $ Candidate source 0 0.0) s_empty
+--solve_one (graph, benchmark) -> IO ()
+solve_one :: (RandomMap [Connection]) -> Benchmark -> IO ()
+solve_one graph (Benchmark source destination) = 
+    let candidates = enumerate_candidates graph source
+        source_destination = show source ++ " " ++ show destination
+        in case L.find (\(Candidate id _ _) -> id == destination) candidates of
+            Just (Candidate _ int_distance distance) -> putStrLn (source_destination ++ " " ++ show int_distance ++ " " ++ show distance)
+            Nothing -> putStrLn (source_destination ++ " " ++ "0" ++ " " ++ "inf")
 
 data Candidate = Candidate Word32 Word32 Float
 instance Eq Candidate where
@@ -239,31 +238,28 @@ instance Ord Candidate where
         | id1 < id2 = LT
         | otherwise = EQ
 
---solve_recursive (graph, destination, queue, mask) -> solution
-solve_recursive :: (RandomMap [Connection]) -> Word32 -> (Set Candidate) -> RandomSet -> Solution
-solve_recursive graph destination queue mask
-    | null queue = Solution 0 (1 / 0)
-    | otherwise = let
-        (candidate, queue') = S.deleteFindMin queue
-        (Candidate id int_distance distance) = candidate
-        in if id == destination then
-            Solution int_distance distance
-        else if s_member id mask then
-            solve_recursive graph destination queue' mask
-        else let
-            (Just connections) = m_lookup id graph
-            mask' = s_insert id mask
-            queue'' = L.foldl' (\q c -> q `seq` c `seq` explore_connection q mask candidate c) queue' connections
-            in queue'' `seq` solve_recursive graph destination queue'' mask'
+--enumerate_candidates(graph source) -> candidates
+enumerate_candidates :: (RandomMap [Connection]) -> Word32 -> [Candidate]
+enumerate_candidates graph source = enumerate_candidates' graph s_empty (S.singleton $ Candidate source 0 0.0)
 
---explore_connection (queue, mask, candidate, connection) -> queue
-explore_connection :: (Set Candidate) -> RandomSet -> Candidate -> Connection -> (Set Candidate)
-explore_connection queue mask candidate (Connection neighbor neighbor_distance) =
-    if s_member neighbor mask then
-        queue
-    else let
-        (Candidate _ int_distance distance) = candidate
-        in S.insert (Candidate neighbor (int_distance + 1) (distance + neighbor_distance)) queue
+--enumerate_candidates'(graph enumerated_candidates pending_candidates) -> candidates
+enumerate_candidates' :: (RandomMap [Connection]) -> RandomSet -> (Set Candidate) -> [Candidate]
+enumerate_candidates' graph enumerated_candidates pending_candidates =
+    let (closest_candidate, pending_candidates') = S.deleteFindMin pending_candidates
+        (Candidate closest_candidate_id _ _) = closest_candidate
+        neighbors = enumerate_neighbors graph closest_candidate enumerated_candidates
+        pending_candidates'' = L.foldl (\s c -> S.insert c s) pending_candidates' neighbors
+        enumerated_candidates' = s_insert closest_candidate_id enumerated_candidates
+        in closest_candidate : (enumerate_candidates' `seq` pending_candidates'' `seq` enumerate_candidates'
+            graph enumerated_candidates' pending_candidates'')
+
+--enumerate_neighbors(graph candidate enumerated_candidates) -> neighbors
+enumerate_neighbors :: (RandomMap [Connection]) -> Candidate -> RandomSet -> [Candidate]
+enumerate_neighbors graph (Candidate id int_distance distance) enumerated_candidates =
+    let (Just connections) = m_lookup id graph
+        filtered_connections = filter (\(Connection n _) -> not $ s_member n enumerated_candidates) connections
+        new_candidates = L.map (\(Connection n d) -> Candidate n (int_distance + 1) (d + distance)) filtered_connections
+        in new_candidates
 
 -- Main --
 ----------
