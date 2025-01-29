@@ -23,8 +23,9 @@ run_benchmark()
         else
             CORES="1"
         fi
-        echo "{ { taskset -c ${CORES} sh -c \"time ${LAUNCH} \\\"$1\\\"\"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee \"$3\"; } 2>&1"
-        { { taskset -c ${CORES} sh -c "time ${LAUNCH} \"$1\""; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
+        RUNS=5
+        echo "{ { taskset -c ${CORES} sh -c \"for i in \\\$(seq 1 ${RUNS}); do time ${LAUNCH} \\\"$1\\\"\"; done } 3>&2 2>&1 1>&3 | grep -v -e "^\$" | tee \"$3\"; } 2>&1"
+        { { taskset -c ${CORES} sh -c "for i in \$(seq 1 ${RUNS}); do time ${LAUNCH} \"$1\"; done"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
     fi
 }
 
