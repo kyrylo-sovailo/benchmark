@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 AFFINITY=1
 SOURCE="$(dirname $(readlink -f $0))"
 BUILD="$SOURCE/build"
@@ -120,6 +120,9 @@ copy "$SOURCE/dijkstra_haskell.hs" "$BUILD/dijkstra_haskell_debug.hs" || exit 1
 compile_debug ghc "$BUILD/dijkstra_haskell_debug.hs" "$BUILD/dijkstra_haskell_ghc_debug" || exit 1
 copy "$SOURCE/dijkstra_haskell.hs" "$BUILD/dijkstra_haskell_release.hs" || exit 1
 compile_release ghc "$BUILD/dijkstra_haskell_release.hs" "$BUILD/dijkstra_haskell_ghc_release" || exit 1
+
+# Matlab
+copy "$SOURCE/dijkstra_matlab.m" "$BUILD/dijkstra_matlab.m" || exit 1
 
 # Testing
 compile_release g++ "$SOURCE/create_dijkstra.cpp" "$BUILD/create_dijkstra" || exit 1

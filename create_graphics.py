@@ -22,12 +22,15 @@ class Measurement:
         self.variance = sum([ (time - self.mean) ** 2 for time in times ]) / len(times)
         self.deviation = math.sqrt(self.variance)
 
-        if "++" in label: self.color = "red"
-        elif "#" in label: self.color = "blue"
-        elif "C" in label: self.color = "orange"
-        elif "Haskell" in label: self.color = "purple"
-        elif "Fortran" in label: self.color = "green"
-        else: self.color = "pink"
+        labels = label.split(", ")
+        if "C" in labels: self.color = "gold"
+        elif "C++" in labels: self.color = "orange"
+        elif "C#" in labels: self.color = "red"
+        elif "Fortran" in labels: self.color = "maroon"
+        elif "Haskell" in labels: self.color = "magenta"
+        elif "Python" in labels: self.color = "cyan"
+        elif "Matlab" in labels or "Octave" in labels: self.color = "blue"
+        else: self.color = "black"
     
 def main():
     label_to_filename = {
@@ -46,6 +49,8 @@ def main():
         "Haskell, ghc, debug" : "dijkstra_haskell_ghc_debug.txt",
         "Haskell, ghc, release" : "dijkstra_haskell_ghc_release.txt",
         "Python" : "dijkstra_python.txt",
+        "Matlab" : "dijkstra_matlab_matlab.txt",
+        "GNU Octave" : "dijkstra_matlab_octve.txt",
 
         "C, clang, map+threads" : "dijkstra_c_clang_release_opt.txt",
         "C, clang++, release" : "dijkstra_c_clang_release_cpp.txt",

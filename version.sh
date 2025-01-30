@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 VERSION=$(gcc --version | head -n 1 | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
 echo GCC "     ${VERSION}"
 VERSION=$(clang --version | head -n 1 | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
