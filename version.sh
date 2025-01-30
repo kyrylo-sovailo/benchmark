@@ -12,5 +12,7 @@ VERSION=$(python --version | head -n 1 | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | h
 echo Python "  ${VERSION}"
 VERSION=$(ghc --version | head -n 1 | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
 echo GHC "     ${VERSION}"
+VERSION=$(matlab -batch 'disp(version)')
+echo MATLAB "  ${VERSION}"
 VERSION=$(uname -r)
 echo KERNEL "  ${VERSION}"
