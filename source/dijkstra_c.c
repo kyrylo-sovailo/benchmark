@@ -25,6 +25,15 @@ typedef struct \
     unsigned int capacity; \
 } T ## Vector;
 
+#define DECLARE_VECTOR_RESERVE(T) \
+void reserve_ ## T ## Vector(T ## Vector *vector, unsigned int capacity) \
+{ \
+    if (capacity <= vector->capacity) return; \
+    vector->capacity = capacity; \
+    vector->begin = (T*)realloc(vector->begin, vector->capacity * sizeof(T)); \
+    if (vector->begin == NULL) { printf("realloc() failed"); exit(1); } \
+}
+
 #define DECLARE_VECTOR_GROW(T) \
 void grow_ ## T ## Vector(T ## Vector *vector, unsigned int length) \
 { \
@@ -54,14 +63,12 @@ void push_ ## T ## Vector(T ## Vector *vector, T item) \
     vector->begin[vector->length - 1] = item; \
 }
 
-typedef struct
-{
-    unsigned int id;
-    unsigned int int_distance;
-    float distance;
-} Candidate;
-DECLARE_VECTOR(Candidate)
-DECLARE_VECTOR_PUSH(Candidate)
+#define DECLARE_VECTOR_UNSAFE_PUSH(T) \
+void unsafe_push_ ## T ## Vector(T ## Vector *vector, T item) \
+{ \
+    vector->begin[vector->length] = item; \
+    vector->length++; \
+}
 
 typedef struct
 {
@@ -81,14 +88,22 @@ DECLARE_VECTOR_PUSH(Connection)
 DECLARE_VECTOR(ConnectionVector)
 DECLARE_VECTOR_GROW(ConnectionVector)
 
-void push_indexed_heap(CandidateVector *data, unsigned int *indices, Candidate element)
+typedef struct
+{
+    unsigned int id;
+    unsigned int int_distance;
+    float distance;
+} Candidate;
+
+void push_indexed_heap(Candidate *restrict data, unsigned int *restrict length, unsigned int *restrict indices, Candidate element)
 {
     unsigned int i = indices[element.id];
     if (i == (unsigned int)-1)
     {
-        i = data->length;
+        i = *length;
         indices[element.id] = i;
-        push_CandidateVector(data, element);
+        data[i] = element;
+        (*length)++;
     }
     else if (i == (unsigned int)-2)
     {
@@ -96,55 +111,55 @@ void push_indexed_heap(CandidateVector *data, unsigned int *indices, Candidate e
     }
     else
     {
-        if (element.distance < data->begin[i].distance) data->begin[i] = element;
+        if (element.distance < data[i].distance) data[i] = element;
         else return;
     }
     while (i > 0)
     {
         const unsigned int parent_i = (i - 1) / 2;
-        if (data->begin[i].distance < data->begin[parent_i].distance)
+        if (data[i].distance < data[parent_i].distance)
         {
-            const unsigned int b1 = indices[data->begin[i].id]; indices[data->begin[i].id] = indices[data->begin[parent_i].id]; indices[data->begin[parent_i].id] = b1;
-            const Candidate b2 = data->begin[i]; data->begin[i] = data->begin[parent_i]; data->begin[parent_i] = b2;
+            const unsigned int b1 = indices[data[i].id]; indices[data[i].id] = indices[data[parent_i].id]; indices[data[parent_i].id] = b1;
+            const Candidate b2 = data[i]; data[i] = data[parent_i]; data[parent_i] = b2;
             i = parent_i;
         }
         else break;
     }
 }
 
-Candidate pop_indexed_heap(CandidateVector *data, unsigned int *indices)
+Candidate pop_indexed_heap(Candidate *restrict data, unsigned int *restrict length, unsigned int *restrict indices)
 {
-    Candidate top = data->begin[0];
-    indices[data->begin[0].id] = (unsigned int)-2;
-    indices[data->begin[data->length - 1].id] = 0;
-    data->begin[0] = data->begin[data->length - 1];
-    data->length--;
+    Candidate top = data[0];
+    indices[data[0].id] = (unsigned int)-2;
+    indices[data[*length - 1].id] = 0;
+    data[0] = data[*length - 1];
+    (*length)--;
 
     unsigned int i = 0;
     while (true)
     {
         const unsigned int left_i = 2 * i + 1;
         const unsigned int right_i = 2 * i + 2;
-        const bool left_exists = left_i < data->length;
-        const bool right_exists = right_i < data->length;
+        const bool left_exists = left_i < *length;
+        const bool right_exists = right_i < *length;
         if (/*left_exists &&*/ right_exists)
         {
-            if (data->begin[left_i].distance < data->begin[right_i].distance)
+            if (data[left_i].distance < data[right_i].distance)
             {
-                if (data->begin[left_i].distance < data->begin[i].distance)
+                if (data[left_i].distance < data[i].distance)
                 {
-                    const unsigned int b1 = indices[data->begin[i].id]; indices[data->begin[i].id] = indices[data->begin[left_i].id]; indices[data->begin[left_i].id] = b1;
-                    const Candidate b2 = data->begin[i]; data->begin[i] = data->begin[left_i]; data->begin[left_i] = b2;
+                    const unsigned int b1 = indices[data[i].id]; indices[data[i].id] = indices[data[left_i].id]; indices[data[left_i].id] = b1;
+                    const Candidate b2 = data[i]; data[i] = data[left_i]; data[left_i] = b2;
                     i = left_i;
                 }
                 else break;
             }
             else
             {
-                if (data->begin[right_i].distance < data->begin[i].distance)
+                if (data[right_i].distance < data[i].distance)
                 {
-                    const unsigned int b1 = indices[data->begin[i].id]; indices[data->begin[i].id] = indices[data->begin[right_i].id]; indices[data->begin[right_i].id] = b1;
-                    const Candidate b2 = data->begin[i]; data->begin[i] = data->begin[right_i]; data->begin[right_i] = b2;
+                    const unsigned int b1 = indices[data[i].id]; indices[data[i].id] = indices[data[right_i].id]; indices[data[right_i].id] = b1;
+                    const Candidate b2 = data[i]; data[i] = data[right_i]; data[right_i] = b2;
                     i = right_i;
                 }
                 else break;
@@ -152,10 +167,10 @@ Candidate pop_indexed_heap(CandidateVector *data, unsigned int *indices)
         }
         else if (left_exists /*&& !right_exists*/)
         {
-            if (data->begin[left_i].distance < data->begin[i].distance)
+            if (data[left_i].distance < data[i].distance)
             {
-                const unsigned int b1 = indices[data->begin[i].id]; indices[data->begin[i].id] = indices[data->begin[left_i].id]; indices[data->begin[left_i].id] = b1;
-                const Candidate b2 = data->begin[i]; data->begin[i] = data->begin[left_i]; data->begin[left_i] = b2;
+                const unsigned int b1 = indices[data[i].id]; indices[data[i].id] = indices[data[left_i].id]; indices[data[left_i].id] = b1;
+                const Candidate b2 = data[i]; data[i] = data[left_i]; data[left_i] = b2;
                 i = left_i;
             }
             else break;
@@ -169,7 +184,7 @@ Candidate pop_indexed_heap(CandidateVector *data, unsigned int *indices)
 }
 
 #ifdef ENABLE_MAPPING
-void parse_space(const char **p, const char *endp)
+void parse_space(const char **restrict p, const char *restrict endp)
 {
     while (true)
     {
@@ -180,7 +195,7 @@ void parse_space(const char **p, const char *endp)
     }
 }
 
-unsigned int parse_uint(const char **p, const char *endp, bool *success)
+unsigned int parse_uint(const char **restrict p, const char *restrict endp, bool *restrict success)
 {
     bool local_success = false;
     unsigned int number = 0;
@@ -195,7 +210,7 @@ unsigned int parse_uint(const char **p, const char *endp, bool *success)
     return number;
 }
 
-float parse_float(const char **p, const char *endp, bool *success)
+float parse_float(const char **restrict p, const char *restrict endp, bool *restrict success)
 {
     bool local_success = false;
     unsigned int number = 0;
@@ -348,7 +363,8 @@ int solve_target_ver5(void *void_arguments)
     mtx_t *mutex = &((ThreadArguments*)void_arguments)->mutex;
     const Benchmark **current_benchmark = &((ThreadArguments*)void_arguments)->current_benchmark;
 
-    CandidateVector candidates; memset(&candidates, 0, sizeof(candidates));
+    Candidate *candidates = (Candidate*)malloc(graph->length * sizeof(Candidate));
+    unsigned int candidates_length = 0;
     unsigned int *candidate_indices = malloc(graph->length * sizeof(unsigned int));
 
     mtx_lock(mutex);
@@ -359,15 +375,15 @@ int solve_target_ver5(void *void_arguments)
     {
         const unsigned int source = benchmark->source;
         const unsigned int destination = benchmark->destination;
-        candidates.length = 0;
+        candidates_length = 0;
         memset(candidate_indices, 0xFF, graph->length * sizeof(unsigned int));
         Candidate candidate = { .id = source, .int_distance = 0, .distance = 0.0 };
-        push_indexed_heap(&candidates, candidate_indices, candidate);
+        push_indexed_heap(candidates, &candidates_length, candidate_indices, candidate);
         unsigned int int_distance = 0;
         float distance = INFINITY;
-        while (candidates.length != 0)
+        while (candidates_length != 0)
         {
-            candidate = pop_indexed_heap(&candidates, candidate_indices);
+            candidate = pop_indexed_heap(candidates, &candidates_length, candidate_indices);
             if (candidate.id == destination) { int_distance = candidate.int_distance; distance = candidate.distance; break; }
             ConnectionVector *connections = &graph->begin[candidate.id];
 
@@ -376,7 +392,7 @@ int solve_target_ver5(void *void_arguments)
                 connection++)
             {
                 Candidate new_candidate = { .id = connection->destination, .int_distance = candidate.int_distance + 1, .distance = candidate.distance + connection->distance };
-                push_indexed_heap(&candidates, candidate_indices, new_candidate);
+                push_indexed_heap(candidates, &candidates_length, candidate_indices, new_candidate);
             }
         }
         mtx_lock(mutex);
@@ -386,7 +402,7 @@ int solve_target_ver5(void *void_arguments)
         mtx_unlock(mutex);
     }
 
-    free(candidates.begin);
+    free(candidates);
     free(candidate_indices);
     return 0;
 }
@@ -407,7 +423,8 @@ void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benc
 #else
 void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benchmarks)
 {
-    CandidateVector candidates; memset(&candidates, 0, sizeof(candidates));
+    Candidate *candidates = (Candidate*)malloc(graph->length * sizeof(Candidate));
+    unsigned int candidates_length = 0;
     unsigned int *candidate_indices = (unsigned int*)malloc(graph->length * sizeof(unsigned int));
 
     for (const Benchmark *benchmark = benchmarks->begin;
@@ -416,15 +433,15 @@ void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benc
     {
         const unsigned int source = benchmark->source;
         const unsigned int destination = benchmark->destination;
-        candidates.length = 0;
+        candidates_length = 0;
         memset(candidate_indices, 0xFF, graph->length * sizeof(unsigned int));
         Candidate candidate = { .id = source, .int_distance = 0, .distance = 0.0 };
-        push_indexed_heap(&candidates, candidate_indices, candidate);
+        push_indexed_heap(candidates, &candidates_length, candidate_indices, candidate);
         unsigned int int_distance = 0;
         float distance = INFINITY;
-        while (candidates.length != 0)
+        while (candidates_length != 0)
         {
-            candidate = pop_indexed_heap(&candidates, candidate_indices);
+            candidate = pop_indexed_heap(candidates, &candidates_length, candidate_indices);
             if (candidate.id == destination) { int_distance = candidate.int_distance; distance = candidate.distance; break; }
             ConnectionVector *connections = &graph->begin[candidate.id];
 
@@ -433,13 +450,13 @@ void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benc
                 connection++)
             {
                 Candidate new_candidate = { .id = connection->destination, .int_distance = candidate.int_distance + 1, .distance = candidate.distance + connection->distance };
-                push_indexed_heap(&candidates, candidate_indices, new_candidate);
+                push_indexed_heap(candidates, &candidates_length, candidate_indices, new_candidate);
             }
         }
         printf("%u %u %f\n", destination, int_distance, distance);
     }
 
-    free(candidates.begin);
+    free(candidates);
     free(candidate_indices);
 }
 #endif

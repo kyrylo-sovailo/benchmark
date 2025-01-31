@@ -1,11 +1,10 @@
 #!/bin/bash
-AFFINITY=1
-SOURCE="$(dirname $(readlink -f $0))"
-BUILD="$SOURCE/build"
+SOURCE="$(dirname $(dirname $(readlink -f $0)))/source"
+BUILD="$(dirname $(dirname $(readlink -f $0)))/build"
 if [ ! -d "$BUILD" ]; then mkdir "$BUILD"; fi
 cd "$BUILD"
 
-"$SOURCE/build.sh" || exit 1
+"$(dirname $(readlink -f $0))/build.sh" || exit 1
 
 #run_benchmark(executable, benchmark, log, cores)
 run_benchmark()
@@ -62,6 +61,7 @@ run_benchmark "$BUILD/dijkstra_fortran_gfortran_release" "$BUILD/dijkstra.txt" "
 
 # Testing extras
 run_benchmark "$BUILD/dijkstra_c_clang_release_opt" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_release_opt.txt" "all" || exit 1
+run_benchmark "$BUILD/dijkstra_cpp_clang_release_opt" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_clang_release_opt.txt" "all" || exit 1
 run_benchmark "$BUILD/dijkstra_c_clang_release_cpp" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_release_cpp.txt" || exit 1
 
 # Testing slow programs

@@ -3,7 +3,7 @@
 This repository contains implementations of Dijkstra algorithm in different programming languages. Quick peek at the results:
 
 ![Bar chart with executions times, Matlab is the slowest, C with cheats is the fastest](benchmark.png "Execution times")
-All data is included, you are welcome to play with the configuration of the visualizer. The current result was produced with `../create_graphics.py --reverse --inverse --relative-slowest`.
+All data is included, you are welcome to play with the configuration of the visualizer. The current result was produced with `../script/create_graphics.py --reverse --inverse --relative-slowest`.
 
 ### Goal
 The benchmark is a combined benchmark that strives to capture a performance of an average and reasonably-written program. The "reasonable" code is defined as code that:
@@ -46,5 +46,5 @@ Kernel   6.10.10-zen1-x86_64
 ```
 
 ### Conclusions
- - C++ is faster than C (see "Goal")
+ - C++ is faster than C (when using standard single-threaded I/O, see "Goal")
  - Fortran is not that fast

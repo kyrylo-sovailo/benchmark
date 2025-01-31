@@ -1,7 +1,6 @@
 #!/bin/bash
-AFFINITY=1
-SOURCE="$(dirname $(readlink -f $0))"
-BUILD="$SOURCE/build"
+SOURCE="$(dirname $(dirname $(readlink -f $0)))/source"
+BUILD="$(dirname $(dirname $(readlink -f $0)))/build"
 if [ ! -d "$BUILD" ]; then mkdir "$BUILD"; fi
 cd "$BUILD"
 
@@ -40,9 +39,9 @@ compile_release()
 {
     if [ "$2" -nt "$3" ]; then
         if [ $( echo "$2" | grep -e '.*.cpp$' | wc -l) -gt 0 ]; then #C++
-            FLAGS="-std=c++11 -O3 -DNDEBUG -fno-rtti -flto -march=native"
+            FLAGS="-std=c++11 -O3 -DNDEBUG -fno-rtti -flto -march=native -Drestrict="
             if [ ! -z "$4" ]; then
-                FLAGS="${FLAGS} -DENABLE_MAPPING -DENABLE_MULTITHREADING"
+                FLAGS="${FLAGS} -DENABLE_MAPPING -DENABLE_MULTITHREADING -lstdc++"
             fi
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
@@ -101,7 +100,9 @@ compile_release gcc "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_gcc_release" || ex
 compile_debug clang "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_clang_debug" || exit 1
 compile_release clang "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_clang_release" || exit 1
 
-compile_release clang "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_clang_release_opt" yes || exit 1 #Cheating
+# Extras
+compile_release clang "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_clang_release_opt" yes || exit 1 #Cheating C
+compile_release clang "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_clang_release_opt" yes || exit 1 #Cheating C++
 copy "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c.cpp" || exit 1
 compile_release clang++ "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_clang_release_cpp" || exit 1 #As C++
 

@@ -58,6 +58,7 @@ class Graphics:
         self.reverse = False
         self.log = False
         self.no_extras = False
+        self.no_debug = False
         self.relative_fastest = False
         self.relative_slowest = False
         self.faster_threshold = math.inf
@@ -67,12 +68,23 @@ class Graphics:
         while i < len(sys.argv):
             arg = sys.argv[i]
             if arg == "--help":
-                print("Usage: ./create_graphics.py [--help] [--inverse] [--reverse] [--log] [--no-extras] [--relative-fastest | --relative-slowest]  [--slower TIME] [--faster TIME]")
+                print("Usage: ./create_graphics.py <options>")
+                print("Options:")
+                print("  --help")
+                print("  --inverse")
+                print("  --reverse")
+                print("  --log")
+                print("  --no-extras")
+                print("  --no-debug")
+                print("  --relative-fastest | --relative-slowest")
+                print("  --slower TIME")
+                print("  --faster TIME")
                 sys.exit(0)
             elif arg == "--inverse": self.inverse = True
             elif arg == "--reverse": self.reverse = True
             elif arg == "--log": self.log = True
             elif arg == "--no-extras": self.no_extras = True
+            elif arg == "--no-extras": self.no_debug = True
             elif arg == "--faster":
                 i += 1
                 if i >= len(sys.argv): raise Exception("Expected time after --faster")
@@ -111,9 +123,12 @@ class Graphics:
         if not self.no_extras:
             extras = {
                 "C, clang, map+threads" : "dijkstra_c_clang_release_opt.txt",
+                "C++, clang++, map+threads" : "dijkstra_cpp_clang_release_opt.txt",
                 "C, clang++, release" : "dijkstra_c_clang_release_cpp.txt"
             }
             label_to_filename.update(extras)
+        if self.no_debug:
+            label_to_filename = { key: value for key, value in label_to_filename.items() if not "debug" in key }
 
         measurements = []
         for label, filename in label_to_filename.items():
