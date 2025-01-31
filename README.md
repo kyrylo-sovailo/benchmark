@@ -29,6 +29,7 @@ The benchmark does not focus on only one of these aspects. Finding out which exa
 The names of the bars on the chart are pretty self-explanatory. Except for:
  - `C, clang++, release` is a C program compiled with clang++ as valid C++.
  - `C, clang, map+threads` is a C program written with multi-threading support and memory mapping enabled. It is written as a demonstration, comparing its performance to other programs is **not fair**.
+ - `C++, clang++, map+threads` is same but with C++.
 
 ### Hardware
 The measurements were performed on Intel Pentium 4415U. To reduce noise, the kernel was booted with `isolcpus=1,3`, where 1 and 3 are logical cores that correspond to physical core 1.
