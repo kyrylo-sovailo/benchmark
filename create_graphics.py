@@ -47,9 +47,9 @@ class Measurement:
         elif "C++" in labels: self.color = "xkcd:warm pink" if find_closest else "#f34b7d"
         elif "C#" in labels: self.color = "green" if find_closest else "#178600"
         elif "Fortran" in labels: self.color = "xkcd:blue with a hint of purple" if find_closest else "#4d41b1"
-        elif "Haskell" in labels: self.color = "xkcd:medium green" if find_closest else "#29b544"
+        elif "Haskell" in labels: self.color = "xkcd:twilight" if find_closest else "#5e5086"
         elif "Python" in labels: self.color = "xkcd:flat blue" if find_closest else "#3572a5"
-        elif "Matlab" in labels: self.color = "xkcd:light mauve" if find_closest else "#bb92ac"
+        elif "Matlab" in labels: self.color = "xkcd:terra cotta" if find_closest else "#e16737"
         else: self.color = "black" if find_closest else "#000000"
 
 class Graphics:
