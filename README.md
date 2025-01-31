@@ -6,7 +6,16 @@ This repository contains implementations of Dijkstra algorithm in different prog
 All data is included, you are welcome to play with the configuration of the visualizer. The current result was produced with `../create_graphics.py --reverse --inverse --relative-slowest`.
 
 ### Goal
-The benchmark is a combined benchmark that strives to capture a performance of a balanced program. The execution time is affected by:
+The benchmark is a combined benchmark that strives to capture a performance of an average and reasonably-written program. The "reasonable" code is defined as code that:
+ - Stays readable
+ - In particular, accesses structure members by names rather than by index
+ - Stays native, does not delegate the task to other programming languages
+ - Does not use assembler optimizations
+ - Does not use hardware acceleration
+ - Uses standard I/O (one exception)
+ - Does not use multithreading (one exception)
+
+The execution time is affected by:
  - Raw speed
  - Efficiency of memory management
  - Efficiency of standard library
@@ -14,7 +23,7 @@ The benchmark is a combined benchmark that strives to capture a performance of a
  - Initialization time
  - etc.
 
-This is also the reason why the programs don't reserve the memory in advance -- because frequent memory allocation is what applications do in real life. The programs (with one exception) are written with standard cross-platform I/O, no third-party libraries and no multithreading.
+The benchmark does not focus on only one of these aspects. Finding out which exactly part is faster in which languages is outside of the scope of this benchmark.
 
 ### Notes
 The names of the bars on the chart are pretty self-explanatory. Except for:
@@ -37,9 +46,5 @@ Kernel   6.10.10-zen1-x86_64
 ```
 
 ### Conclusions
- - C++ is faster than C (no comments)
- - C is faster than Fortran
- - Haskell is terrible for everything algorithm-related
-
-##### But where's the language that all 3.5 members of my cult use???
-Fork. I may accept the pull request if I'm in a good mood.
+ - C++ is faster than C (see "Goal")
+ - Fortran is not that fast
