@@ -3,7 +3,7 @@
 This repository contains implementations of Dijkstra algorithm in different programming languages. Quick peek at the results:
 
 ![Bar chart with executions times, Matlab is the slowest, C with cheats is the fastest](benchmark.png "Execution times")
-All data is included, you are welcome to play with the configuration of the visualizer.
+All data is included, you are welcome to play with the configuration of the visualizer. The current result was produced with `../create_graphics.py --reverse --inverse --relative-slowest`.
 
 ### Goal
 The benchmark is a combined benchmark that strives to capture a performance of a balanced program. The execution time is affected by:
