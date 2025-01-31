@@ -2,6 +2,20 @@
 import matplotlib.pyplot as plt
 import sys, math
 
+def find_closest_color(desired_color):
+    import matplotlib.colors as mcolors
+    map = mcolors.get_named_colors_mapping()
+    desired_rgb = mcolors.to_rgb(desired_color)
+    closest_name = None
+    closest_distance = math.inf
+    for name, value in map.items():
+        rgb = mcolors.to_rgb(value)
+        distance = abs(desired_rgb[0] - rgb[0]) + abs(desired_rgb[1] - rgb[1]) + abs(desired_rgb[2] - rgb[2])
+        if distance < closest_distance:
+            closest_distance = distance
+            closest_name = name
+    return closest_name
+
 class Measurement:
     def __init__(self, label, filename):
         times = []
@@ -28,14 +42,15 @@ class Measurement:
         self.inv_deviation = math.sqrt(self.inv_variance)
 
         labels = label.split(", ")
-        if "C" in labels: self.color = "gold"
-        elif "C++" in labels: self.color = "orange"
-        elif "C#" in labels: self.color = "red"
-        elif "Fortran" in labels: self.color = "maroon"
-        elif "Haskell" in labels: self.color = "magenta"
-        elif "Python" in labels: self.color = "cyan"
-        elif "Matlab" in labels: self.color = "blue"
-        else: self.color = "black"
+        find_closest = True
+        if "C" in labels: self.color = "xkcd:gunmetal" if find_closest else "#555555"
+        elif "C++" in labels: self.color = "xkcd:warm pink" if find_closest else "#f34b7d"
+        elif "C#" in labels: self.color = "green" if find_closest else "#178600"
+        elif "Fortran" in labels: self.color = "xkcd:blue with a hint of purple" if find_closest else "#4d41b1"
+        elif "Haskell" in labels: self.color = "xkcd:medium green" if find_closest else "#29b544"
+        elif "Python" in labels: self.color = "xkcd:flat blue" if find_closest else "#3572a5"
+        elif "Matlab" in labels: self.color = "xkcd:light mauve" if find_closest else "#bb92ac"
+        else: self.color = "black" if find_closest else "#000000"
 
 class Graphics:
     def __init__(self):

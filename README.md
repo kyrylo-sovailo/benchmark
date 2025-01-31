@@ -39,7 +39,6 @@ Kernel   6.10.10-zen1-x86_64
 ### Conclusions
  - C++ is faster than C (no comments)
  - C is faster than Fortran
- - Clang is faster than GCC
  - Haskell is terrible for everything algorithm-related
 
 ##### But where's the language that all 3.5 members of my cult use???
