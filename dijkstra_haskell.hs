@@ -57,9 +57,9 @@ edges_insert_with = \f key value mp -> DIM.insertWith f (fromIntegral key) value
 edges_from_list_with = \f values -> DIM.fromListWith f (DL.map (\(a, b) -> (fromIntegral a, b)) values)
 
 parse :: String -> (Edges, [Benchmark])
-parse = parse_ver2
+parse = parse_ver1
 solve :: Edges -> [Benchmark] -> IO ()
-solve = solve_ver2
+solve = solve_ver1
 
 -----------------------
 -- Random Access Map --
@@ -430,9 +430,9 @@ enumerate_candidates_ver2' edges enumerated_candidates pending_candidates =
     let (closest_candidate, pending_candidates') = DS.deleteFindMin pending_candidates
         (Candidate closest_candidate_id _ _) = closest_candidate
         neighbors = enumerate_neighbors_ver2 edges closest_candidate enumerated_candidates
-        pending_candidates'' = DL.foldl (\s c -> DS.insert c s) pending_candidates' neighbors
+        pending_candidates'' = DL.foldl' (\s c -> DS.insert c s) pending_candidates' neighbors
         enumerated_candidates' = vertices_insert closest_candidate_id enumerated_candidates
-        in closest_candidate : (enumerate_candidates_ver2' `seq` pending_candidates'' `seq` enumerate_candidates_ver2'
+        in closest_candidate : (enumerated_candidates' `seq` pending_candidates'' `seq` enumerate_candidates_ver2'
             edges enumerated_candidates' pending_candidates'')
 
 --enumerate_neighbors_ver2(edges candidate enumerated_candidates) -> neighbors
