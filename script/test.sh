@@ -12,6 +12,8 @@ run_benchmark()
     if [ "$1" -nt "$3" -o "$2" -nt "$3" ]; then
         if [ $( echo "$1" | grep -e '.*.exe$' | wc -l) -gt 0 ]; then
             LAUNCH="mono"
+        elif [ $( echo "$1" | grep -e '.*.js$' | wc -l) -gt 0 ]; then
+            LAUNCH="node"
         else
             LAUNCH=""
         fi
@@ -66,6 +68,7 @@ run_benchmark "$BUILD/dijkstra_c_clang_release_cpp" "$BUILD/dijkstra.txt" "$BUIL
 
 # Testing slow programs
 run_benchmark "$SOURCE/dijkstra_python.py" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_python.txt" || exit 1
+run_benchmark "$SOURCE/dijkstra_js.js" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_js_node.txt" || exit 1
 run_benchmark "$BUILD/dijkstra_haskell_ghc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_debug.txt" || exit 1
 run_benchmark "$BUILD/dijkstra_haskell_ghc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_release.txt" || exit 1
 run_benchmark_matlab "$BUILD/dijkstra_matlab.m" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_matlab_matlab.txt" || exit 1

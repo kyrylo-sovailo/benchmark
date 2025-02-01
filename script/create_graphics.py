@@ -49,6 +49,7 @@ class Measurement:
         elif "Fortran" in labels: self.color = "xkcd:blue with a hint of purple" if find_closest else "#4d41b1"
         elif "Haskell" in labels: self.color = "xkcd:twilight" if find_closest else "#5e5086"
         elif "Python" in labels: self.color = "xkcd:flat blue" if find_closest else "#3572a5"
+        elif "Javascript" in labels: self.color = "xkcd:dull yellow" if find_closest else "#f1e05a"
         elif "Matlab" in labels: self.color = "xkcd:terra cotta" if find_closest else "#e16737"
         else: self.color = "black" if find_closest else "#000000"
 
@@ -117,6 +118,7 @@ class Graphics:
             "Fortran, gfortran, release" : "dijkstra_fortran_gfortran_release.txt",
             "Haskell, ghc, debug" : "dijkstra_haskell_ghc_debug.txt",
             "Haskell, ghc, release" : "dijkstra_haskell_ghc_release.txt",
+            "Javascript" : "dijkstra_js_node.txt",
             "Python" : "dijkstra_python.txt",
             "Matlab" : "dijkstra_matlab_matlab.txt"
         }

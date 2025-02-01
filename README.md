@@ -39,9 +39,10 @@ The measurements were performed on Intel Pentium 4415U. To reduce noise, the ker
 GCC      13.3.1
 Clang    19.1.4
 GFortran 13.3.1
-MCS      6.12.0.199, TARGET 4.5
+MCS      6.12.0.199, Target 4.5
 Python   3.12.8
 GHC      9.4.8
+Node     22.4.1
 Matlab   24.2.0.2833386 (R2024b) Update 4
 Kernel   6.10.10-zen1-x86_64
 ```
