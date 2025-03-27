@@ -47,9 +47,6 @@ compile_release()
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.c$' | wc -l) -gt 0 ]; then #C
             FLAGS="-std=c11 -O3 -DNDEBUG -flto -march=native"
-            if [ ! -z "$4" ]; then
-                FLAGS="${FLAGS} -DENABLE_MAPPING -DENABLE_MULTITHREADING"
-            fi
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.cs$' | wc -l) -gt 0 ]; then #C#
@@ -89,42 +86,66 @@ copy()
 }
 
 # C++
-compile_debug g++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_gcc_debug" || exit 1
-compile_release g++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_gcc_release" || exit 1
-compile_debug clang++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_clang_debug" || exit 1
-compile_release clang++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_clang_release" || exit 1
+if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
+    compile_debug g++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_gcc_debug" || exit 1
+    compile_release g++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_gcc_release" || exit 1
+fi
+if [ $(type clang++ 2>/dev/null | wc -l) -gt 0 ]; then
+    compile_debug clang++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_clang_debug" || exit 1
+    compile_release clang++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_clang_release" || exit 1
+fi
 
 # C
-compile_debug gcc "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_gcc_debug" || exit 1
-compile_release gcc "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_gcc_release" || exit 1
-compile_debug clang "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_clang_debug" || exit 1
-compile_release clang "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_clang_release" || exit 1
+if [ $(type gcc 2>/dev/null | wc -l) -gt 0 ]; then
+    compile_debug gcc "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_gcc_debug" || exit 1
+    compile_release gcc "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_gcc_release" || exit 1
+fi
+if [ $(type clang 2>/dev/null | wc -l) -gt 0 ]; then
+    compile_debug clang "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_clang_debug" || exit 1
+    compile_release clang "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_clang_release" || exit 1
+fi
 
 # Extras
-compile_release clang "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_clang_release_opt" yes || exit 1 #Cheating C
-compile_release clang "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_clang_release_opt" yes || exit 1 #Cheating C++
-copy "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c.cpp" || exit 1
-compile_release clang++ "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_clang_release_cpp" || exit 1 #As C++
+if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
+    copy "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c.cpp" || exit 1
+    compile_release g++ "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_gcc_release_cpp" || exit 1 #C as C++
+fi
+if [ $(type clang++ 2>/dev/null | wc -l) -gt 0 ]; then
+    copy "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c.cpp" || exit 1
+    compile_release clang++ "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_clang_release_cpp" || exit 1 #C as C++
+fi
 
 # C#
-copy "$SOURCE/dijkstra_csharp.cs" "$BUILD/dijkstra_csharp_debug.cs" || exit 1
-compile_debug mcs "$BUILD/dijkstra_csharp_debug.cs" "$BUILD/dijkstra_csharp_mcs_debug.exe" || exit 1
-copy "$SOURCE/dijkstra_csharp.cs" "$BUILD/dijkstra_csharp_release.cs" || exit 1
-compile_release mcs "$BUILD/dijkstra_csharp_release.cs" "$BUILD/dijkstra_csharp_mcs_release.exe" || exit 1
+if [ $(type mcs 2>/dev/null | wc -l) -gt 0 ]; then
+    copy "$SOURCE/dijkstra_csharp.cs" "$BUILD/dijkstra_csharp_debug.cs" || exit 1
+    compile_debug mcs "$BUILD/dijkstra_csharp_debug.cs" "$BUILD/dijkstra_csharp_mcs_debug.exe" || exit 1
+    copy "$SOURCE/dijkstra_csharp.cs" "$BUILD/dijkstra_csharp_release.cs" || exit 1
+    compile_release mcs "$BUILD/dijkstra_csharp_release.cs" "$BUILD/dijkstra_csharp_mcs_release.exe" || exit 1
+fi
 
 # Fortran
-compile_debug gfortran "$SOURCE/dijkstra_fortran.f90" "$BUILD/dijkstra_fortran_gfortran_debug" || exit 1
-compile_release gfortran "$SOURCE/dijkstra_fortran.f90" "$BUILD/dijkstra_fortran_gfortran_release" || exit 1
+if [ $(type gfortran 2>/dev/null | wc -l) -gt 0 ]; then
+    compile_debug gfortran "$SOURCE/dijkstra_fortran.f90" "$BUILD/dijkstra_fortran_gfortran_debug" || exit 1
+    compile_release gfortran "$SOURCE/dijkstra_fortran.f90" "$BUILD/dijkstra_fortran_gfortran_release" || exit 1
+fi
 
 # Haskell
-copy "$SOURCE/dijkstra_haskell.hs" "$BUILD/dijkstra_haskell_debug.hs" || exit 1
-compile_debug ghc "$BUILD/dijkstra_haskell_debug.hs" "$BUILD/dijkstra_haskell_ghc_debug" || exit 1
-copy "$SOURCE/dijkstra_haskell.hs" "$BUILD/dijkstra_haskell_release.hs" || exit 1
-compile_release ghc "$BUILD/dijkstra_haskell_release.hs" "$BUILD/dijkstra_haskell_ghc_release" || exit 1
+if [ $(type ghc 2>/dev/null | wc -l) -gt 0 ]; then
+    copy "$SOURCE/dijkstra_haskell.hs" "$BUILD/dijkstra_haskell_debug.hs" || exit 1
+    compile_debug ghc "$BUILD/dijkstra_haskell_debug.hs" "$BUILD/dijkstra_haskell_ghc_debug" || exit 1
+    copy "$SOURCE/dijkstra_haskell.hs" "$BUILD/dijkstra_haskell_release.hs" || exit 1
+    compile_release ghc "$BUILD/dijkstra_haskell_release.hs" "$BUILD/dijkstra_haskell_ghc_release" || exit 1
+fi
 
 # Matlab
-copy "$SOURCE/dijkstra_matlab.m" "$BUILD/dijkstra_matlab.m" || exit 1
+if [ $(type matlab 2>/dev/null | wc -l) -gt 0 ]; then
+    copy "$SOURCE/dijkstra_matlab.m" "$BUILD/dijkstra_matlab.m" || exit 1
+fi
 
 # Testing
-compile_release g++ "$SOURCE/create_dijkstra.cpp" "$BUILD/create_dijkstra" || exit 1
+if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
+    compile_release g++ "$SOURCE/create_dijkstra.cpp" "$BUILD/create_dijkstra" || exit 1
+else
+    compile_release clang++ "$SOURCE/create_dijkstra.cpp" "$BUILD/create_dijkstra" || exit 1
+fi
 create_benchmark "$BUILD/create_dijkstra" "$BUILD/dijkstra.txt" || exit 1

@@ -4,16 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef ENABLE_MAPPING
-    #include <fcntl.h>
-    #include <unistd.h>
-    #include <sys/mman.h>
-    #include <sys/stat.h>
-#endif
-#ifdef ENABLE_MULTITHREADING
-    #include <threads.h>
-#endif
-
 #define MIN(A, B) (((A) < (B)) ? (A) : (B))
 #define MAX(A, B) (((A) > (B)) ? (A) : (B))
 
@@ -183,128 +173,6 @@ Candidate pop_indexed_heap(Candidate *restrict data, unsigned int *restrict leng
     return top;
 }
 
-#ifdef ENABLE_MAPPING
-void parse_space(const char **restrict p, const char *restrict endp)
-{
-    while (true)
-    {
-        if (*p >= endp) return;
-        const char c = **p;
-        if (c == ' ' || c == '\t') (*p)++;
-        else break;
-    }
-}
-
-unsigned int parse_uint(const char **restrict p, const char *restrict endp, bool *restrict success)
-{
-    bool local_success = false;
-    unsigned int number = 0;
-    while (true)
-    {
-        if (*p >= endp) break;
-        const char c = **p;
-        if (c >= '0' && c <= '9') { number = 10 * number + (c - '0'); local_success = true; (*p)++; }
-        else break;
-    }
-    if (!local_success) *success = false;
-    return number;
-}
-
-float parse_float(const char **restrict p, const char *restrict endp, bool *restrict success)
-{
-    bool local_success = false;
-    unsigned int number = 0;
-    while (true)
-    {
-        if (*p >= endp) { if (!local_success) *success = false; return number; }
-        const char c = **p;
-        if (c >= '0' && c <= '9') { number = 10 * number + (c - '0'); local_success = true; (*p)++; }
-        else break;
-    }
-
-    float fnumber = number;
-    if (*p < endp && **p == '.')
-    {
-        (*p)++;
-        unsigned int divider = 10;
-        while (true)
-        {
-            if (*p >= endp) { if (!local_success) *success = false; return fnumber; }
-            char c = **p;
-            if (c >= '0' && c <= '9') { fnumber += ((float)(c - '0'))/((float)divider); local_success = true; divider *= 10; (*p)++; }
-            else break;
-        }
-        if (!local_success) p--; //Read dot, but no numbers
-    }
-
-    if (!local_success) *success = false;
-    return fnumber;
-}
-
-void parse_ver5(ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
-{
-    int file = open("dijkstra.txt", O_RDONLY);
-    if (file < 0) exit(2);
-    struct stat status;
-    if (fstat(file, &status) < 0) exit(3);
-    char *map = mmap(NULL, status.st_size, PROT_READ, MAP_PRIVATE, file, 0);
-    if (map == NULL) { close(file); exit(4); }
-
-    const size_t graph_len = strlen("GRAPH");
-    const size_t benchmark_len = strlen("BENCHMARK");
-    const char *p = map;
-    const char *endp = map + status.st_size;
-    
-    bool read_benchmarks = false;
-    while (true)
-    {
-        parse_space(&p, endp); //Skip space, arrive at decision point
-
-        if (p >= endp) break; //End of file
-        else if (*p == '\n' || *p == '\r') p++; //End of line
-        else if (p + graph_len <= endp && memcmp(p, "GRAPH", graph_len) == 0) //GRAPH keyword
-        {
-            read_benchmarks = false;
-            p += graph_len;
-        }
-        else if (p + benchmark_len <= endp && memcmp(p, "BENCHMARK", benchmark_len) == 0) //BENCHMARK keyword
-        {
-            read_benchmarks = true;
-            p += benchmark_len;
-        }
-        else if (read_benchmarks) //Read benchmark
-        {
-            bool success = true;
-            unsigned int source = parse_uint(&p, endp, &success);
-            parse_space(&p, endp);
-            unsigned int destination = parse_uint(&p, endp, &success);
-            if (!success) break;
-
-            Benchmark benchmark = { .source = source, .destination = destination };
-            push_BenchmarkVector(benchmarks, benchmark);
-        }
-        else //Read connection
-        {
-            bool success = true;
-            unsigned int source = parse_uint(&p, endp, &success);
-            parse_space(&p, endp);
-            unsigned int destination = parse_uint(&p, endp, &success);
-            parse_space(&p, endp);
-            float distance = parse_float(&p, endp, &success);
-            if (!success) break;
-
-            grow_ConnectionVectorVector(graph, MAX(source, destination) + 1);
-            Connection forward = { .destination = destination, .distance = distance };
-            push_ConnectionVector(&graph->begin[source], forward);
-            Connection backward = { .destination = source, .distance = distance };
-            push_ConnectionVector(&graph->begin[destination], backward);
-        }
-    }
-    
-    munmap(map, status.st_size);
-    close(file);
-}
-#else
 void parse_ver5(ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
 {
     FILE *file = fopen("dijkstra.txt", "r");
@@ -346,81 +214,7 @@ void parse_ver5(ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
     }
     fclose(file);
 }
-#endif
 
-#ifdef ENABLE_MULTITHREADING
-typedef struct
-{
-    const ConnectionVectorVector *graph;
-    const BenchmarkVector *benchmarks;
-    mtx_t mutex;
-    const Benchmark *current_benchmark;
-} ThreadArguments;
-int solve_target_ver5(void *void_arguments)
-{
-    const ConnectionVectorVector *graph = ((ThreadArguments*)void_arguments)->graph;
-    const BenchmarkVector *benchmarks = ((ThreadArguments*)void_arguments)->benchmarks;
-    mtx_t *mutex = &((ThreadArguments*)void_arguments)->mutex;
-    const Benchmark **current_benchmark = &((ThreadArguments*)void_arguments)->current_benchmark;
-
-    Candidate *candidates = (Candidate*)malloc(graph->length * sizeof(Candidate));
-    unsigned int candidates_length = 0;
-    unsigned int *candidate_indices = malloc(graph->length * sizeof(unsigned int));
-
-    mtx_lock(mutex);
-    const Benchmark *benchmark = *current_benchmark;
-    (*current_benchmark)++;
-    mtx_unlock(mutex);
-    while (benchmark < &benchmarks->begin[benchmarks->length])
-    {
-        const unsigned int source = benchmark->source;
-        const unsigned int destination = benchmark->destination;
-        candidates_length = 0;
-        memset(candidate_indices, 0xFF, graph->length * sizeof(unsigned int));
-        Candidate candidate = { .id = source, .int_distance = 0, .distance = 0.0 };
-        push_indexed_heap(candidates, &candidates_length, candidate_indices, candidate);
-        unsigned int int_distance = 0;
-        float distance = INFINITY;
-        while (candidates_length != 0)
-        {
-            candidate = pop_indexed_heap(candidates, &candidates_length, candidate_indices);
-            if (candidate.id == destination) { int_distance = candidate.int_distance; distance = candidate.distance; break; }
-            ConnectionVector *connections = &graph->begin[candidate.id];
-
-            for (const Connection *connection = connections->begin;
-                connection < &connections->begin[connections->length];
-                connection++)
-            {
-                Candidate new_candidate = { .id = connection->destination, .int_distance = candidate.int_distance + 1, .distance = candidate.distance + connection->distance };
-                push_indexed_heap(candidates, &candidates_length, candidate_indices, new_candidate);
-            }
-        }
-        mtx_lock(mutex);
-        printf("%u %u %f\n", destination, int_distance, distance);
-        benchmark = *current_benchmark;
-        (*current_benchmark)++;
-        mtx_unlock(mutex);
-    }
-
-    free(candidates);
-    free(candidate_indices);
-    return 0;
-}
-
-void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benchmarks)
-{
-    ThreadArguments arguments;
-    arguments.graph = graph;
-    arguments.benchmarks = benchmarks;
-    arguments.current_benchmark = benchmarks->begin;
-    if (mtx_init(&arguments.mutex, mtx_plain) != thrd_success) exit(5);
-    const unsigned int nthreads = MIN(4, benchmarks->length);
-    thrd_t threads[4];
-    for (unsigned int i = 0; i < nthreads; i++) thrd_create(threads + i, solve_target_ver5, &arguments);
-    for (unsigned int i = 0; i < nthreads; i++) thrd_join(threads[i], NULL);
-    mtx_destroy(&arguments.mutex);
-}
-#else
 void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benchmarks)
 {
     Candidate *candidates = (Candidate*)malloc(graph->length * sizeof(Candidate));
@@ -459,7 +253,6 @@ void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benc
     free(candidates);
     free(candidate_indices);
 }
-#endif
 
 int main_ver5(void)
 {

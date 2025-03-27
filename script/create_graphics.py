@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import matplotlib.pyplot as plt
-import sys, math
+import math, shutil, sys
 
 def find_closest_color(desired_color):
     import matplotlib.colors as mcolors
@@ -103,32 +103,50 @@ class Graphics:
         if self.faster_threshold < self.slower_threshold: raise Exception("Maximum threshold is lower than minium threshold")
 
     def run(self):
-        label_to_filename = {
+        label_to_filename = dict()
+        if shutil.which("g++"): label_to_filename.update({
             "C++, g++, debug" : "dijkstra_cpp_gcc_debug.txt",
-            "C++, g++, release" : "dijkstra_cpp_gcc_release.txt",
+            "C++, g++, release" : "dijkstra_cpp_gcc_release.txt"
+        })
+        if shutil.which("clang++"): label_to_filename.update({
             "C++, clang++, debug" : "dijkstra_cpp_clang_debug.txt",
             "C++, clang++, release" : "dijkstra_cpp_clang_release.txt",
+        })
+        if shutil.which("gcc"): label_to_filename.update({
             "C, gcc, debug" : "dijkstra_c_gcc_debug.txt",
             "C, gcc, release" : "dijkstra_c_gcc_release.txt",
+        })
+        if shutil.which("clang"): label_to_filename.update({
             "C, clang, debug" : "dijkstra_c_clang_debug.txt",
             "C, clang, release" : "dijkstra_c_clang_release.txt",
+        })
+        if shutil.which("mcs"): label_to_filename.update({
             "C#, mcs, debug" : "dijkstra_csharp_mcs_debug.txt",
             "C#, mcs, release" : "dijkstra_csharp_mcs_release.txt",
+        })
+        if shutil.which("gfortran"): label_to_filename.update({
             "Fortran, gfortran, debug" : "dijkstra_fortran_gfortran_debug.txt",
             "Fortran, gfortran, release" : "dijkstra_fortran_gfortran_release.txt",
+        })
+        if shutil.which("ghc"): label_to_filename.update({
             "Haskell, ghc, debug" : "dijkstra_haskell_ghc_debug.txt",
             "Haskell, ghc, release" : "dijkstra_haskell_ghc_release.txt",
-            "Javascript" : "dijkstra_js_node.txt",
-            "Python" : "dijkstra_python.txt",
+        })
+        if shutil.which("node"): label_to_filename.update({
+            "Javascript" : "dijkstra_js_node.txt"
+        })
+        if shutil.which("python"): label_to_filename.update({
+            "Python" : "dijkstra_python.txt"
+        })
+        if shutil.which("matlab"): label_to_filename.update({
             "Matlab" : "dijkstra_matlab_matlab.txt"
-        }
-        if not self.no_extras:
-            extras = {
-                "C, clang, map+threads" : "dijkstra_c_clang_release_opt.txt",
-                "C++, clang++, map+threads" : "dijkstra_cpp_clang_release_opt.txt",
-                "C, clang++, release" : "dijkstra_c_clang_release_cpp.txt"
-            }
-            label_to_filename.update(extras)
+        })
+        if not self.no_extras and shutil.which("g++"): label_to_filename.update({
+            "C, g++, release" : "dijkstra_c_gcc_release_cpp.txt"
+        })
+        if not self.no_extras and shutil.which("clang++"): label_to_filename.update({
+            "C, clang++, release" : "dijkstra_c_clang_release_cpp.txt"
+        })
         if self.no_debug:
             label_to_filename = { key: value for key, value in label_to_filename.items() if not "debug" in key }
 

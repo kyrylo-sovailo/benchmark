@@ -48,27 +48,50 @@ run_benchmark_matlab()
 }
 
 # Testing
-run_benchmark "$BUILD/dijkstra_cpp_gcc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_gcc_debug.txt" || exit 1
-run_benchmark "$BUILD/dijkstra_cpp_gcc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_gcc_release.txt" || exit 1
-run_benchmark "$BUILD/dijkstra_cpp_clang_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_clang_debug.txt" || exit 1
-run_benchmark "$BUILD/dijkstra_cpp_clang_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_clang_release.txt" || exit 1
-run_benchmark "$BUILD/dijkstra_c_gcc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_gcc_debug.txt" || exit 1
-run_benchmark "$BUILD/dijkstra_c_gcc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_gcc_release.txt" || exit 1
-run_benchmark "$BUILD/dijkstra_c_clang_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_debug.txt" || exit 1
-run_benchmark "$BUILD/dijkstra_c_clang_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_release.txt" || exit 1
-run_benchmark "$BUILD/dijkstra_csharp_mcs_debug.exe" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_csharp_mcs_debug.txt" || exit 1
-run_benchmark "$BUILD/dijkstra_csharp_mcs_release.exe" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_csharp_mcs_release.txt" || exit 1
-run_benchmark "$BUILD/dijkstra_fortran_gfortran_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_fortran_gfortran_debug.txt" || exit 1
-run_benchmark "$BUILD/dijkstra_fortran_gfortran_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_fortran_gfortran_release.txt" || exit 1
+if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/dijkstra_cpp_gcc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_gcc_debug.txt" || exit 1
+    run_benchmark "$BUILD/dijkstra_cpp_gcc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_gcc_release.txt" || exit 1
+fi
+if [ $(type clang++ 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/dijkstra_cpp_clang_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_clang_debug.txt" || exit 1
+    run_benchmark "$BUILD/dijkstra_cpp_clang_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_clang_release.txt" || exit 1
+fi
+if [ $(type gcc 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/dijkstra_c_gcc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_gcc_debug.txt" || exit 1
+    run_benchmark "$BUILD/dijkstra_c_gcc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_gcc_release.txt" || exit 1
+fi
+if [ $(type clang 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/dijkstra_c_clang_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_debug.txt" || exit 1
+    run_benchmark "$BUILD/dijkstra_c_clang_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_release.txt" || exit 1
+fi
+if [ $(type mcs 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/dijkstra_csharp_mcs_debug.exe" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_csharp_mcs_debug.txt" || exit 1
+    run_benchmark "$BUILD/dijkstra_csharp_mcs_release.exe" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_csharp_mcs_release.txt" || exit 1
+fi
+if [ $(type gfortran 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/dijkstra_fortran_gfortran_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_fortran_gfortran_debug.txt" || exit 1
+    run_benchmark "$BUILD/dijkstra_fortran_gfortran_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_fortran_gfortran_release.txt" || exit 1
+fi
 
 # Testing extras
-run_benchmark "$BUILD/dijkstra_c_clang_release_opt" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_release_opt.txt" "all" || exit 1
-run_benchmark "$BUILD/dijkstra_cpp_clang_release_opt" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_clang_release_opt.txt" "all" || exit 1
-run_benchmark "$BUILD/dijkstra_c_clang_release_cpp" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_release_cpp.txt" || exit 1
+if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/dijkstra_c_gcc_release_cpp" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_gcc_release_cpp.txt" || exit 1
+fi
+if [ $(type clang++ 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/dijkstra_c_clang_release_cpp" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_release_cpp.txt" || exit 1
+fi
 
 # Testing slow programs
-run_benchmark "$SOURCE/dijkstra_python.py" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_python.txt" || exit 1
-run_benchmark "$SOURCE/dijkstra_js.js" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_js_node.txt" || exit 1
-run_benchmark "$BUILD/dijkstra_haskell_ghc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_debug.txt" || exit 1
-run_benchmark "$BUILD/dijkstra_haskell_ghc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_release.txt" || exit 1
-run_benchmark_matlab "$BUILD/dijkstra_matlab.m" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_matlab_matlab.txt" || exit 1
+if [ $(type python 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$SOURCE/dijkstra_python.py" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_python.txt" || exit 1
+fi
+if [ $(type node 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$SOURCE/dijkstra_js.js" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_js_node.txt" || exit 1
+fi
+if [ $(type ghc 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/dijkstra_haskell_ghc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_debug.txt" || exit 1
+    run_benchmark "$BUILD/dijkstra_haskell_ghc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_release.txt" || exit 1
+fi
+if [ $(type matlab 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark_matlab "$BUILD/dijkstra_matlab.m" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_matlab_matlab.txt" || exit 1
+fi

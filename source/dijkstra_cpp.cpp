@@ -12,18 +12,6 @@
 #include <utility>
 #include <vector>
 
-#ifdef ENABLE_MAPPING
-    #include <cstring>
-    #include <fcntl.h>
-    #include <sys/mman.h>
-    #include <sys/stat.h>
-    #include <unistd.h>
-#endif
-#ifdef ENABLE_MULTITHREADING
-    #include <mutex>
-    #include <thread>
-#endif
-
 /*
 VERSION 1 - naive implementation, graph represented as double map
 VERSION 2 - naive implementation, graph represented as vector of maps
@@ -215,127 +203,7 @@ std::pair<std::vector<std::map<unsigned int, float>>, std::vector<std::pair<unsi
 }
 #endif
 
-#if (VERSION == 3 || VERSION == 5) && defined(ENABLE_MAPPING)
-void parse_space(const char **p, const char *endp)
-{
-    while (true)
-    {
-        if (*p >= endp) return;
-        const char c = **p;
-        if (c == ' ' || c == '\t') (*p)++;
-        else break;
-    }
-}
-
-unsigned int parse_uint(const char **p, const char *endp, bool *success)
-{
-    bool local_success = false;
-    unsigned int number = 0;
-    while (true)
-    {
-        if (*p >= endp) break;
-        const char c = **p;
-        if (c >= '0' && c <= '9') { number = 10 * number + (c - '0'); local_success = true; (*p)++; }
-        else break;
-    }
-    if (!local_success) *success = false;
-    return number;
-}
-
-float parse_float(const char **p, const char *endp, bool *success)
-{
-    bool local_success = false;
-    unsigned int number = 0;
-    while (true)
-    {
-        if (*p >= endp) { if (!local_success) *success = false; return number; }
-        const char c = **p;
-        if (c >= '0' && c <= '9') { number = 10 * number + (c - '0'); local_success = true; (*p)++; }
-        else break;
-    }
-
-    float fnumber = number;
-    if (*p < endp && **p == '.')
-    {
-        (*p)++;
-        unsigned int divider = 10;
-        while (true)
-        {
-            if (*p >= endp) { if (!local_success) *success = false; return fnumber; }
-            char c = **p;
-            if (c >= '0' && c <= '9') { fnumber += ((float)(c - '0'))/((float)divider); local_success = true; divider *= 10; (*p)++; }
-            else break;
-        }
-        if (!local_success) p--; //Read dot, but no numbers
-    }
-
-    if (!local_success) *success = false;
-    return fnumber;
-}
-
-std::pair<std::vector<std::vector<std::pair<unsigned int, float>>>, std::vector<std::pair<unsigned int, unsigned int>>> parse_ver3()
-{
-    struct File { int file; File(int file) : file(file) {} ~File() { if (file >= 0) close(file); } };
-    struct Map { void *map; size_t size; Map(void *map, size_t size) : map(map), size(size) {} ~Map() { if (map != nullptr) munmap(map, size); } };
-    std::vector<std::vector<std::pair<unsigned int, float>>> graph;
-    std::vector<std::pair<unsigned int, unsigned int>> benchmarks;
-    File file(open("dijkstra.txt", O_RDONLY));
-    if (file.file < 0) throw std::runtime_error("open() failed");
-    struct stat status;
-    if (fstat(file.file, &status) < 0) throw std::runtime_error("stat() failed");
-    Map map(mmap(nullptr, status.st_size, PROT_READ, MAP_PRIVATE, file.file, 0), status.st_size);
-    if (map.map == nullptr) throw std::runtime_error("mmap() failed");
-
-    const size_t graph_len = std::strlen("GRAPH");
-    const size_t benchmark_len = std::strlen("BENCHMARK");
-    const char *p = static_cast<const char*>(map.map);
-    const char *endp = p + status.st_size;
-    
-    bool read_benchmarks = false;
-    while (true)
-    {
-        parse_space(&p, endp); //Skip space, arrive at decision point
-
-        if (p >= endp) break; //End of file
-        else if (*p == '\n' || *p == '\r') p++; //End of line
-        else if (p + graph_len <= endp && memcmp(p, "GRAPH", graph_len) == 0) //GRAPH keyword
-        {
-            read_benchmarks = false;
-            p += graph_len;
-        }
-        else if (p + benchmark_len <= endp && memcmp(p, "BENCHMARK", benchmark_len) == 0) //BENCHMARK keyword
-        {
-            read_benchmarks = true;
-            p += benchmark_len;
-        }
-        else if (read_benchmarks) //Read benchmark
-        {
-            bool success = true;
-            unsigned int source = parse_uint(&p, endp, &success);
-            parse_space(&p, endp);
-            unsigned int destination = parse_uint(&p, endp, &success);
-            if (!success) break;
-            benchmarks.push_back({ source, destination });
-        }
-        else //Read connection
-        {
-            bool success = true;
-            unsigned int source = parse_uint(&p, endp, &success);
-            parse_space(&p, endp);
-            unsigned int destination = parse_uint(&p, endp, &success);
-            parse_space(&p, endp);
-            float distance = parse_float(&p, endp, &success);
-            if (!success) break;
-            if (std::max(source, destination) >= graph.size()) graph.resize(std::max(source, destination) + 1);
-            graph[source].push_back({ destination, distance });
-            graph[destination].push_back({ source, distance });
-        }
-    }
-    return { graph, benchmarks };
-}
-#endif
-
-#if (VERSION == 3 || VERSION == 5) && !defined(ENABLE_MAPPING)
+#if (VERSION == 3 || VERSION == 5)
 std::pair<std::vector<std::vector<std::pair<unsigned int, float>>>, std::vector<std::pair<unsigned int, unsigned int>>> parse_ver3()
 {
     std::vector<std::vector<std::pair<unsigned int, float>>> graph;
@@ -498,58 +366,7 @@ void solve_ver4(const std::vector<std::map<unsigned int, float>> &graph, const s
 }
 #endif
 
-#if VERSION == 5 && defined(ENABLE_MULTITHREADING)
-void solve_target_ver5(const std::vector<std::vector<std::pair<unsigned int, float>>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks,
-    std::mutex &mutex, std::vector<std::pair<unsigned int, unsigned int>>::const_iterator &current_benchmark)
-{
-    indexed_priority_queue<Candidate> candidates(graph.size());
-
-    mutex.lock();
-    auto benchmark = current_benchmark;
-    current_benchmark++;
-    mutex.unlock();
-    while (benchmark < benchmarks.cend())
-    {
-        const unsigned int source = benchmark->first;
-        const unsigned int destination = benchmark->second;
-        candidates.reset();
-        candidates.push({ source, 0, 0.0 });
-        unsigned int int_distance = 0;
-        float distance = std::numeric_limits<float>::infinity();
-        while (!candidates.empty())
-        {
-            Candidate candidate = candidates.top();
-            if (candidate.id == destination) { int_distance = candidate.int_distance; distance = candidate.distance; break; }
-            candidates.pop();
-            const auto &connections = graph[candidate.id];
-
-            for (const auto &connection : connections)
-            {
-                candidates.push({ connection.first, candidate.int_distance + 1, candidate.distance + connection.second });
-            }
-        }
-        mutex.lock();
-        std::cout << source << ' ' << destination << ' ' << int_distance << ' ' << distance << '\n';
-        benchmark = current_benchmark;
-        current_benchmark++;
-        mutex.unlock();
-    }
-}
-
-void solve_ver5(const std::vector<std::vector<std::pair<unsigned int, float>>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
-{
-    std::mutex mutex;
-    auto current_benchmark = benchmarks.cbegin();
-    const size_t nthreads = std::min(static_cast<size_t>(4), benchmarks.size());
-    std::array<std::thread, 4> threads;
-    for (auto thread = threads.begin(); thread != threads.begin() + nthreads; thread++)
-        *thread = std::thread(solve_target_ver5, std::cref(graph), std::cref(benchmarks), std::ref(mutex), std::ref(current_benchmark));
-    for (auto thread = threads.begin(); thread != threads.begin() + nthreads; thread++)
-        thread->join();
-}
-#endif
-
-#if VERSION == 5 && !defined(ENABLE_MULTITHREADING)
+#if VERSION == 5
 void solve_ver5(const std::vector<std::vector<std::pair<unsigned int, float>>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
 {
     indexed_priority_queue<Candidate> candidates(graph.size());
