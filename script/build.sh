@@ -24,6 +24,10 @@ compile_debug()
             FLAGS="-std=f95 -g -fcheck=all"
             echo $1  "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
+        elif [ $( echo "$2" | grep -e '.*.pas$' | wc -l) -gt 0 ]; then #Pascal
+            FLAGS=""
+            echo $1  "$2" -o"$3"
+            $1 $FLAGS "$2" -o"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.hs$' | wc -l) -gt 0 ]; then #Haskell
             FLAGS="-rtsopts"
             echo $1 $FLAGS "$2" -o "$3"
@@ -57,6 +61,10 @@ compile_release()
             FLAGS="-std=f95 -O3 -flto -march=native"
             echo $1  "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
+        elif [ $( echo "$2" | grep -e '.*.pas$' | wc -l) -gt 0 ]; then #Pascal
+            FLAGS=""
+            echo $1  "$2" -o"$3"
+            $1 $FLAGS "$2" -o"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.hs$' | wc -l) -gt 0 ]; then #Haskell
             FLAGS="-O2 -optc-O3"
             echo $1 $FLAGS "$2" -o "$3"
@@ -127,6 +135,12 @@ fi
 if [ $(type gfortran 2>/dev/null | wc -l) -gt 0 ]; then
     compile_debug gfortran "$SOURCE/dijkstra_fortran.f90" "$BUILD/dijkstra_fortran_gfortran_debug" || exit 1
     compile_release gfortran "$SOURCE/dijkstra_fortran.f90" "$BUILD/dijkstra_fortran_gfortran_release" || exit 1
+fi
+
+# Pascal
+if [ $(type fpc 2>/dev/null | wc -l) -gt 0 ]; then
+    compile_debug fpc "$SOURCE/dijkstra_pascal.pas" "$BUILD/dijkstra_pascal_fpc_debug" || exit 1
+    compile_release fpc "$SOURCE/dijkstra_pascal.pas" "$BUILD/dijkstra_pascal_fpc_release" || exit 1
 fi
 
 # Haskell
