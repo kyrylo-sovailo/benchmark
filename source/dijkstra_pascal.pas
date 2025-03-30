@@ -237,51 +237,59 @@ end;
 
 procedure SolveVer5(const graph: TConnectionVectorVector; const benchmarks: TBenchmarkVector);
 var
+    //Queue of candidates
     candidates: array of TCandidate;
     candidate_indices: array of Cardinal;
     candidates_size: Cardinal;
-    benchmark_i, candidate_i, connection_i: Cardinal;
-    candidate, new_candidate: TCandidate;
-    int_distance: Cardinal;
+    candidate: TCandidate;
+    //Temporary values
+    new_candidate: TCandidate;
+    //Iteration
+    benchmark_i, connection_i, candidate_i: Cardinal;
+    benchmark: TBenchmark;
+    connection: TConnection;
+    //Result
     distance: Single;
+    int_distance: Cardinal;
 begin
     SetLength(candidates, graph.size);
     SetLength(candidate_indices, graph.size);
     
     for benchmark_i := 0 to benchmarks.size - 1 do
     begin
+        benchmark := benchmarks.p[benchmark_i];
         candidates_size := 0;
         for candidate_i := 0 to graph.size - 1 do
             candidate_indices[candidate_i] := Cardinal(-1);
         
-        candidate.id := benchmarks.p[benchmark_i].source;
+        candidate.id := benchmark.source;
         candidate.int_distance := 0;
         candidate.distance := 0.0;
         PushIndexHeap(candidates, candidates_size, candidate_indices, candidate);
         
-        int_distance := 0;
         distance := Infinity;
+        int_distance := 0;
         
         while candidates_size > 0 do
         begin
             candidate := PopIndexHeap(candidates, candidates_size, candidate_indices);
-            if candidate.id = benchmarks.p[benchmark_i].destination then 
+            if candidate.id = benchmark.destination then 
             begin
-                int_distance := candidate.int_distance;
                 distance := candidate.distance;
+                int_distance := candidate.int_distance;
                 Break; 
             end;
             
             for connection_i := 0 to graph.p[candidate.id].size - 1 do
             begin
                 new_candidate.id := graph.p[candidate.id].p[connection_i].destination;
-                new_candidate.int_distance := candidate.int_distance + 1;
                 new_candidate.distance := candidate.distance + graph.p[candidate.id].p[connection_i].distance;
+                new_candidate.int_distance := candidate.int_distance + 1;
                 PushIndexHeap(candidates, candidates_size, candidate_indices, new_candidate);
             end;
         end;
 
-        WriteLn(benchmarks.p[benchmark_i].destination, ' ', int_distance, ' ', distance);
+        WriteLn(benchmark.source, ' -> ', benchmark.destination, ': ', distance:100:6, ' (', int_distance, ')');
     end;
 end;
 

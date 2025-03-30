@@ -300,9 +300,11 @@ contains
             end do
 
             if (distance /= huge(1.0)) then
-                write (*,'(I0.1, A, I0.1, A, I0.1, A, F0.4)') source-1, ' ', destination-1, ' ', int_distance, ' ', distance
+                write (*,'(I0.1, A, I0.1, A, F0.4, A, I0.1, A)') &
+                    source-1, ' -> ', destination-1, ': ', distance, ' (', int_distance, ')'
             else
-                write (*,'(I0.1, A, I0.1, A, I0.1, A, A)') source-1, ' ', destination-1, ' ', int_distance, ' ', 'inf'
+                write (*,'(I0.1, A, I0.1, A)') &
+                    source-1, ' -> ', destination-1, ': inf (0)'
             end if
         end do
         

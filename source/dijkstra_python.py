@@ -106,8 +106,8 @@ def solve_ver1(graph, benchmarks):
         candidates = []
         explored = set()
         heapq.heappush(candidates, Candidate(source, 0, 0.0))
-        int_distance = 0
         distance = float('inf')
+        int_distance = 0
 
         while candidates:
             candidate = heapq.heappop(candidates)
@@ -121,15 +121,15 @@ def solve_ver1(graph, benchmarks):
                 if destination in explored: continue
                 heapq.heappush(candidates, Candidate(neighbor, candidate.int_distance + 1, candidate.distance + neighbor_distance))
 
-        print(source, destination, int_distance, distance)
+        print(f"{source} -> {destination}: {distance} ({int_distance})")
 
 def solve_ver2(graph, benchmarks):
     for source, destination in benchmarks:
         candidates = []
         explored = [ False for _ in range(len(graph)) ]
         heapq.heappush(candidates, Candidate(source, 0, 0.0))
-        int_distance = 0
         distance = float('inf')
+        int_distance = 0
 
         while candidates:
             candidate = heapq.heappop(candidates)
@@ -143,15 +143,15 @@ def solve_ver2(graph, benchmarks):
                 if explored[destination]: continue
                 heapq.heappush(candidates, Candidate(neighbor, candidate.int_distance + 1, candidate.distance + neighbor_distance))
 
-        print(source, destination, int_distance, distance)
+        print(f"{source} -> {destination}: {distance} ({int_distance})")
 
 def solve_ver3(graph, benchmarks):
     for source, destination in benchmarks:
         candidates = []
         explored = [ False for _ in range(len(graph)) ]
         heapq.heappush(candidates, Candidate(source, 0, 0.0))
-        int_distance = 0
         distance = float('inf')
+        int_distance = 0
 
         while candidates:
             candidate = heapq.heappop(candidates)
@@ -165,7 +165,7 @@ def solve_ver3(graph, benchmarks):
                 if explored[destination]: continue
                 heapq.heappush(candidates, Candidate(neighbor, candidate.int_distance + 1, candidate.distance + neighbor_distance))
 
-        print(source, destination, int_distance, distance)
+        print(f"{source} -> {destination}: {distance} ({int_distance})")
 
 def main_ver1():
     graph, benchmarks = parse_ver1()

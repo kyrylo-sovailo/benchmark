@@ -2,7 +2,7 @@
 
 This repository contains implementations of Dijkstra algorithm in different programming languages. Quick peek at the results:
 
-![Bar chart with executions times, Matlab is the slowest, C++ is the fastest](benchmark.png "Execution times")
+![Bar chart with executions times, Matlab is the slowest, C++ is the fastest](data/benchmark.png "Execution times")
 All data is included, you are welcome to play with the configuration of the visualizer. This graph was produced with `../script/create_graphics.py --reverse --inverse --relative-slowest`.
 
 ### Goal
@@ -38,15 +38,16 @@ The measurements were performed on Intel Pentium 4415U. To reduce noise, the ker
 
 ### Software
 ```
-GCC      13.3.1
-Clang    19.1.4
-GFortran 13.3.1
-MCS      6.12.0.199, Target 4.5
-Python   3.12.8
-GHC      9.4.8
-Node     22.4.1
-Matlab   24.2.0.2833386 (R2024b) Update 4
-Kernel   6.10.10-zen1-x86_64
+GCC                  14.2.1
+Clang                19.1.7
+GFortran             14.2.1
+Free Pascal Compiler 3.2.2
+MCS                  6.12.0.199, Target 4.5
+Python               3.12.9
+GHC                  9.8.4
+Node                 22.13.1
+Matlab               24.2.0.2833386 (R2024b) Update 4
+Kernel               6.12.10-zen1-x86_64
 ```
 
 ### Conclusions

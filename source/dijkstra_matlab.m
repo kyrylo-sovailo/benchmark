@@ -198,7 +198,7 @@ classdef dijkstra_matlab < handle
                     end
                 end
 
-                disp([ num2str(source-1) ' ' num2str(destination-1) ' ' num2str(int_distance) ' ' num2str(distance) ]);
+                disp([ num2str(source-1) ' -> ' num2str(destination-1) ': ' num2str(distance) ' (' num2str(int_distance) ')' ]);
             end
         end
 

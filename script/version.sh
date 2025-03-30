@@ -37,4 +37,4 @@ if [ $(type matlab 2>/dev/null | wc -l) -gt 0 ]; then
     echo "Matlab               ${VERSION}"
 fi
 VERSION=$(uname -r)
-echo Kernel "                  ${VERSION}"
+echo Kernel "              ${VERSION}"

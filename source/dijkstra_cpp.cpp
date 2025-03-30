@@ -250,8 +250,8 @@ void solve_ver1(const std::map<unsigned int, std::map<unsigned int, float>> &gra
         std::priority_queue<Candidate, std::vector<Candidate>, std::greater<Candidate>> candidates;
         std::set<unsigned int> explored;
         candidates.push({ source, 0, 0.0 });
-        unsigned int int_distance = 0;
         float distance = std::numeric_limits<float>::infinity();
+        unsigned int int_distance = 0;
         while (!candidates.empty())
         {
             Candidate candidate = candidates.top();
@@ -267,7 +267,7 @@ void solve_ver1(const std::map<unsigned int, std::map<unsigned int, float>> &gra
                 candidates.push({ connection.first, candidate.int_distance + 1, candidate.distance + connection.second });
             }
         }
-        std::cout << source << ' ' << destination << ' ' << int_distance << ' ' << distance << '\n';
+        std::cout << source << " -> " << destination << ": " << distance << " (" << int_distance << ")\n";
     }
 }
 #endif
@@ -282,8 +282,8 @@ void solve_ver2(const std::vector<std::map<unsigned int, float>> &graph, const s
         std::priority_queue<Candidate, std::vector<Candidate>, std::greater<Candidate>> candidates;
         std::vector<bool> explored(graph.size());
         candidates.push({ source, 0, 0.0 });
-        unsigned int int_distance = 0;
         float distance = std::numeric_limits<float>::infinity();
+        unsigned int int_distance = 0;
         while (!candidates.empty())
         {
             Candidate candidate = candidates.top();
@@ -299,7 +299,7 @@ void solve_ver2(const std::vector<std::map<unsigned int, float>> &graph, const s
                 candidates.push({ connection.first, candidate.int_distance + 1, candidate.distance + connection.second });
             }
         }
-        std::cout << source << ' ' << destination << ' ' << int_distance << ' ' << distance << '\n';
+        std::cout << source << " -> " << destination << ": " << distance << " (" << int_distance << ")\n";
     }
 }
 #endif
@@ -314,8 +314,8 @@ void solve_ver3(const std::vector<std::vector<std::pair<unsigned int, float>>> &
         std::priority_queue<Candidate, std::vector<Candidate>, std::greater<Candidate>> candidates;
         std::vector<bool> explored(graph.size());
         candidates.push({ source, 0, 0.0 });
-        unsigned int int_distance = 0;
         float distance = std::numeric_limits<float>::infinity();
+        unsigned int int_distance = 0;
         while (!candidates.empty())
         {
             Candidate candidate = candidates.top();
@@ -331,7 +331,7 @@ void solve_ver3(const std::vector<std::vector<std::pair<unsigned int, float>>> &
                 candidates.push({ connection.first, candidate.int_distance + 1, candidate.distance + connection.second });
             }
         }
-        std::cout << source << ' ' << destination << ' ' << int_distance << ' ' << distance << '\n';
+        std::cout << source << " -> " << destination << ": " << distance << " (" << int_distance << ")\n";
     }
 }
 #endif
@@ -347,8 +347,8 @@ void solve_ver4(const std::vector<std::map<unsigned int, float>> &graph, const s
         const unsigned int destination = benchmark.second;
         candidates.reset();
         candidates.push({ source, 0, 0.0 });
-        unsigned int int_distance = 0;
         float distance = std::numeric_limits<float>::infinity();
+        unsigned int int_distance = 0;
         while (!candidates.empty())
         {
             Candidate candidate = candidates.top();
@@ -361,7 +361,7 @@ void solve_ver4(const std::vector<std::map<unsigned int, float>> &graph, const s
                 candidates.push({ connection.first, candidate.int_distance + 1, candidate.distance + connection.second });
             }
         }
-        std::cout << source << ' ' << destination << ' ' << int_distance << ' ' << distance << '\n';
+        std::cout << source << " -> " << destination << ": " << distance << " (" << int_distance << ")\n";
     }
 }
 #endif
@@ -377,8 +377,8 @@ void solve_ver5(const std::vector<std::vector<std::pair<unsigned int, float>>> &
         const unsigned int destination = benchmark.second;
         candidates.reset();
         candidates.push({ source, 0, 0.0 });
-        unsigned int int_distance = 0;
         float distance = std::numeric_limits<float>::infinity();
+        unsigned int int_distance = 0;
         while (!candidates.empty())
         {
             Candidate candidate = candidates.top();
@@ -391,7 +391,7 @@ void solve_ver5(const std::vector<std::vector<std::pair<unsigned int, float>>> &
                 candidates.push({ connection.first, candidate.int_distance + 1, candidate.distance + connection.second });
             }
         }
-        std::cout << source << ' ' << destination << ' ' << int_distance << ' ' << distance << '\n';
+        std::cout << source << " -> " << destination << ": " << distance << " (" << int_distance << ")\n";
     }
 }
 #endif

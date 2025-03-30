@@ -2,7 +2,7 @@ import qualified Control.Exception as CE (try)
 import qualified Control.Monad as CM (foldM)
 import qualified Data.Char as DC (isDigit, digitToInt)
 import qualified Data.Either as DE (lefts, rights)
-import qualified Data.List as DL (null, isPrefixOf, foldl, foldl', find, map)
+import qualified Data.List as DL (foldl, foldl', find, map)
 import qualified Data.Map.Strict as DM (empty, lookup, insert, insertWith, fromListWith)
 import qualified Data.Set as DS (empty, member, singleton, insert, deleteFindMin)
 import qualified Data.IntMap.Strict as DIM (empty, lookup, insert, insertWith, fromListWith)
@@ -199,40 +199,42 @@ parse_ver1 input = parse_graph_ver1 (edges_empty, []) input
 
 parse_graph_ver1 :: (Edges, [Benchmark]) -> String -> (Edges, [Benchmark])
 parse_graph_ver1 (edges, benchmarks) input = let postspace = parse_space input in
-    if DL.null postspace then
-        (edges, benchmarks)
-    else if DL.isPrefixOf "GRAPH" postspace then
-        parse_graph_ver1 (edges, benchmarks) (drop 5 postspace)
-    else if DL.isPrefixOf "BENCHMARK" postspace then
-        parse_benchmarks_ver1 (edges, benchmarks) (drop 10 postspace)
-    else if DC.isDigit $ head postspace then let
-        (source, postsource) = parse_integer (0, postspace)
-        postspace2 = parse_space postsource
-        (destination, postdestination) = parse_integer (0, postspace2)
-        postspace3 = parse_space postdestination
-        (distance, postdistance) = parse_real (0.0, postspace3)
-        postspace4 = parse_space postdistance
-        edges' = edges_insert_with (++) source ([Connection destination distance]) edges
-        edges'' = edges_insert_with (++) destination ([Connection source distance]) edges'
-        in edges'' `seq` parse_graph_ver1 (edges'', benchmarks) postspace4
-    else error "Invalid symbol"
+    case postspace of
+        [] ->
+            (edges, benchmarks)
+        'G':'R':'A':'P':'H':postkey ->
+            parse_graph_ver1 (edges, benchmarks) postkey
+        'B':'E':'N':'C':'H':'M':'A':'R':'K':postkey ->
+            parse_benchmarks_ver1 (edges, benchmarks) postkey
+        key:_ | DC.isDigit key -> let
+            (source, postsource) = parse_integer (0, postspace)
+            postspace2 = parse_space postsource
+            (destination, postdestination) = parse_integer (0, postspace2)
+            postspace3 = parse_space postdestination
+            (distance, postdistance) = parse_real (0.0, postspace3)
+            postspace4 = parse_space postdistance
+            edges' = edges_insert_with (++) source ([Connection destination distance]) edges
+            edges'' = edges_insert_with (++) destination ([Connection source distance]) edges'
+            in edges'' `seq` parse_graph_ver1 (edges'', benchmarks) postspace4
+        _ -> error "Invalid symbol"
 
 parse_benchmarks_ver1 :: (Edges, [Benchmark]) -> String -> (Edges, [Benchmark])
 parse_benchmarks_ver1 (edges, benchmarks) input = let postspace = parse_space input in
-    if DL.null postspace then
-        (edges, benchmarks)
-    else if DL.isPrefixOf "GRAPH" postspace then
-        parse_graph_ver1 (edges, benchmarks) (drop 5 postspace)
-    else if DL.isPrefixOf "BENCHMARK" postspace then
-        parse_benchmarks_ver1 (edges, benchmarks) (drop 10 postspace)
-    else if DC.isDigit $ head postspace then let
-        (source, postsource) = parse_integer (0, postspace)
-        postspace2 = parse_space postsource
-        (destination, postdestination) = parse_integer (0, postspace2)
-        postspace3 = parse_space postdestination
-        benchmarks' = (Benchmark source destination):benchmarks
-        in benchmarks' `seq` parse_benchmarks_ver1 (edges, benchmarks') postspace3
-    else error "Invalid symbol"
+    case postspace of
+        [] ->
+            (edges, benchmarks)
+        'G':'R':'A':'P':'H':postkey ->
+            parse_graph_ver1 (edges, benchmarks) postkey
+        'B':'E':'N':'C':'H':'M':'A':'R':'K':postkey ->
+            parse_benchmarks_ver1 (edges, benchmarks) postkey
+        key:_ | DC.isDigit key -> let
+            (source, postsource) = parse_integer (0, postspace)
+            postspace2 = parse_space postsource
+            (destination, postdestination) = parse_integer (0, postspace2)
+            postspace3 = parse_space postdestination
+            benchmarks' = (Benchmark source destination):benchmarks
+            in benchmarks' `seq` parse_benchmarks_ver1 (edges, benchmarks') postspace3
+        _ -> error "Invalid symbol"
 
 -- Version 2 --
 parse_ver2 :: String -> (Edges, [Benchmark])
@@ -240,40 +242,42 @@ parse_ver2 input = parse_graph_ver2 input
 
 parse_graph_ver2 :: String -> (Edges, [Benchmark])
 parse_graph_ver2 input = let postspace = parse_space input in
-    if DL.null postspace then
-        (edges_empty, [])
-    else if DL.isPrefixOf "GRAPH" postspace then
-        parse_graph_ver2 (drop 5 postspace)
-    else if DL.isPrefixOf "BENCHMARK" postspace then
-        parse_benchmarks_ver2 (drop 10 postspace)
-    else if DC.isDigit $ head postspace then let
-        (source, postsource) = parse_integer (0, postspace)
-        postspace2 = parse_space postsource
-        (destination, postdestination) = parse_integer (0, postspace2)
-        postspace3 = parse_space postdestination
-        (distance, postdistance) = parse_real (0.0, postspace3)
-        (edges, benchmarks) = parse_graph_ver2 postdistance
-        edges' = edges_insert_with (++) source ([Connection destination distance]) edges
-        edges'' = edges_insert_with (++) destination ([Connection source distance]) edges'
-        in (edges'', benchmarks)
-    else error "Invalid symbol"
+    case postspace of
+        [] ->
+            (edges_empty, [])
+        'G':'R':'A':'P':'H':postkey ->
+            parse_graph_ver2 postkey
+        'B':'E':'N':'C':'H':'M':'A':'R':'K':postkey ->
+            parse_benchmarks_ver2 postkey
+        key:_ | DC.isDigit key -> let
+            (source, postsource) = parse_integer (0, postspace)
+            postspace2 = parse_space postsource
+            (destination, postdestination) = parse_integer (0, postspace2)
+            postspace3 = parse_space postdestination
+            (distance, postdistance) = parse_real (0.0, postspace3)
+            (edges, benchmarks) = parse_graph_ver2 postdistance
+            edges' = edges_insert_with (++) source ([Connection destination distance]) edges
+            edges'' = edges_insert_with (++) destination ([Connection source distance]) edges'
+            in (edges'', benchmarks)
+        _ -> error "Invalid symbol"
 
 parse_benchmarks_ver2 :: String -> (Edges, [Benchmark])
 parse_benchmarks_ver2 input = let postspace = parse_space input in
-    if DL.null postspace then
-        (edges_empty, [])
-    else if DL.isPrefixOf "GRAPH" postspace then
-        parse_graph_ver2 (drop 5 postspace)
-    else if DL.isPrefixOf "BENCHMARK" postspace then
-        parse_benchmarks_ver2 (drop 10 postspace)
-    else if DC.isDigit $ head postspace then let
-        (source, postsource) = parse_integer (0, postspace)
-        postspace2 = parse_space postsource
-        (destination, postdestination) = parse_integer (0, postspace2)
-        (edges, benchmarks) = parse_benchmarks_ver2 postdestination
-        benchmarks' = (Benchmark source destination):benchmarks
-        in (edges, benchmarks')
-    else error "Invalid symbol"
+    case postspace of
+        [] ->
+            (edges_empty, [])
+        'G':'R':'A':'P':'H':postkey ->
+            parse_graph_ver2 postkey
+        'B':'E':'N':'C':'H':'M':'A':'R':'K':postkey ->
+            parse_benchmarks_ver2 postkey
+        key:_ | DC.isDigit key -> let
+            (source, postsource) = parse_integer (0, postspace)
+            postspace2 = parse_space postsource
+            (destination, postdestination) = parse_integer (0, postspace2)
+            (edges, benchmarks) = parse_benchmarks_ver2 postdestination
+            benchmarks' = (Benchmark source destination):benchmarks
+            in (edges, benchmarks')
+        _ -> error "Invalid symbol"
 
 -- Version 3 --
 type EntryVer3 = Either (Word32, Connection) Benchmark
@@ -288,37 +292,39 @@ parse_ver3 input = let
 
 parse_graph_ver3 :: String -> [EntryVer3]
 parse_graph_ver3 input = let postspace = parse_space input in
-    if DL.null postspace then
-        []
-    else if DL.isPrefixOf "GRAPH" postspace then
-        parse_graph_ver3 (drop 5 postspace)
-    else if DL.isPrefixOf "BENCHMARK" postspace then
-        parse_benchmarks_ver3 (drop 10 postspace)
-    else if DC.isDigit $ head postspace then let
-        (source, postsource) = parse_integer (0, postspace)
-        postspace2 = parse_space postsource
-        (destination, postdestination) = parse_integer (0, postspace2)
-        postspace3 = parse_space postdestination
-        (distance, postdistance) = parse_real (0.0, postspace3)
-        entries = parse_graph_ver3 postdistance
-        in Left (source, Connection destination distance) : Left (destination, Connection source distance) : entries
-    else error "Invalid symbol"
+    case postspace of
+        [] ->
+            []
+        'G':'R':'A':'P':'H':postkey ->
+            parse_graph_ver3 postkey
+        'B':'E':'N':'C':'H':'M':'A':'R':'K':postkey ->
+            parse_benchmarks_ver3 postkey
+        key:_ | DC.isDigit key -> let
+            (source, postsource) = parse_integer (0, postspace)
+            postspace2 = parse_space postsource
+            (destination, postdestination) = parse_integer (0, postspace2)
+            postspace3 = parse_space postdestination
+            (distance, postdistance) = parse_real (0.0, postspace3)
+            entries = parse_graph_ver3 postdistance
+            in Left (source, Connection destination distance) : Left (destination, Connection source distance) : entries
+        _ -> error "Invalid symbol"
 
 parse_benchmarks_ver3 :: String -> [EntryVer3]
 parse_benchmarks_ver3 input = let postspace = parse_space input in
-    if DL.null postspace then
-        []
-    else if DL.isPrefixOf "GRAPH" postspace then
-        parse_graph_ver3 (drop 5 postspace)
-    else if DL.isPrefixOf "BENCHMARK" postspace then
-        parse_benchmarks_ver3 (drop 10 postspace)
-    else if DC.isDigit $ head postspace then let
-        (source, postsource) = parse_integer (0, postspace)
-        postspace2 = parse_space postsource
-        (destination, postdestination) = parse_integer (0, postspace2)
-        entries = parse_benchmarks_ver3 postdestination
-        in (Right $ Benchmark source destination) : entries
-    else error "Invalid symbol"
+    case postspace of
+        [] ->
+            []
+        'G':'R':'A':'P':'H':postkey ->
+            parse_graph_ver3 postkey
+        'B':'E':'N':'C':'H':'M':'A':'R':'K':postkey ->
+            parse_benchmarks_ver3 postkey
+        key:_ | DC.isDigit key -> let
+            (source, postsource) = parse_integer (0, postspace)
+            postspace2 = parse_space postsource
+            (destination, postdestination) = parse_integer (0, postspace2)
+            entries = parse_benchmarks_ver3 postdestination
+            in (Right $ Benchmark source destination) : entries
+        _ -> error "Invalid symbol"
 
 --parse_integer (number, input) -> (number, input)
 parse_integer :: (Word32, String) -> (Word32, String)
@@ -373,7 +379,7 @@ solve_ver1 edges benchmarks = case benchmarks of
         let (i, f) = solve_one_ver1 edges benchmark
         let (Benchmark s d) = benchmark
         solve_ver1 edges benchmarks'
-        putStrLn (show s ++ " " ++ show d ++ " " ++ show i ++ " " ++ show f)
+        putStrLn (show s ++ " -> " ++ show d ++ ": " ++ show f ++ " (" ++ show i ++ ")")
 
 --solve_one_ver1 (edges, benchmark) -> solution
 solve_one_ver1 :: Edges -> Benchmark -> (Word32, Float)
@@ -415,10 +421,11 @@ solve_ver2 edges benchmarks = CM.foldM (\_ benchmark -> solve_one_ver2 edges ben
 solve_one_ver2 :: Edges -> Benchmark -> IO ()
 solve_one_ver2 edges (Benchmark source destination) = 
     let candidates = enumerate_candidates_ver2 edges source
-        source_destination = show source ++ " " ++ show destination
-        in case DL.find (\(Candidate id _ _) -> id == destination) candidates of
-            Just (Candidate _ int_distance distance) -> putStrLn (source_destination ++ " " ++ show int_distance ++ " " ++ show distance)
-            Nothing -> putStrLn (source_destination ++ " " ++ "0" ++ " " ++ "inf")
+        solution = DL.find (\(Candidate id _ _) -> id == destination) candidates
+        message = show source ++ " -> " ++ show destination ++ ": " ++ case solution of
+            Just (Candidate _ int_distance distance) -> show distance ++ "(" ++ show int_distance ++ ")"
+            Nothing -> "inf (0)"
+        in putStrLn message
 
 --enumerate_candidates_ver2(edges source) -> candidates
 enumerate_candidates_ver2 :: Edges -> Word32 -> [Candidate]

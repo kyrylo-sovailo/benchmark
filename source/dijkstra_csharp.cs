@@ -292,8 +292,8 @@ class Program
             candidates.Clear();
             for (int i = 0; i < graph.Count; i++) explored[i] = false;
             candidates.Enqueue(new Candidate(source, 0, 0f));
-            int int_distance = 0;
             float distance = float.PositiveInfinity;
+            int int_distance = 0;
             while (candidates.Count != 0)
             {
                 Candidate candidate = candidates.Dequeue();
@@ -306,7 +306,7 @@ class Program
                     candidates.Enqueue(new Candidate(connection.destination, candidate.int_distance + 1, candidate.distance + connection.distance));
                 }
             }
-            Console.WriteLine("{0} {1} {2} {3}", source, destination, int_distance, distance);
+            Console.WriteLine("{0} -> {1}: {2} ({3})", source, destination, distance.ToString(CultureInfo.InvariantCulture), int_distance);
         }
     }
     #endif
@@ -322,8 +322,8 @@ class Program
             int destination = benchmark.destination;
             candidates.Clear();
             candidates.Enqueue(new Candidate(source, 0, 0f));
-            int int_distance = 0;
             float distance = float.PositiveInfinity;
+            int int_distance = 0;
             while (candidates.Count != 0)
             {
                 Candidate candidate = candidates.Dequeue();
@@ -333,7 +333,7 @@ class Program
                     candidates.Enqueue(new Candidate(connection.destination, candidate.int_distance + 1, candidate.distance + connection.distance));
                 }
             }
-            Console.WriteLine("{0} {1} {2} {3}", source, destination, int_distance, distance.ToString(CultureInfo.InvariantCulture));
+            Console.WriteLine("{0} -> {1}: {2} ({3})", source, destination, distance.ToString(CultureInfo.InvariantCulture), int_distance);
         }
     }
     #endif

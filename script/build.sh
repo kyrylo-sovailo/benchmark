@@ -159,7 +159,9 @@ fi
 # Testing
 if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
     compile_release g++ "$SOURCE/create_dijkstra.cpp" "$BUILD/create_dijkstra" || exit 1
-else
+elif [ $(type clang++ 2>/dev/null | wc -l) -gt 0 ]; then
     compile_release clang++ "$SOURCE/create_dijkstra.cpp" "$BUILD/create_dijkstra" || exit 1
+else
+    echo "Either g++ or clang++ needs to be present" && exit 1
 fi
 create_benchmark "$BUILD/create_dijkstra" "$BUILD/dijkstra.txt" || exit 1

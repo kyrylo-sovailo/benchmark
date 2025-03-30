@@ -179,16 +179,20 @@ void parse_ver5(ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
     if (file == NULL) { printf("fopen() failed"); exit(2); }
 
     bool read_benchmarks = false;
-    char line[256];
+    unsigned int line_capacity = 128;
+    char *line = (char*)malloc(line_capacity);
     while (true)
     {
-        for (unsigned int i = 0;; i++)
+        unsigned int line_size = 0;
+        while (true)
         {
             char c;
-            if (fread(&c, 1, 1, file) == 0) { line[MIN(i, sizeof(line) - 1)] = '\0'; break; }
-            if (i < sizeof(line) - 1) line[i] = c;
-            if (c == '\n' || c == '\r') { line[MIN(i, sizeof(line) - 1)] = '\0'; break; }
+            if (fread(&c, 1, 1, file) == 0 || c == '\n' || c == '\r') break;
+            if (line_size + 2 > line_capacity) { line_capacity <<= 1; line = (char*)realloc(line, line_capacity); }
+            line[line_size] = c;
+            line_size++;
         }
+        line[line_size] = '\0';
         if (strstr(line, "GRAPH") != NULL) { read_benchmarks = false; continue; }
         if (strstr(line, "BENCHMARK") != NULL) { read_benchmarks = true; continue; }
         if (read_benchmarks)
@@ -231,8 +235,8 @@ void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benc
         memset(candidate_indices, 0xFF, graph->length * sizeof(unsigned int));
         Candidate candidate = { .id = source, .int_distance = 0, .distance = 0.0 };
         push_indexed_heap(candidates, &candidates_length, candidate_indices, candidate);
-        unsigned int int_distance = 0;
         float distance = INFINITY;
+        unsigned int int_distance = 0;
         while (candidates_length != 0)
         {
             candidate = pop_indexed_heap(candidates, &candidates_length, candidate_indices);
@@ -243,11 +247,14 @@ void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benc
                 connection < &connections->begin[connections->length];
                 connection++)
             {
-                Candidate new_candidate = { .id = connection->destination, .int_distance = candidate.int_distance + 1, .distance = candidate.distance + connection->distance };
+                Candidate new_candidate;
+                new_candidate.id = connection->destination;
+                new_candidate.distance = candidate.distance + connection->distance;
+                new_candidate.int_distance = candidate.int_distance + 1;
                 push_indexed_heap(candidates, &candidates_length, candidate_indices, new_candidate);
             }
         }
-        printf("%u %u %f\n", destination, int_distance, distance);
+        printf("%u -> %u: %f (%u) \n", source, destination, distance, int_distance);
     }
 
     free(candidates);
