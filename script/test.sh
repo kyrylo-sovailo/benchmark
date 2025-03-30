@@ -69,6 +69,8 @@ fi
 if [ $(type fpc 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_pascal_fpc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_pascal_fpc_debug.txt" || exit 1
     run_benchmark "$BUILD/dijkstra_pascal_fpc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_pascal_fpc_release.txt" || exit 1
+    run_benchmark "$BUILD/dijkstra_delphi_fpc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_delphi_fpc_debug.txt" || exit 1
+    run_benchmark "$BUILD/dijkstra_delphi_fpc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_delphi_fpc_release.txt" || exit 1
 fi
 
 # Testing extras

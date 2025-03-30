@@ -47,7 +47,7 @@ class Measurement:
         elif "C++" in labels: self.color = "xkcd:warm pink" if find_closest else "#f34b7d"
         elif "C#" in labels: self.color = "green" if find_closest else "#178600"
         elif "Fortran" in labels: self.color = "xkcd:blue with a hint of purple" if find_closest else "#4d41b1"
-        elif "Pascal" in labels: self.color = "xkcd:sandy yellow" if find_closest else "#e3f171"
+        elif "Pascal" in labels or "Delphi" in labels: self.color = "xkcd:sandy yellow" if find_closest else "#e3f171"
         elif "Haskell" in labels: self.color = "xkcd:twilight" if find_closest else "#5e5086"
         elif "Python" in labels: self.color = "xkcd:flat blue" if find_closest else "#3572a5"
         elif "Javascript" in labels: self.color = "xkcd:dull yellow" if find_closest else "#f1e05a"
@@ -86,7 +86,7 @@ class Graphics:
             elif arg == "--reverse": self.reverse = True
             elif arg == "--log": self.log = True
             elif arg == "--no-extras": self.no_extras = True
-            elif arg == "--no-extras": self.no_debug = True
+            elif arg == "--no-debug": self.no_debug = True
             elif arg == "--faster":
                 i += 1
                 if i >= len(sys.argv): raise Exception("Expected time after --faster")
@@ -130,8 +130,10 @@ class Graphics:
             "Fortran, gfortran, release" : "dijkstra_fortran_gfortran_release.txt",
         })
         if shutil.which("fpc"): label_to_filename.update({
-            "Pascal, FPC, debug" : "dijkstra_fortran_gfortran_debug.txt",
-            "Pascal, FPC, release" : "dijkstra_fortran_gfortran_release.txt",
+            "Pascal, FPC, debug" : "dijkstra_pascal_fpc_debug.txt",
+            "Pascal, FPC, release" : "dijkstra_pascal_fpc_release.txt",
+            "Delphi, FPC, debug" : "dijkstra_delphi_fpc_debug.txt",
+            "Delphi, FPC, release" : "dijkstra_delphi_fpc_release.txt",
         })
         if shutil.which("ghc"): label_to_filename.update({
             "Haskell, ghc, debug" : "dijkstra_haskell_ghc_debug.txt",

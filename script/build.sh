@@ -4,7 +4,7 @@ BUILD="$(dirname $(dirname $(readlink -f $0)))/build"
 if [ ! -d "$BUILD" ]; then mkdir "$BUILD"; fi
 cd "$BUILD"
 
-#compile_debug(compiler, source, destination)
+#compile_debug(compiler, source, destination, options)
 compile_debug()
 {
     if [ "$2" -nt "$3" ]; then
@@ -22,11 +22,15 @@ compile_debug()
             $1 $FLAGS "$2" -out:"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.f90$' | wc -l) -gt 0 ]; then #Fortran
             FLAGS="-std=f95 -g -fcheck=all"
-            echo $1  "$2" -o "$3"
+            echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.pas$' | wc -l) -gt 0 ]; then #Pascal
-            FLAGS="-g"
-            echo $1  "$2" -o"$3"
+	    if [ "$4" == "delphi" ]; then
+                FLAGS="-g -Mdelphi"
+	    else
+                FLAGS="-g -Mtp"
+            fi
+            echo $1 $FLAGS "$2" -o"$3"
             $1 $FLAGS "$2" -o"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.hs$' | wc -l) -gt 0 ]; then #Haskell
             FLAGS="-rtsopts"
@@ -38,15 +42,12 @@ compile_debug()
     fi
 }
 
-#compile_release(compiler, source, destination, optimizations)
+#compile_release(compiler, source, destination, options)
 compile_release()
 {
     if [ "$2" -nt "$3" ]; then
         if [ $( echo "$2" | grep -e '.*.cpp$' | wc -l) -gt 0 ]; then #C++
             FLAGS="-std=c++11 -O3 -DNDEBUG -fno-rtti -flto -march=native -Drestrict="
-            if [ ! -z "$4" ]; then
-                FLAGS="${FLAGS} -DENABLE_MAPPING -DENABLE_MULTITHREADING -lstdc++"
-            fi
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.c$' | wc -l) -gt 0 ]; then #C
@@ -59,11 +60,15 @@ compile_release()
             $1 $FLAGS "$2" -out:"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.f90$' | wc -l) -gt 0 ]; then #Fortran
             FLAGS="-std=f95 -O3 -flto -march=native"
-            echo $1  "$2" -o "$3"
+            echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.pas$' | wc -l) -gt 0 ]; then #Pascal
-            FLAGS="-O4"
-            echo $1 "$2" -o"$3"
+	    if [ "$4" == "delphi" ]; then
+                FLAGS="-O4 -Mdelphi"
+	    else
+                FLAGS="-O4 -Mtp"
+            fi
+            echo $1 $FLAGS "$2" -o"$3"
             $1 $FLAGS "$2" -o"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.hs$' | wc -l) -gt 0 ]; then #Haskell
             FLAGS="-O2 -optc-O3"
@@ -137,10 +142,12 @@ if [ $(type gfortran 2>/dev/null | wc -l) -gt 0 ]; then
     compile_release gfortran "$SOURCE/dijkstra_fortran.f90" "$BUILD/dijkstra_fortran_gfortran_release" || exit 1
 fi
 
-# Pascal
+# Pascal/Delphi
 if [ $(type fpc 2>/dev/null | wc -l) -gt 0 ]; then
     compile_debug fpc "$SOURCE/dijkstra_pascal.pas" "$BUILD/dijkstra_pascal_fpc_debug" || exit 1
     compile_release fpc "$SOURCE/dijkstra_pascal.pas" "$BUILD/dijkstra_pascal_fpc_release" || exit 1
+    compile_debug fpc "$SOURCE/dijkstra_delphi.pas" "$BUILD/dijkstra_delphi_fpc_debug" delphi || exit 1
+    compile_release fpc "$SOURCE/dijkstra_delphi.pas" "$BUILD/dijkstra_delphi_fpc_release" delphi || exit 1
 fi
 
 # Haskell

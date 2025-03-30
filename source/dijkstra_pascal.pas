@@ -282,18 +282,20 @@ begin
             
             for connection_i := 0 to graph.p[candidate.id].size - 1 do
             begin
-                new_candidate.id := graph.p[candidate.id].p[connection_i].destination;
-                new_candidate.distance := candidate.distance + graph.p[candidate.id].p[connection_i].distance;
+                connection := graph.p[candidate.id].p[connection_i];
+                new_candidate.id := connection.destination;
+                new_candidate.distance := candidate.distance + connection.distance;
                 new_candidate.int_distance := candidate.int_distance + 1;
                 PushIndexHeap(candidates, candidates_size, candidate_indices, new_candidate);
             end;
         end;
 
-        WriteLn(benchmark.source, ' -> ', benchmark.destination, ': ', distance:100:6, ' (', int_distance, ')');
+        Write(benchmark.source, ' -> ', benchmark.destination, ': ');
+        WriteLn(FloatToStrF(distance, ffFixed, 100, 6), ' (', int_distance, ')');
     end;
 end;
 
-procedure MainVer5();
+procedure MainVer5;
 var
     graph: TConnectionVectorVector;
     benchmarks: TBenchmarkVector;
