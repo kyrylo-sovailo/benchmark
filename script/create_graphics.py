@@ -141,7 +141,10 @@ class Graphics:
             "Javascript" : "dijkstra_js_node.txt"
         })
         if shutil.which("python"): label_to_filename.update({
-            "Python" : "dijkstra_python.txt"
+            "Python, CPython" : "dijkstra_python_cpython.txt"
+        })
+        if shutil.which("pypy3"): label_to_filename.update({
+            "Python, PyPy" : "dijkstra_python_pypy.txt"
         })
         if shutil.which("matlab"): label_to_filename.update({
             "Matlab" : "dijkstra_matlab_matlab.txt"

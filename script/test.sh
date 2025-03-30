@@ -6,14 +6,20 @@ cd "$BUILD"
 
 "$(dirname $(readlink -f $0))/build.sh" || exit 1
 
-#run_benchmark(executable, benchmark, log, cores)
+#run_benchmark(executable, benchmark, log, cores, interpreter)
 run_benchmark()
 {
     if [ "$1" -nt "$3" -o "$2" -nt "$3" ]; then
-        if [ $( echo "$1" | grep -e '.*.exe$' | wc -l) -gt 0 ]; then
+        if [ ! -z "$5" ]; then
+            LAUNCH="$5"
+        elif [ $( echo "$1" | grep -e '.*.exe$' | wc -l) -gt 0 ]; then
             LAUNCH="mono"
         elif [ $( echo "$1" | grep -e '.*.js$' | wc -l) -gt 0 ]; then
             LAUNCH="node"
+        elif [ $( echo "$1" | grep -e '.*.py$' | wc -l) -gt 0 ]; then
+            LAUNCH="python"
+        elif [ $( echo "$1" | grep -e '.*.m$' | wc -l) -gt 0 ]; then
+            LAUNCH="matlab"
         else
             LAUNCH=""
         fi
@@ -25,25 +31,13 @@ run_benchmark()
             CORES="1"
         fi
         RUNS=5
-        echo "{ { taskset -c ${CORES} bash -c \"for i in \\\$(seq 1 ${RUNS}); do time ${LAUNCH} \\\"$1\\\"\"; done } 3>&2 2>&1 1>&3 | grep -v -e "^\$" | tee \"$3\"; } 2>&1"
-        { { taskset -c ${CORES} bash -c "for i in \$(seq 1 ${RUNS}); do time ${LAUNCH} \"$1\"; done"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
-    fi
-}
-
-#run_benchmark_matlab(script, benchmark, log, cores)
-run_benchmark_matlab()
-{
-    if [ "$1" -nt "$3" -o "$2" -nt "$3" ]; then
-        if [ "$4" == "all" ]; then
-            CORES="1,2,3,4"
-        elif [ "$4" == "one_physical" ]; then
-            CORES="1,2"
+        if [ "$LAUNCH" == "matlab" ]; then
+            echo "{ { taskset -c ${CORES} bash -c \"for i in \\\$(seq 1 ${RUNS}); do time matlab -batch 'm = dijkstra_matlab(); m.main();'; done } 3>&2 2>&1 1>&3 | grep -v -e "^\$" | tee \"$3\"; } 2>&1"
+            { { taskset -c ${CORES} bash -c "for i in \$(seq 1 ${RUNS}); do time matlab -batch 'm = dijkstra_matlab(); m.main();'; done"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
         else
-            CORES="1"
+            echo "{ { taskset -c ${CORES} bash -c \"for i in \\\$(seq 1 ${RUNS}); do time ${LAUNCH} \\\"$1\\\"\"; done } 3>&2 2>&1 1>&3 | grep -v -e "^\$" | tee \"$3\"; } 2>&1"
+            { { taskset -c ${CORES} bash -c "for i in \$(seq 1 ${RUNS}); do time ${LAUNCH} \"$1\"; done"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
         fi
-        RUNS=5
-        echo "{ { taskset -c ${CORES} bash -c \"for i in \\\$(seq 1 ${RUNS}); do time matlab -batch 'm = dijkstra_matlab(); m.main();'; done } 3>&2 2>&1 1>&3 | grep -v -e "^\$" | tee \"$3\"; } 2>&1"
-        { { taskset -c ${CORES} bash -c "for i in \$(seq 1 ${RUNS}); do time matlab -batch 'm = dijkstra_matlab(); m.main();'; done"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
     fi
 }
 
@@ -87,7 +81,10 @@ fi
 
 # Testing slow programs
 if [ $(type python 2>/dev/null | wc -l) -gt 0 ]; then
-    run_benchmark "$SOURCE/dijkstra_python.py" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_python.txt" || exit 1
+    run_benchmark "$SOURCE/dijkstra_python.py" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_python_cpython.txt" || exit 1
+fi
+if [ $(type pypy3 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$SOURCE/dijkstra_python.py" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_python_pypy.txt" "" pypy3 || exit 1
 fi
 if [ $(type node 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$SOURCE/dijkstra_js.js" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_js_node.txt" || exit 1
