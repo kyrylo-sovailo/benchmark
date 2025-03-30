@@ -6,9 +6,9 @@ This repository contains implementations of Dijkstra algorithm in different prog
 All data is included, you are welcome to play with the configuration of the visualizer. This graph was produced with `../script/create_graphics.py --reverse --inverse --relative-slowest --no-debug --no-extras`.
 
 ### Goal
-The benchmark is a combined benchmark that strives to capture a performance of an average and reasonably-written program. Check out the [daughter project](https://github.com/kyrylo-sovailo/benchmark_masterrace) to see what happens with this constraint dropped.
+The benchmark is a combined benchmark that strives to capture a performance of an **reasonably-written** and **balanced** program. Check out the [daughter project](https://github.com/kyrylo-sovailo/benchmark_masterrace) to see what happens with these constraints dropped.
 
-The "reasonable" code is defined as a code that:
+A "reasonable" code is a code that:
  - Stays readable
  - In particular, accesses structure members by names rather than by index
  - Stays native, does not delegate the task to other programming languages
@@ -18,20 +18,21 @@ The "reasonable" code is defined as a code that:
  - Does not use multithreading
  - Does not assume any prior knowledge about the program input
 
-The execution time is affected by:
- - Raw speed
- - Efficiency of memory management
- - Efficiency of standard library
- - Input/output speed
- - Initialization time
+A "balanced" program is a program that does all types of operations in a close-to-real-life proportions. It includes:
+ - Logics
+ - Floating-point operations
+ - Memory management
+ - Routines from the standard library
+ - Input and output
+ - Initialization and finalization
  - etc.
 
 The benchmark does not focus on only one of these aspects. Finding out which exactly part is faster in which languages is outside of the scope of this repository.
 
 ### Notes
 The names of the bars on the chart are pretty self-explanatory. Except for:
- - `C, g++, release` is a C program compiled with g++ as valid C++.
- - `C, clang++, release` is same but for clang++.
+ - `C, g++` is a C program compiled with g++ as valid C++.
+ - `C, clang++` is same but for clang++.
 
 ### Hardware
 The measurements were performed on Intel Pentium 4415U. To reduce noise, the kernel was booted with `isolcpus=1,3`, where 1 and 3 are logical cores that correspond to physical core 1.
