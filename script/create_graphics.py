@@ -47,6 +47,7 @@ class Measurement:
         elif "C++" in labels: self.color = "xkcd:warm pink" if find_closest else "#f34b7d"
         elif "C#" in labels: self.color = "green" if find_closest else "#178600"
         elif "Fortran" in labels: self.color = "xkcd:blue with a hint of purple" if find_closest else "#4d41b1"
+        elif "Pascal" in labels: self.color = "xkcd:sandy yellow" if find_closest else "#e3f171"
         elif "Haskell" in labels: self.color = "xkcd:twilight" if find_closest else "#5e5086"
         elif "Python" in labels: self.color = "xkcd:flat blue" if find_closest else "#3572a5"
         elif "Javascript" in labels: self.color = "xkcd:dull yellow" if find_closest else "#f1e05a"
@@ -127,6 +128,10 @@ class Graphics:
         if shutil.which("gfortran"): label_to_filename.update({
             "Fortran, gfortran, debug" : "dijkstra_fortran_gfortran_debug.txt",
             "Fortran, gfortran, release" : "dijkstra_fortran_gfortran_release.txt",
+        })
+        if shutil.which("fpc"): label_to_filename.update({
+            "Pascal, FPC, debug" : "dijkstra_fortran_gfortran_debug.txt",
+            "Pascal, FPC, release" : "dijkstra_fortran_gfortran_release.txt",
         })
         if shutil.which("ghc"): label_to_filename.update({
             "Haskell, ghc, debug" : "dijkstra_haskell_ghc_debug.txt",

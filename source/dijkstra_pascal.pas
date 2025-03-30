@@ -1,7 +1,7 @@
 program GraphBenchmark;
 
 uses
-    SysUtils, Math;
+    SysUtils, StrUtils, Math;
 
 type
     TBenchmark = record
@@ -39,8 +39,7 @@ procedure PushBenchmarkVector(var benchmarks: TBenchmarkVector; item: TBenchmark
 var
     new_capacity : Cardinal;
 begin
-    Inc(benchmarks.size);
-    if benchmarks.size > Length(benchmarks.p) then
+    if benchmarks.size + 1 > Length(benchmarks.p) then
     begin
         if Length(benchmarks.p) = 0 then
             new_capacity := 1
@@ -48,15 +47,15 @@ begin
             new_capacity := 2 * Length(benchmarks.p);
         SetLength(benchmarks.p, new_capacity);
     end;
-    benchmarks.p[Length(benchmarks.p) - 1] := item;
+    benchmarks.p[benchmarks.size] := item;
+    Inc(benchmarks.size);
 end;
 
 procedure PushConnectionVector(var connections: TConnectionVector; item: TConnection);
 var
     new_capacity : Cardinal;
 begin
-    Inc(connections.size);
-    if connections.size > Length(connections.p) then
+    if connections.size + 1 > Length(connections.p) then
     begin
         if Length(connections.p) = 0 then
             new_capacity := 1
@@ -64,7 +63,8 @@ begin
             new_capacity := 2 * Length(connections.p);
         SetLength(connections.p, new_capacity);
     end;
-    connections.p[Length(connections.p) - 1] := item;
+    connections.p[connections.size] := item;
+    Inc(connections.size);
 end;
 
 procedure GrowConnectionVectorVector(var graph: TConnectionVectorVector; size: Cardinal);
@@ -184,6 +184,7 @@ procedure ParseVer5(var graph: TConnectionVectorVector; var benchmarks: TBenchma
 var
     f: TextFile;
     line: string;
+    split: TStringArray;
     benchmark: TBenchmark;
     connection: TConnection;
     source, destination: Cardinal;
@@ -209,16 +210,17 @@ begin
             Continue;
         end;
 
+        split := SplitString(line, ' ');
         if read_benchmarks then
         begin
-            if TryStrToUInt(line, benchmark.source) and TryStrToUInt(line, benchmark.destination) then
+            if TryStrToUInt(split[0], benchmark.source) and TryStrToUInt(split[1], benchmark.destination) then
                 PushBenchmarkVector(benchmarks, benchmark)
             else
                 Break;
         end
         else
         begin
-            if TryStrToUInt(line, source) and TryStrToUInt(line, destination) and TryStrToFloat(line, connection.distance) then
+            if TryStrToUInt(split[0], source) and TryStrToUInt(split[1], destination) and TryStrToFloat(split[2], connection.distance) then
             begin
                 GrowConnectionVectorVector(graph, Max(source, destination) + 1);
                 connection.destination := destination;
@@ -270,7 +272,7 @@ begin
                 Break; 
             end;
             
-            for connection_i := 0 to graph.size - 1 do
+            for connection_i := 0 to graph.p[candidate.id].size - 1 do
             begin
                 new_candidate.id := graph.p[candidate.id].p[connection_i].destination;
                 new_candidate.int_distance := candidate.int_distance + 1;
@@ -288,6 +290,8 @@ var
     graph: TConnectionVectorVector;
     benchmarks: TBenchmarkVector;
 begin
+    graph.size := 0;
+    benchmarks.size := 0;
     ParseVer5(graph, benchmarks);
     SolveVer5(graph, benchmarks);
 end;

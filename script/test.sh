@@ -72,6 +72,10 @@ if [ $(type gfortran 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_fortran_gfortran_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_fortran_gfortran_debug.txt" || exit 1
     run_benchmark "$BUILD/dijkstra_fortran_gfortran_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_fortran_gfortran_release.txt" || exit 1
 fi
+if [ $(type fpc 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/dijkstra_pascal_fpc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_pascal_fpc_debug.txt" || exit 1
+    run_benchmark "$BUILD/dijkstra_pascal_fpc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_pascal_fpc_release.txt" || exit 1
+fi
 
 # Testing extras
 if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then

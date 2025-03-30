@@ -16,6 +16,7 @@ The "reasonable" code is defined as a code that:
  - Does not use hardware acceleration
  - Uses standard I/O
  - Does not use multithreading
+ - Does not assume any prior knowledge about the program input
 
 The execution time is affected by:
  - Raw speed

@@ -25,7 +25,7 @@ compile_debug()
             echo $1  "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.pas$' | wc -l) -gt 0 ]; then #Pascal
-            FLAGS=""
+            FLAGS="-g"
             echo $1  "$2" -o"$3"
             $1 $FLAGS "$2" -o"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.hs$' | wc -l) -gt 0 ]; then #Haskell
@@ -62,8 +62,8 @@ compile_release()
             echo $1  "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.pas$' | wc -l) -gt 0 ]; then #Pascal
-            FLAGS=""
-            echo $1  "$2" -o"$3"
+            FLAGS="-O4"
+            echo $1 "$2" -o"$3"
             $1 $FLAGS "$2" -o"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.hs$' | wc -l) -gt 0 ]; then #Haskell
             FLAGS="-O2 -optc-O3"
