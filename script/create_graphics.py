@@ -105,64 +105,76 @@ class Graphics:
 
     def run(self):
         label_to_filename = dict()
-        if shutil.which("g++"): label_to_filename.update({
-            "C++, g++, debug" : "dijkstra_cpp_gcc_debug.txt",
-            "C++, g++, release" : "dijkstra_cpp_gcc_release.txt"
+        gpp_present = bool(shutil.which("g++"))
+        label_to_filename.update({
+            "C++, g++, debug" : ("dijkstra_cpp_gcc_debug.txt", gpp_present),
+            "C++, g++, release" : ("dijkstra_cpp_gcc_release.txt", gpp_present)
         })
-        if shutil.which("clang++"): label_to_filename.update({
-            "C++, clang++, debug" : "dijkstra_cpp_clang_debug.txt",
-            "C++, clang++, release" : "dijkstra_cpp_clang_release.txt",
+        clangpp_present = bool(shutil.which("clang++"))
+        label_to_filename.update({
+            "C++, clang++, debug" : ("dijkstra_cpp_clang_debug.txt", clangpp_present),
+            "C++, clang++, release" : ("dijkstra_cpp_clang_release.txt", clangpp_present),
         })
-        if shutil.which("gcc"): label_to_filename.update({
-            "C, gcc, debug" : "dijkstra_c_gcc_debug.txt",
-            "C, gcc, release" : "dijkstra_c_gcc_release.txt",
+        gcc_present = bool(shutil.which("gcc"))
+        label_to_filename.update({
+            "C, gcc, debug" : ("dijkstra_c_gcc_debug.txt", gcc_present),
+            "C, gcc, release" : ("dijkstra_c_gcc_release.txt", gcc_present),
         })
-        if shutil.which("clang"): label_to_filename.update({
-            "C, clang, debug" : "dijkstra_c_clang_debug.txt",
-            "C, clang, release" : "dijkstra_c_clang_release.txt",
+        clang_present = bool(shutil.which("clang"))
+        label_to_filename.update({
+            "C, clang, debug" : ("dijkstra_c_clang_debug.txt", clang_present),
+            "C, clang, release" : ("dijkstra_c_clang_release.txt", clang_present),
         })
-        if shutil.which("mcs"): label_to_filename.update({
-            "C#, mcs, debug" : "dijkstra_csharp_mcs_debug.txt",
-            "C#, mcs, release" : "dijkstra_csharp_mcs_release.txt",
+        mcs_present = bool(shutil.which("mcs"))
+        label_to_filename.update({
+            "C#, mcs, debug" : ("dijkstra_csharp_mcs_debug.txt", mcs_present),
+            "C#, mcs, release" : ("dijkstra_csharp_mcs_release.txt", mcs_present),
         })
-        if shutil.which("gfortran"): label_to_filename.update({
-            "Fortran, gfortran, debug" : "dijkstra_fortran_gfortran_debug.txt",
-            "Fortran, gfortran, release" : "dijkstra_fortran_gfortran_release.txt",
+        gfortran_present = bool(shutil.which("gfortran"))
+        label_to_filename.update({
+            "Fortran, gfortran, debug" : ("dijkstra_fortran_gfortran_debug.txt", gfortran_present),
+            "Fortran, gfortran, release" : ("dijkstra_fortran_gfortran_release.txt", gfortran_present),
         })
-        if shutil.which("fpc"): label_to_filename.update({
-            "Pascal, FPC, debug" : "dijkstra_pascal_fpc_debug.txt",
-            "Pascal, FPC, release" : "dijkstra_pascal_fpc_release.txt",
-            "Delphi, FPC, debug" : "dijkstra_delphi_fpc_debug.txt",
-            "Delphi, FPC, release" : "dijkstra_delphi_fpc_release.txt",
+        fpc_present = bool(shutil.which("fpc"))
+        label_to_filename.update({
+            "Pascal, FPC, debug" : ("dijkstra_pascal_fpc_debug.txt", fpc_present),
+            "Pascal, FPC, release" : ("dijkstra_pascal_fpc_release.txt", fpc_present),
+            "Delphi, FPC, debug" : ("dijkstra_delphi_fpc_debug.txt", fpc_present),
+            "Delphi, FPC, release" : ("dijkstra_delphi_fpc_release.txt", fpc_present),
         })
+        ghc_present = bool(shutil.which("ghc"))
         if shutil.which("ghc"): label_to_filename.update({
-            "Haskell, ghc, debug" : "dijkstra_haskell_ghc_debug.txt",
-            "Haskell, ghc, release" : "dijkstra_haskell_ghc_release.txt",
+            "Haskell, ghc, debug" : ("dijkstra_haskell_ghc_debug.txt", ghc_present),
+            "Haskell, ghc, release" : ("dijkstra_haskell_ghc_release.txt", ghc_present),
         })
-        if shutil.which("node"): label_to_filename.update({
-            "Javascript" : "dijkstra_js_node.txt"
+        label_to_filename.update({
+            "Javascript" : ("dijkstra_js_node.txt", bool(shutil.which("node")))
         })
-        if shutil.which("python"): label_to_filename.update({
-            "Python, CPython" : "dijkstra_python_cpython.txt"
+        label_to_filename.update({
+            "Python, CPython" : ("dijkstra_python_cpython.txt", bool(shutil.which("python")))
         })
-        if shutil.which("pypy3"): label_to_filename.update({
-            "Python, PyPy" : "dijkstra_python_pypy.txt"
+        label_to_filename.update({
+            "Python, PyPy" : ("dijkstra_python_pypy.txt", bool(shutil.which("pypy3")))
         })
-        if shutil.which("matlab"): label_to_filename.update({
-            "Matlab" : "dijkstra_matlab_matlab.txt"
+        label_to_filename.update({
+            "Matlab" : ("dijkstra_matlab_matlab.txt", bool(shutil.which("matlab")))
         })
-        if not self.no_extras and shutil.which("g++"): label_to_filename.update({
-            "C, g++, release" : "dijkstra_c_gcc_release_cpp.txt"
+        if not self.no_extras: label_to_filename.update({
+            "C, g++, release" : ("dijkstra_c_gcc_release_cpp.txt", gpp_present)
         })
-        if not self.no_extras and shutil.which("clang++"): label_to_filename.update({
-            "C, clang++, release" : "dijkstra_c_clang_release_cpp.txt"
+        if not self.no_extras: label_to_filename.update({
+            "C, clang++, release" : ("dijkstra_c_clang_release_cpp.txt", clangpp_present)
         })
         if self.no_debug:
             label_to_filename = { key: value for key, value in label_to_filename.items() if not "debug" in key }
 
         measurements = []
-        for label, filename in label_to_filename.items():
-            m = Measurement(label, filename)
+        for label, (filename, present) in label_to_filename.items():
+            if present:
+                m = Measurement(label, filename)
+            else:
+                try: m = Measurement(label, filename)
+                except: continue
             if m.mean <= self.faster_threshold and m.mean >= self.slower_threshold: measurements.append(m)
         if not self.reverse: measurements.sort(key=lambda m: m.mean)
         else: measurements.sort(key=lambda m: -m.mean)

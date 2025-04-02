@@ -6,7 +6,7 @@ This repository contains implementations of Dijkstra algorithm in different prog
 All data is included, you are welcome to play with the configuration of the visualizer. This graph was produced with `../script/create_graphics.py --reverse --inverse --relative-slowest --no-debug --no-extras`.
 
 ### Goal
-The benchmark is a combined benchmark that strives to capture a performance of an **reasonably-written** and **balanced** program. Check out the [daughter project](https://github.com/kyrylo-sovailo/benchmark_masterrace) to see what happens with these constraints dropped.
+The benchmark is a combined benchmark that strives to capture a performance of a **reasonably-written** and **balanced** program. Check out the [daughter project](https://github.com/kyrylo-sovailo/benchmark_masterrace) to see what happens with these constraints dropped.
 
 A "reasonable" code is a code that:
  - Stays readable
@@ -18,7 +18,7 @@ A "reasonable" code is a code that:
  - Does not use multithreading
  - Does not assume any prior knowledge about the program input
 
-A "balanced" program is a program that does all types of operations in a close-to-real-life proportions. It includes:
+A "balanced" program is a program that does all types of operations that you'd expect a non-mathematical utility to do, in close-to-real-life proportions. It includes:
  - Logics
  - Floating-point operations
  - Memory management
@@ -45,6 +45,7 @@ GFortran             14.2.1
 Free Pascal Compiler 3.2.2
 MCS                  6.12.0.199, Target 4.5
 Python               3.12.9
+PyPy                 7.3.17, Target 3.10.14
 GHC                  9.8.4
 Node                 22.13.1
 Matlab               24.2.0.2833386 (R2024b) Update 4
