@@ -255,7 +255,7 @@ class Program
         bool read_benchmarks = false;
         while (true)
         {
-            string line = file.ReadLine();
+            string? line = file.ReadLine();
             if (line == null) break;
             if (line.Contains("GRAPH")) { read_benchmarks = false; continue; }
             if (line.Contains("BENCHMARK")) { read_benchmarks = true; continue; }

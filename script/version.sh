@@ -20,6 +20,14 @@ if [ $(type mcs 2>/dev/null | wc -l) -gt 0 ]; then
     TARGET=$(mcs --help | grep VERSION | grep -o -E '[0-9.]+ \(default\)' | grep -o -E '[0-9.]*' | head -n 1)
     echo "MCS                  ${VERSION}, Target ${TARGET}"
 fi
+if [ $(type dotnet 2>/dev/null | wc -l) -gt 0 ]; then
+    VERSION=$(dotnet --version | head -n 1)
+    echo ".NET                 ${VERSION}"
+fi
+if [ $(type javac 2>/dev/null | wc -l) -gt 0 ]; then
+    VERSION=$(javac --version | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+    echo "Java                 ${VERSION}"
+fi
 if [ $(type python 2>/dev/null | wc -l) -gt 0 ]; then
     VERSION=$(python --version | grep -o -E 'Python [0-9]+\.[0-9]+\.[0-9]+' | head -n 1 | cut -d ' ' -f 2)
     echo "Python               ${VERSION}"

@@ -131,6 +131,11 @@ class Graphics:
             "C#, mcs, debug" : ("dijkstra_csharp_mcs_debug.txt", mcs_present),
             "C#, mcs, release" : ("dijkstra_csharp_mcs_release.txt", mcs_present),
         })
+        dotnet_present = bool(shutil.which("dotnet"))
+        label_to_filename.update({
+            "C#, .NET, debug" : ("dijkstra_csharp_dotnet_debug.txt", dotnet_present),
+            "C#, .NET, release" : ("dijkstra_csharp_dotnet_release.txt", dotnet_present),
+        })
         javac_present = bool(shutil.which("mcs"))
         label_to_filename.update({
             "Java, OpenJDK, debug" : ("dijkstra_java_openjdk_debug.txt", javac_present),

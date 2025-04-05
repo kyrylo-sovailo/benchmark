@@ -16,24 +16,42 @@ compile_debug()
             FLAGS="-std=c11 -g -Wall -Wextra -pedantic"
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
+        elif [ $( echo "$2" | grep -e '.*.cs$' | wc -l) -gt 0 -a "$1" == "dotnet" ]; then #C#
+            #Actual destination is ignored, assuming destination has form $DIRECTORY/$NAME/Debug/$NAME.dll
+            DIRECTORY=$(dirname $(dirname $(dirname "$3")))
+            if [ ! -d "$DIRECTORY" ]; then
+                echo mkdir \"$DIRECTORY\"
+                mkdir "$DIRECTORY" || exit 1
+            fi
+            CWD=$(pwd)
+            NAME=$(basename $(dirname $(dirname "$3")))
+            if [ ! -f "$DIRECTORY/$NAME/$NAME.csproj" ]; then
+                echo cd \"$DIRECTORY\" \&\& dotnet new console -n \"$NAME\" \&\& cd \"$CWD\"
+                cd "$DIRECTORY" && dotnet new console -n "$NAME" && cd "$CWD" || exit 1
+            fi
+            FLAGS="-c Debug"
+            echo cd \"$DIRECTORY/$NAME\" \&\& cp \"$2\" \"./Program.cs\" \&\& $1 build $FLAGS -o \"./Debug\" \&\& cd \"$CWD\"
+            cd "$DIRECTORY/$NAME" && cp "$2" "./Program.cs" && $1 build $FLAGS -o "./Debug" && cd "$CWD" || exit 1
         elif [ $( echo "$2" | grep -e '.*.cs$' | wc -l) -gt 0 ]; then #C#
             FLAGS="-debug -platform:x64"
             echo $1 $FLAGS "$2" -out:"$3"
             $1 $FLAGS "$2" -out:"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.java$' | wc -l) -gt 0 ]; then #Java
+            #Actual destination basename is ignored, assuming destination basename is equal to source basename
+            DIRECTORY=$(dirname "$3")
             FLAGS="-g"
-            echo $1 $FLAGS "$2"
-            $1 $FLAGS "$2" || exit 1
+            echo $1 $FLAGS \"$2\" -d \"$DIRECTORY\"
+            $1 $FLAGS "$2" -d "$DIRECTORY" || exit 1
         elif [ $( echo "$2" | grep -e '.*.f90$' | wc -l) -gt 0 ]; then #Fortran
             FLAGS="-std=f95 -g -fcheck=all"
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
+        elif [ $( echo "$2" | grep -e '.*.pas$' | wc -l) -gt 0 -a "$4" == "delphi" ]; then #Delphi
+            FLAGS="-g -Mdelphi"
+            echo $1 $FLAGS "$2" -o"$3"
+            $1 $FLAGS "$2" -o"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.pas$' | wc -l) -gt 0 ]; then #Pascal
-	    if [ "$4" == "delphi" ]; then
-                FLAGS="-g -Mdelphi"
-	    else
-                FLAGS="-g -Mtp"
-            fi
+            FLAGS="-g -Mtp"
             echo $1 $FLAGS "$2" -o"$3"
             $1 $FLAGS "$2" -o"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.hs$' | wc -l) -gt 0 ]; then #Haskell
@@ -58,24 +76,41 @@ compile_release()
             FLAGS="-std=c11 -O3 -DNDEBUG -flto -march=native"
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
+        elif [ $( echo "$2" | grep -e '.*.cs$' | wc -l) -gt 0 -a "$1" == "dotnet" ]; then #C#
+            #Actual destination is ignored, assuming destination has form $DIRECTORY/$NAME/Debug/$NAME.dll
+            DIRECTORY=$(dirname $(dirname $(dirname "$3")))
+            if [ ! -d "$DIRECTORY" ]; then
+                echo mkdir \"$DIRECTORY\"
+                mkdir "$DIRECTORY" || exit 1
+            fi
+            CWD=$(pwd)
+            NAME=$(basename $(dirname $(dirname "$3")))
+            if [ ! -f "$DIRECTORY/$NAME/$NAME.csproj" ]; then
+                echo cd \"$DIRECTORY\" \&\& dotnet new console -n \"$NAME\" \&\& cd \"$CWD\"
+                cd "$DIRECTORY" && dotnet new console -n "$NAME" && cd "$CWD" || exit 1
+            fi
+            FLAGS="-c Release"
+            echo cd \"$DIRECTORY/$NAME\" \&\& cp \"$2\" \"./Program.cs\" \&\& $1 build $FLAGS -o \"./Release\" \&\& cd \"$CWD\"
+            cd "$DIRECTORY/$NAME" && cp "$2" "./Program.cs" && $1 build $FLAGS -o "./Release" && cd "$CWD" || exit 1
         elif [ $( echo "$2" | grep -e '.*.cs$' | wc -l) -gt 0 ]; then #C#
             FLAGS="-optimize+ -platform:x64"
             echo $1 $FLAGS "$2" -out:"$3"
             $1 $FLAGS "$2" -out:"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.java$' | wc -l) -gt 0 ]; then #Java
+            DIRECTORY=$(dirname "$3")
             FLAGS=""
-            echo $1 $FLAGS "$2"
-            $1 $FLAGS "$2" || exit 1
+            echo $1 $FLAGS \"$2\" -d \"$DIRECTORY\"
+            $1 $FLAGS "$2" -d "$DIRECTORY" || exit 1
         elif [ $( echo "$2" | grep -e '.*.f90$' | wc -l) -gt 0 ]; then #Fortran
             FLAGS="-std=f95 -O3 -flto -march=native"
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
+        elif [ $( echo "$2" | grep -e '.*.pas$' | wc -l) -gt 0 -a "$4" == "delphi" ]; then #Delphi
+            FLAGS="-O4 -Mdelphi"
+            echo $1 $FLAGS "$2" -o"$3"
+            $1 $FLAGS "$2" -o"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.pas$' | wc -l) -gt 0 ]; then #Pascal
-	    if [ "$4" == "delphi" ]; then
-                FLAGS="-O4 -Mdelphi"
-	    else
-                FLAGS="-O4 -Mtp"
-            fi
+            FLAGS="-O4 -Mtp"
             echo $1 $FLAGS "$2" -o"$3"
             $1 $FLAGS "$2" -o"$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.hs$' | wc -l) -gt 0 ]; then #Haskell
@@ -143,14 +178,20 @@ if [ $(type mcs 2>/dev/null | wc -l) -gt 0 ]; then
     copy "$SOURCE/dijkstra_csharp.cs" "$BUILD/dijkstra_csharp_release.cs" || exit 1
     compile_release mcs "$BUILD/dijkstra_csharp_release.cs" "$BUILD/dijkstra_csharp_mcs_release.exe" || exit 1
 fi
+if [ $(type dotnet 2>/dev/null | wc -l) -gt 0 ]; then
+    compile_debug dotnet "$SOURCE/dijkstra_csharp.cs" "$BUILD/Dotnet/Debug/Dotnet.dll" dotnet || exit 1
+    compile_release dotnet "$SOURCE/dijkstra_csharp.cs" "$BUILD/Dotnet/Release/Dotnet.dll" dotnet || exit 1
+fi
 
 # Java
 if [ $(type javac 2>/dev/null | wc -l) -gt 0 ]; then
     if [ ! -d "$BUILD/JavaDebug" ]; then
-        mkdir "$BUILD/JavaDebug"
+        echo mkdir \"$BUILD/JavaDebug\"
+        mkdir "$BUILD/JavaDebug" || exit 1
     fi
     if [ ! -d "$BUILD/JavaRelease" ]; then
-        mkdir "$BUILD/JavaRelease"
+        echo mkdir \"$BUILD/JavaRelease\"
+        mkdir "$BUILD/JavaRelease" || exit 1
     fi
     copy "$SOURCE/dijkstra_java.java" "$BUILD/JavaDebug/Dijkstra.java" || exit 1
     compile_debug javac "$BUILD/JavaDebug/Dijkstra.java" "$BUILD/JavaDebug/Dijkstra.class" || exit 1

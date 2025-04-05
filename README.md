@@ -44,6 +44,8 @@ Clang                19.1.7
 GFortran             14.2.1
 Free Pascal Compiler 3.2.2
 MCS                  6.12.0.199, Target 4.5
+.NET                 9.0.101
+Java                 21.0.6
 Python               3.12.9
 PyPy                 7.3.17, Target 3.10.14
 GHC                  9.8.4

@@ -14,6 +14,8 @@ run_benchmark()
             LAUNCH="$5"
         elif [ $( echo "$1" | grep -e '.*.exe$' | wc -l) -gt 0 ]; then
             LAUNCH="mono"
+        elif [ $( echo "$1" | grep -e '.*.dll$' | wc -l) -gt 0 ]; then
+            LAUNCH="dotnet"
         elif [ $( echo "$1" | grep -e '.*.class$' | wc -l) -gt 0 ]; then
             LAUNCH="java"
         elif [ $( echo "$1" | grep -e '.*.js$' | wc -l) -gt 0 ]; then
@@ -68,6 +70,10 @@ fi
 if [ $(type mcs 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_csharp_mcs_debug.exe" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_csharp_mcs_debug.txt" || exit 1
     run_benchmark "$BUILD/dijkstra_csharp_mcs_release.exe" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_csharp_mcs_release.txt" || exit 1
+fi
+if [ $(type dotnet 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/Dotnet/Debug/Dotnet.dll" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_csharp_dotnet_debug.txt" || exit 1
+    run_benchmark "$BUILD/Dotnet/Release/Dotnet.dll" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_csharp_dotnet_release.txt" || exit 1
 fi
 if [ $(type javac 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/JavaDebug/Dijkstra.class" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_java_openjdk_debug.txt" || exit 1
