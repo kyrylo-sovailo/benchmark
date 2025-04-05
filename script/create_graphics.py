@@ -46,6 +46,7 @@ class Measurement:
         if "C" in labels: self.color = "xkcd:gunmetal" if find_closest else "#555555"
         elif "C++" in labels: self.color = "xkcd:warm pink" if find_closest else "#f34b7d"
         elif "C#" in labels: self.color = "green" if find_closest else "#178600"
+        elif "Java" in labels: self.color = "xkcd:caramel" if find_closest else "#b07219"
         elif "Fortran" in labels: self.color = "xkcd:blue with a hint of purple" if find_closest else "#4d41b1"
         elif "Pascal" in labels or "Delphi" in labels: self.color = "xkcd:sandy yellow" if find_closest else "#e3f171"
         elif "Haskell" in labels: self.color = "xkcd:twilight" if find_closest else "#5e5086"
@@ -129,6 +130,11 @@ class Graphics:
         label_to_filename.update({
             "C#, mcs, debug" : ("dijkstra_csharp_mcs_debug.txt", mcs_present),
             "C#, mcs, release" : ("dijkstra_csharp_mcs_release.txt", mcs_present),
+        })
+        javac_present = bool(shutil.which("mcs"))
+        label_to_filename.update({
+            "Java, OpenJDK, debug" : ("dijkstra_java_openjdk_debug.txt", javac_present),
+            "Java, OpenJDK, release" : ("dijkstra_java_openjdk_release.txt", javac_present),
         })
         gfortran_present = bool(shutil.which("gfortran"))
         label_to_filename.update({

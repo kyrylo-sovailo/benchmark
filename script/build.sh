@@ -20,6 +20,10 @@ compile_debug()
             FLAGS="-debug -platform:x64"
             echo $1 $FLAGS "$2" -out:"$3"
             $1 $FLAGS "$2" -out:"$3" || exit 1
+        elif [ $( echo "$2" | grep -e '.*.java$' | wc -l) -gt 0 ]; then #Java
+            FLAGS="-g"
+            echo $1 $FLAGS "$2"
+            $1 $FLAGS "$2" || exit 1
         elif [ $( echo "$2" | grep -e '.*.f90$' | wc -l) -gt 0 ]; then #Fortran
             FLAGS="-std=f95 -g -fcheck=all"
             echo $1 $FLAGS "$2" -o "$3"
@@ -58,6 +62,10 @@ compile_release()
             FLAGS="-optimize+ -platform:x64"
             echo $1 $FLAGS "$2" -out:"$3"
             $1 $FLAGS "$2" -out:"$3" || exit 1
+        elif [ $( echo "$2" | grep -e '.*.java$' | wc -l) -gt 0 ]; then #Java
+            FLAGS=""
+            echo $1 $FLAGS "$2"
+            $1 $FLAGS "$2" || exit 1
         elif [ $( echo "$2" | grep -e '.*.f90$' | wc -l) -gt 0 ]; then #Fortran
             FLAGS="-std=f95 -O3 -flto -march=native"
             echo $1 $FLAGS "$2" -o "$3"
@@ -134,6 +142,20 @@ if [ $(type mcs 2>/dev/null | wc -l) -gt 0 ]; then
     compile_debug mcs "$BUILD/dijkstra_csharp_debug.cs" "$BUILD/dijkstra_csharp_mcs_debug.exe" || exit 1
     copy "$SOURCE/dijkstra_csharp.cs" "$BUILD/dijkstra_csharp_release.cs" || exit 1
     compile_release mcs "$BUILD/dijkstra_csharp_release.cs" "$BUILD/dijkstra_csharp_mcs_release.exe" || exit 1
+fi
+
+# Java
+if [ $(type javac 2>/dev/null | wc -l) -gt 0 ]; then
+    if [ ! -d "$BUILD/JavaDebug" ]; then
+        mkdir "$BUILD/JavaDebug"
+    fi
+    if [ ! -d "$BUILD/JavaRelease" ]; then
+        mkdir "$BUILD/JavaRelease"
+    fi
+    copy "$SOURCE/dijkstra_java.java" "$BUILD/JavaDebug/Dijkstra.java" || exit 1
+    compile_debug javac "$BUILD/JavaDebug/Dijkstra.java" "$BUILD/JavaDebug/Dijkstra.class" || exit 1
+    copy "$SOURCE/dijkstra_java.java" "$BUILD/JavaRelease/Dijkstra.java" || exit 1
+    compile_release javac "$BUILD/JavaRelease/Dijkstra.java" "$BUILD/JavaRelease/Dijkstra.class" || exit 1
 fi
 
 # Fortran

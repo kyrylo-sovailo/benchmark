@@ -14,6 +14,8 @@ run_benchmark()
             LAUNCH="$5"
         elif [ $( echo "$1" | grep -e '.*.exe$' | wc -l) -gt 0 ]; then
             LAUNCH="mono"
+        elif [ $( echo "$1" | grep -e '.*.class$' | wc -l) -gt 0 ]; then
+            LAUNCH="java"
         elif [ $( echo "$1" | grep -e '.*.js$' | wc -l) -gt 0 ]; then
             LAUNCH="node"
         elif [ $( echo "$1" | grep -e '.*.py$' | wc -l) -gt 0 ]; then
@@ -34,6 +36,11 @@ run_benchmark()
         if [ "$LAUNCH" == "matlab" ]; then
             echo "{ { taskset -c ${CORES} bash -c \"for i in \\\$(seq 1 ${RUNS}); do time matlab -batch 'm = dijkstra_matlab(); m.main();'; done } 3>&2 2>&1 1>&3 | grep -v -e "^\$" | tee \"$3\"; } 2>&1"
             { { taskset -c ${CORES} bash -c "for i in \$(seq 1 ${RUNS}); do time matlab -batch 'm = dijkstra_matlab(); m.main();'; done"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
+        elif [ "$LAUNCH" == "java" ]; then
+            DIRECTORY=$(dirname "$1")
+            CLASS=$(basename "$1" | sed 's/.class$//g')
+            echo "{ { taskset -c ${CORES} bash -c \"cd \\\"$DIRECTORY\\\"\"; for i in \\\$(seq 1 ${RUNS}); do time ${LAUNCH} \\\"$CLASS\\\"\"; done } 3>&2 2>&1 1>&3 | grep -v -e "^\$" | tee \"$3\"; } 2>&1"
+            { { taskset -c ${CORES} bash -c "cd \"$DIRECTORY\"; for i in \$(seq 1 ${RUNS}); do time ${LAUNCH} \"$CLASS\"; done"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
         else
             echo "{ { taskset -c ${CORES} bash -c \"for i in \\\$(seq 1 ${RUNS}); do time ${LAUNCH} \\\"$1\\\"\"; done } 3>&2 2>&1 1>&3 | grep -v -e "^\$" | tee \"$3\"; } 2>&1"
             { { taskset -c ${CORES} bash -c "for i in \$(seq 1 ${RUNS}); do time ${LAUNCH} \"$1\"; done"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
@@ -61,6 +68,10 @@ fi
 if [ $(type mcs 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_csharp_mcs_debug.exe" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_csharp_mcs_debug.txt" || exit 1
     run_benchmark "$BUILD/dijkstra_csharp_mcs_release.exe" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_csharp_mcs_release.txt" || exit 1
+fi
+if [ $(type javac 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/JavaDebug/Dijkstra.class" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_java_openjdk_debug.txt" || exit 1
+    run_benchmark "$BUILD/JavaRelease/Dijkstra.class" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_java_openjdk_release.txt" || exit 1
 fi
 if [ $(type gfortran 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_fortran_gfortran_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_fortran_gfortran_debug.txt" || exit 1

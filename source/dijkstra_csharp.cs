@@ -67,18 +67,18 @@ class PriorityQueue
         int i = 0;
         while (true)
         {
-            int parent_i = 2 * i + 1;
+            int left_i = 2 * i + 1;
             int right_i = 2 * i + 2;
-            bool left_exists = parent_i < data.Count;
+            bool left_exists = left_i < data.Count;
             bool right_exists = right_i < data.Count;
             if (/*left_exists &&*/ right_exists)
             {
-                if (data[parent_i].Priority < data[right_i].Priority)
+                if (data[left_i].Priority < data[right_i].Priority)
                 {
-                    if (data[parent_i].Priority < data[i].Priority)
+                    if (data[left_i].Priority < data[i].Priority)
                     {
-                        Candidate b1 = data[i]; data[i] = data[parent_i]; data[parent_i] = b1;
-                        i = parent_i;
+                        Candidate b1 = data[i]; data[i] = data[left_i]; data[left_i] = b1;
+                        i = left_i;
                     }
                     else break;
                 }
@@ -94,10 +94,10 @@ class PriorityQueue
             }
             else if (left_exists /*&& !right_exists*/)
             {
-                if (data[parent_i].Priority < data[i].Priority)
+                if (data[left_i].Priority < data[i].Priority)
                 {
-                    Candidate b1 = data[i]; data[i] = data[parent_i]; data[parent_i] = b1;
-                    i = parent_i;
+                    Candidate b1 = data[i]; data[i] = data[left_i]; data[left_i] = b1;
+                    i = left_i;
                 }
                 else break;
             }
