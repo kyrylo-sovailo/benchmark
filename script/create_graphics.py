@@ -166,6 +166,9 @@ class Graphics:
             "Lua, Lua" : ("dijkstra_lua_lua.txt", bool(shutil.which("lua")))
         })
         label_to_filename.update({
+            "Lua, LuaJIT" : ("dijkstra_lua_luajit.txt", bool(shutil.which("luajit")))
+        })
+        label_to_filename.update({
             "Python, CPython" : ("dijkstra_python_cpython.txt", bool(shutil.which("python")))
         })
         label_to_filename.update({

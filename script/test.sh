@@ -113,6 +113,9 @@ fi
 if [ $(type lua 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$SOURCE/dijkstra_lua.lua" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_lua_lua.txt" || exit 1
 fi
+if [ $(type luajit 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$SOURCE/dijkstra_lua.lua" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_lua_luajit.txt" "" luajit || exit 1
+fi
 if [ $(type ghc 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_haskell_ghc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_debug.txt" || exit 1
     run_benchmark "$BUILD/dijkstra_haskell_ghc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_release.txt" || exit 1

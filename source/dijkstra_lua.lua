@@ -17,7 +17,7 @@ local function indexed_heap_push(data, indices, element)
     end
 
     while i > 1 do
-        local parent_i = i // 2
+        local parent_i = math.floor(i / 2)
         if data[i].distance < data[parent_i].distance then
             indices[data[i].id], indices[data[parent_i].id] = indices[data[parent_i].id], indices[data[i].id]
             data[i], data[parent_i] = data[parent_i], data[i]
