@@ -20,6 +20,8 @@ run_benchmark()
             LAUNCH="java"
         elif [ $( echo "$1" | grep -e '.*.js$' | wc -l) -gt 0 ]; then
             LAUNCH="node"
+        elif [ $( echo "$1" | grep -e '.*.lua$' | wc -l) -gt 0 ]; then
+            LAUNCH="lua"
         elif [ $( echo "$1" | grep -e '.*.py$' | wc -l) -gt 0 ]; then
             LAUNCH="python"
         elif [ $( echo "$1" | grep -e '.*.m$' | wc -l) -gt 0 ]; then
@@ -107,6 +109,9 @@ if [ $(type pypy3 2>/dev/null | wc -l) -gt 0 ]; then
 fi
 if [ $(type node 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$SOURCE/dijkstra_js.js" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_js_node.txt" || exit 1
+fi
+if [ $(type lua 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$SOURCE/dijkstra_lua.lua" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_lua_lua.txt" || exit 1
 fi
 if [ $(type ghc 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_haskell_ghc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_debug.txt" || exit 1

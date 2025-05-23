@@ -52,6 +52,7 @@ class Measurement:
         elif "Haskell" in labels: self.color = "xkcd:twilight" if find_closest else "#5e5086"
         elif "Python" in labels: self.color = "xkcd:flat blue" if find_closest else "#3572a5"
         elif "Javascript" in labels: self.color = "xkcd:dull yellow" if find_closest else "#f1e05a"
+        elif "Lua" in labels: self.color = "navy" if find_closest else "#000080"
         elif "Matlab" in labels: self.color = "xkcd:terra cotta" if find_closest else "#e16737"
         else: self.color = "black" if find_closest else "#000000"
 
@@ -159,7 +160,10 @@ class Graphics:
             "Haskell, ghc, release" : ("dijkstra_haskell_ghc_release.txt", ghc_present),
         })
         label_to_filename.update({
-            "Javascript" : ("dijkstra_js_node.txt", bool(shutil.which("node")))
+            "Javascript, Node" : ("dijkstra_js_node.txt", bool(shutil.which("node")))
+        })
+        label_to_filename.update({
+            "Lua, Lua" : ("dijkstra_lua_lua.txt", bool(shutil.which("lua")))
         })
         label_to_filename.update({
             "Python, CPython" : ("dijkstra_python_cpython.txt", bool(shutil.which("python")))

@@ -338,36 +338,10 @@ void solve_ver3(const std::vector<std::vector<std::pair<unsigned int, float>>> &
 
 #if VERSION == 4
 void solve_ver4(const std::vector<std::map<unsigned int, float>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
-{
-    indexed_priority_queue<Candidate> candidates(graph.size());
-
-    for (const auto &benchmark : benchmarks)
-    {
-        const unsigned int source = benchmark.first;
-        const unsigned int destination = benchmark.second;
-        candidates.reset();
-        candidates.push({ source, 0, 0.0 });
-        float distance = std::numeric_limits<float>::infinity();
-        unsigned int int_distance = 0;
-        while (!candidates.empty())
-        {
-            Candidate candidate = candidates.top();
-            if (candidate.id == destination) { int_distance = candidate.int_distance; distance = candidate.distance; break; }
-            candidates.pop();
-            const auto &connections = graph[candidate.id];
-
-            for (const auto &connection : connections)
-            {
-                candidates.push({ connection.first, candidate.int_distance + 1, candidate.distance + connection.second });
-            }
-        }
-        std::cout << source << " -> " << destination << ": " << distance << " (" << int_distance << ")\n";
-    }
-}
-#endif
-
-#if VERSION == 5
+#elif VERSION == 5
 void solve_ver5(const std::vector<std::vector<std::pair<unsigned int, float>>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
+#endif
+#if VERSION == 4 || VERSION == 5
 {
     indexed_priority_queue<Candidate> candidates(graph.size());
 

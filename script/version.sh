@@ -45,6 +45,10 @@ if [ $(type node 2>/dev/null | wc -l) -gt 0 ]; then
     VERSION=$(node --version | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
     echo "Node                 ${VERSION}"
 fi
+if [ $(type lua 2>/dev/null | wc -l) -gt 0 ]; then
+    VERSION=$(lua -v | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+    echo "Lua                  ${VERSION}"
+fi
 if [ $(type matlab 2>/dev/null | wc -l) -gt 0 ]; then
     VERSION=$(matlab -batch 'disp(version)' | head -n 1)
     echo "Matlab               ${VERSION}"
