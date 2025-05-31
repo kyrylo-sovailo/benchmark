@@ -32,9 +32,9 @@ if [ $(type python 2>/dev/null | wc -l) -gt 0 ]; then
     VERSION=$(python --version | grep -o -E 'Python [0-9]+\.[0-9]+\.[0-9]+' | head -n 1 | cut -d ' ' -f 2)
     echo "Python               ${VERSION}"
 fi
-if [ $(type pypy3 2>/dev/null | wc -l) -gt 0 ]; then
-    VERSION=$(pypy3 --version | grep -o -E 'PyPy [0-9]+\.[0-9]+\.[0-9]+' | head -n 1 | cut -d ' ' -f 2)
-    TARGET=$(pypy3 --version | grep -o -E 'Python [0-9]+\.[0-9]+\.[0-9]+' | head -n 1 | cut -d ' ' -f 2)
+if [ $(type pypy 2>/dev/null | wc -l) -gt 0 ]; then
+    VERSION=$(pypy --version | grep -o -E 'PyPy [0-9]+\.[0-9]+\.[0-9]+' | head -n 1 | cut -d ' ' -f 2)
+    TARGET=$(pypy --version | grep -o -E 'Python [0-9]+\.[0-9]+\.[0-9]+' | head -n 1 | cut -d ' ' -f 2)
     echo "PyPy                 ${VERSION}, Target ${TARGET}"
 fi
 if [ $(type ghc 2>/dev/null | wc -l) -gt 0 ]; then

@@ -12,6 +12,7 @@ A "reasonable" code is a code that:
  - Stays readable
  - In particular, accesses structure members by names rather than by index
  - Stays native, does not delegate the task to other programming languages
+ - Does not use third party libraries
  - Does not use assembler optimizations
  - Does not use hardware acceleration
  - Does not use multithreading
@@ -31,12 +32,14 @@ A "balanced" program is a program that does all types of operations that you'd e
 The benchmark does not focus on only one of these aspects. Finding out which exact part is faster in which languages is outside of the scope of this repository.
 
 ### Notes
+The tests were composed in such a way that `C` and `C++` spend approximately the same time on parsing the file and solving the problem, therefore equating the impact of all parts of the program. The comparison chart is known to be qualitatively different when using smaller problem.
+
 The names of the bars on the chart are pretty self-explanatory. Except for:
  - `C, g++` is a C program compiled with g++ as valid C++.
  - `C, clang++` is same but for clang++.
 
 My knowledge of programming languages is not on the same level, and not all implementations are created equally. Here are my comments on the probability of improvement:
- - All interpreted languages do little optimizations, therefore it is always possible to optimize teh code by using fewer variables, shorter names and otherwise making code less readable. I will call it "micromanagement". Some minor improvements with help of micromanagement are to be expected.
+ - All interpreted languages do little optimizations, therefore it is always possible to optimize the code by using fewer variables, shorter names and otherwise making code less readable. I will call it "micromanagement". Some minor improvements with help of micromanagement are to be expected.
  - `C++`: reference implementation, well-researched and well-optimized.
  - `C`, `Fortran`: direct translation, the optimizing compiler is powerful, no improvement is expected.
  - `Pascal`, `C#`, `Java`: direct translation, the optimizing compiler is not great, improvement may be achieved by micromanagement.
@@ -57,13 +60,12 @@ GFortran             14.2.1
 Free Pascal Compiler 3.2.2
 MCS                  6.12.0.199, Target 4.5
 .NET                 9.0.101
-Java                 21.0.6
-Python               3.12.9
-PyPy                 7.3.17, Target 3.10.14
+Java                 21.0.7
+Python               3.13.3
 GHC                  9.8.4
 Node                 22.13.1
 Lua                  5.4.6
-LuaJIU               2.1.1731601260
+LuaJIT               2.1.1731601260
 Matlab               24.2.0.2833386 (R2024b) Update 4
 Kernel               6.12.10-zen1-x86_64
 ```

@@ -4,6 +4,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+/*
+VERSION 5 - indexed optimization, graph represented as vector of vectors
+VERSION 8 - indexed optimization, allocator optimization, graph represented as vector of pointers
+VERSION 9 - indexed optimization, copyless allocator optimization, graph represented as vector of pointers
+*/
+#define VERSION 5
+
 #define MIN(A, B) (((A) < (B)) ? (A) : (B))
 #define MAX(A, B) (((A) > (B)) ? (A) : (B))
 
@@ -68,6 +75,7 @@ typedef struct
 DECLARE_VECTOR(Benchmark)
 DECLARE_VECTOR_PUSH(Benchmark)
 
+#if VERSION == 5
 typedef struct
 {
     unsigned int destination;
@@ -77,6 +85,54 @@ DECLARE_VECTOR(Connection)
 DECLARE_VECTOR_PUSH(Connection)
 DECLARE_VECTOR(ConnectionVector)
 DECLARE_VECTOR_GROW(ConnectionVector)
+#endif
+
+#if VERSION == 8
+typedef struct
+{
+    unsigned int source;
+    unsigned int destination;
+    float distance;
+} UnassignedConnection;
+DECLARE_VECTOR(UnassignedConnection)
+DECLARE_VECTOR_PUSH(UnassignedConnection)
+typedef struct
+{
+    unsigned int destination;
+    float distance;
+} Connection;
+typedef struct
+{
+    Connection *begin;
+    unsigned int length;
+} ConnectionVector;
+typedef struct
+{
+    ConnectionVector *begin;
+    unsigned int length;
+} ConnectionVectorVector;
+#endif
+
+#if VERSION == 9
+typedef struct
+{
+    unsigned int source;
+    unsigned int destination;
+    float distance;
+} UnassignedConnection;
+DECLARE_VECTOR(UnassignedConnection)
+DECLARE_VECTOR_PUSH(UnassignedConnection)
+typedef struct
+{
+    UnassignedConnection *begin;
+    unsigned int length;
+} ConnectionVector;
+typedef struct
+{
+    ConnectionVector *begin;
+    unsigned int length;
+} ConnectionVectorVector;
+#endif
 
 typedef struct
 {
@@ -173,6 +229,7 @@ Candidate pop_indexed_heap(Candidate *restrict data, unsigned int *restrict leng
     return top;
 }
 
+#if VERSION == 5
 void parse_ver5(ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
 {
     FILE *file = fopen("dijkstra.txt", "r");
@@ -218,6 +275,161 @@ void parse_ver5(ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
     }
     fclose(file);
 }
+#endif
+
+#if VERSION == 8
+int parse_ver8_sort(const void *a, const void *b)
+{
+    return ((const UnassignedConnection*)a)->source - ((const UnassignedConnection*)b)->source;
+}
+
+void parse_ver8(ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
+{
+    UnassignedConnectionVector connections; memset(&connections, 0, sizeof(connections));
+    unsigned int max_node_id = 0;
+    FILE *file = fopen("dijkstra.txt", "r");
+    if (file == NULL) { printf("fopen() failed"); exit(2); }
+
+    //Stage 1
+    bool read_benchmarks = false;
+    unsigned int line_capacity = 128;
+    char *line = (char*)malloc(line_capacity);
+    while (true)
+    {
+        unsigned int line_size = 0;
+        while (true)
+        {
+            char c;
+            if (fread(&c, 1, 1, file) == 0 || c == '\n' || c == '\r') break;
+            if (line_size + 2 > line_capacity) { line_capacity <<= 1; line = (char*)realloc(line, line_capacity); }
+            line[line_size] = c;
+            line_size++;
+        }
+        line[line_size] = '\0';
+        if (strstr(line, "GRAPH") != NULL) { read_benchmarks = false; continue; }
+        if (strstr(line, "BENCHMARK") != NULL) { read_benchmarks = true; continue; }
+        if (read_benchmarks)
+        {
+            unsigned int source, destination;
+            if (sscanf(line, "%u %u", &source, &destination) != 2) break;
+
+            Benchmark benchmark = { .source = source, .destination = destination };
+            push_BenchmarkVector(benchmarks, benchmark);
+        }
+        else
+        {
+            unsigned int source, destination;
+            float distance;
+            if (sscanf(line, "%u %u %f", &source, &destination, &distance) != 3) break;
+            
+            UnassignedConnection forward = { .source = source, .destination = destination, .distance = distance };
+            push_UnassignedConnectionVector(&connections, forward);
+            UnassignedConnection backward = { .source = destination, .destination = source, .distance = distance };
+            push_UnassignedConnectionVector(&connections, backward);
+            if (source > max_node_id) max_node_id = source;
+            if (destination > max_node_id) max_node_id = destination;
+        }
+    }
+
+    //Stage 2
+    qsort(connections.begin, connections.length, sizeof(*connections.begin), parse_ver8_sort);
+
+    //Stage 3
+    graph->length = max_node_id + 1;
+    graph->begin = (ConnectionVector*)malloc(graph->length * sizeof(*graph->begin));
+    for (unsigned int i = 0; i < connections.length;)
+    {
+        const unsigned int current_id = connections.begin[i].source;
+        unsigned int length;
+        for (length = 1; i + length < connections.length && connections.begin[i + length].source == current_id; length++) {}
+        Connection *begin = (Connection*)malloc(length * sizeof(*begin));
+        for (unsigned int length_repeat = 0; length_repeat < length; length_repeat++)
+        {
+            begin[length_repeat].destination = connections.begin[i + length_repeat].destination;
+            begin[length_repeat].distance = connections.begin[i + length_repeat].distance;
+        }
+        graph->begin[current_id].length = length;
+        graph->begin[current_id].begin = begin;
+        i += length;
+    }
+
+    if (connections.begin != NULL) free(connections.begin);
+    fclose(file);
+}
+#endif
+
+#if VERSION == 9
+int parse_ver9_sort(const void *a, const void *b)
+{
+    return ((const UnassignedConnection*)a)->source - ((const UnassignedConnection*)b)->source;
+}
+
+void parse_ver9(UnassignedConnectionVector *connections, ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
+{
+    unsigned int max_node_id = 0;
+    FILE *file = fopen("dijkstra.txt", "r");
+    if (file == NULL) { printf("fopen() failed"); exit(2); }
+
+    //Stage 1
+    bool read_benchmarks = false;
+    unsigned int line_capacity = 128;
+    char *line = (char*)malloc(line_capacity);
+    while (true)
+    {
+        unsigned int line_size = 0;
+        while (true)
+        {
+            char c;
+            if (fread(&c, 1, 1, file) == 0 || c == '\n' || c == '\r') break;
+            if (line_size + 2 > line_capacity) { line_capacity <<= 1; line = (char*)realloc(line, line_capacity); }
+            line[line_size] = c;
+            line_size++;
+        }
+        line[line_size] = '\0';
+        if (strstr(line, "GRAPH") != NULL) { read_benchmarks = false; continue; }
+        if (strstr(line, "BENCHMARK") != NULL) { read_benchmarks = true; continue; }
+        if (read_benchmarks)
+        {
+            unsigned int source, destination;
+            if (sscanf(line, "%u %u", &source, &destination) != 2) break;
+
+            Benchmark benchmark = { .source = source, .destination = destination };
+            push_BenchmarkVector(benchmarks, benchmark);
+        }
+        else
+        {
+            unsigned int source, destination;
+            float distance;
+            if (sscanf(line, "%u %u %f", &source, &destination, &distance) != 3) break;
+            
+            UnassignedConnection forward = { .source = source, .destination = destination, .distance = distance };
+            push_UnassignedConnectionVector(connections, forward);
+            UnassignedConnection backward = { .source = destination, .destination = source, .distance = distance };
+            push_UnassignedConnectionVector(connections, backward);
+            if (source > max_node_id) max_node_id = source;
+            if (destination > max_node_id) max_node_id = destination;
+        }
+    }
+
+    //Stage 2
+    qsort(connections->begin, connections->length, sizeof(*connections->begin), parse_ver9_sort);
+
+    //Stage 3
+    graph->length = max_node_id + 1;
+    graph->begin = (ConnectionVector*)malloc(graph->length * sizeof(*graph->begin));
+    for (unsigned int i = 0; i < connections->length;)
+    {
+        const unsigned int current_id = connections->begin[i].source;
+        unsigned int length;
+        for (length = 1; i + length < connections->length && connections->begin[i + length].source == current_id; length++) {}
+        graph->begin[current_id].length = length;
+        graph->begin[current_id].begin = &connections->begin[i];
+        i += length;
+    }
+
+    fclose(file);
+}
+#endif
 
 void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benchmarks)
 {
@@ -243,7 +455,13 @@ void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benc
             if (candidate.id == destination) { int_distance = candidate.int_distance; distance = candidate.distance; break; }
             ConnectionVector *connections = &graph->begin[candidate.id];
 
-            for (const Connection *connection = connections->begin;
+            for (const
+                #if VERSION == 9
+                UnassignedConnection
+                #else
+                Connection
+                #endif
+                *connection = connections->begin;
                 connection < &connections->begin[connections->length];
                 connection++)
             {
@@ -265,13 +483,31 @@ int main_ver5(void)
 {
     ConnectionVectorVector graph; memset(&graph, 0, sizeof(graph));
     BenchmarkVector benchmarks; memset(&benchmarks, 0, sizeof(benchmarks));
+    #if VERSION == 9
+    UnassignedConnectionVector connections; memset(&connections, 0, sizeof(connections));
+    #endif
 
+    #if VERSION == 5
     parse_ver5(&graph, &benchmarks);
+    #endif
+    #if VERSION == 8
+    parse_ver8(&graph, &benchmarks);
+    #endif
+    #if VERSION == 9
+    parse_ver9(&connections, &graph, &benchmarks);
+    #endif
     solve_ver5(&graph, &benchmarks);
-    
-    for (const ConnectionVector *connections = graph.begin; connections < &graph.begin[graph.length]; connections++) free(connections->begin);
-    free(graph.begin);
-    free(benchmarks.begin);
+
+    #if VERSION == 5 || VERSION == 8
+    for (const ConnectionVector *connections = graph.begin; connections < &graph.begin[graph.length]; connections++)
+    {
+        if (connections->begin != NULL) free(connections->begin);
+    }
+    #elif VERSION == 9
+    if (connections.begin != NULL) free(connections.begin);
+    #endif
+    if (graph.begin != NULL) free(graph.begin);
+    if (benchmarks.begin != NULL) free(benchmarks.begin);
     return 0;
 }
 
