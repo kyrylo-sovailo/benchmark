@@ -28,7 +28,7 @@ A "balanced" program is a program that does all types of operations that you'd e
  - Initialization and finalization
  - etc.
 
-The benchmark does not focus on only one of these aspects. Finding out which exact part is faster in which languages is outside of the scope of this repository. Some further research on `C++` and `C` is coming soon.
+The benchmark does not focus on only one of these aspects. Finding out which exact part is faster in which languages is outside of the scope of this repository.
 
 ### Notes
 The names of the bars on the chart are pretty self-explanatory. Except for:
