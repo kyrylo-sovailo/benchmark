@@ -51,7 +51,7 @@ if [ $(type lua 2>/dev/null | wc -l) -gt 0 ]; then
 fi
 if [ $(type luajit 2>/dev/null | wc -l) -gt 0 ]; then
     VERSION=$(luajit -v | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
-    echo "LuaJIU               ${VERSION}"
+    echo "LuaJIT               ${VERSION}"
 fi
 if [ $(type matlab 2>/dev/null | wc -l) -gt 0 ]; then
     VERSION=$(matlab -batch 'disp(version)' | head -n 1)

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import heapq
 import sys
 from typing import List, Tuple

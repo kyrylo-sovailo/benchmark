@@ -6,7 +6,7 @@ This repository contains implementations of Dijkstra algorithm in different prog
 All data is included, you are welcome to play with the configuration of the visualizer. This graph was produced with: `cd data && ../script/create_graphics.py --reverse --inverse --relative-slowest --no-debug --no-extras`.
 
 ### Goal
-The benchmark is a combined benchmark that strives to capture a performance of a **reasonably-written** and **balanced** program. Check out the [daughter project](https://github.com/kyrylo-sovailo/benchmark_masterrace) to see what happens with these constraints dropped.
+The benchmark is a combined benchmark that strives to capture a performance of a **reasonably-written** and **balanced** program.
 
 A "reasonable" code is a code that:
  - Stays readable
@@ -14,8 +14,9 @@ A "reasonable" code is a code that:
  - Stays native, does not delegate the task to other programming languages
  - Does not use assembler optimizations
  - Does not use hardware acceleration
- - Uses standard I/O
  - Does not use multithreading
+ - Uses standard I/O
+ - Does not leak memory
  - Does not assume any prior knowledge about the program input
 
 A "balanced" program is a program that does all types of operations that you'd expect a non-computation-heavy utility to do, in close-to-real-life proportions. It includes:
@@ -35,11 +36,13 @@ The names of the bars on the chart are pretty self-explanatory. Except for:
  - `C, clang++` is same but for clang++.
 
 My knowledge of programming languages is not on the same level, and not all implementations are created equally. Here are my comments on the probability of improvement:
+ - All interpreted languages do little optimizations, therefore it is always possible to optimize teh code by using fewer variables, shorter names and otherwise making code less readable. I will call it "micromanagement". Some minor improvements with help of micromanagement are to be expected.
  - `C++`: reference implementation, well-researched and well-optimized.
- - `C`, `Fortran`: direct translation, the optimization is powerful, no improvement is expected.
- - `Pascal`, `C#`, `Java`: direct translation, the optimization is not great, some improvement may be achieved by micromanagement.
- - `Python`, `JS`, `Lua`: not well-researched, some improvement may be achieved by micromanagement and different data structures.
- - `Matlab`: I highly doubt that something can be done to the algorithm, though improvement through micromanagement is very likely.
+ - `C`, `Fortran`: direct translation, the optimizing compiler is powerful, no improvement is expected.
+ - `Pascal`, `C#`, `Java`: direct translation, the optimizing compiler is not great, improvement may be achieved by micromanagement.
+ - `Python`, `JS`, `Lua`: not well-researched, improvement may be achieved by micromanagement and different data structures.
+ - `PyPy`: the implementation in `Python` relied on the fact that native priority queue is available, but indexed priority queue is not. Therefore `PyPy`'s optimal algorithm may be different from the `Python`'s one.
+ - `Matlab`: I highly doubt that something can be done to the algorithm, though improvement through micromanagement is extremely likely.
  - `Delphi`: since Pascal is (roughly) a subset of Delphi, the improvement can be achieved by simply downgrading to Pascal.
  - `Haskell`: further improvements are probable. Better Haskell knowledge is required.
 
@@ -60,10 +63,11 @@ PyPy                 7.3.17, Target 3.10.14
 GHC                  9.8.4
 Node                 22.13.1
 Lua                  5.4.6
+LuaJIU               2.1.1731601260
 Matlab               24.2.0.2833386 (R2024b) Update 4
 Kernel               6.12.10-zen1-x86_64
 ```
 
 ### Conclusions
- - C++ is faster than C (with "reasonable" code, see [Goal](#goal). Further research is coming soon)
+ - C++ is faster than C (on this benchmark, under "reasonability" constraint, due to faster I/O [read further](https://github.com/kyrylo-sovailo/benchmark_masterrace))
  - Fortran is not that fast

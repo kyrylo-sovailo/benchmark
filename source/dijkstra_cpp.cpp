@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <list>
 #include <map>
 #include <queue>
 #include <set>
@@ -18,6 +19,8 @@ VERSION 2 - naive implementation, graph represented as vector of maps
 VERSION 3 - naive implementation, graph represented as vector of vectors
 VERSION 4 - indexed optimization, graph represented as vector of maps
 VERSION 5 - indexed optimization, graph represented as vector of vectors
+VERSION 6 - indexed optimization, graph represented as vector of lists
+VERSION 7 - indexed optimization, graph represented as vector of custom forward lists
 */
 #define VERSION 5
 
@@ -31,7 +34,7 @@ struct Candidate
     inline bool constexpr operator>(const Candidate &other) const noexcept { return this->distance > other.distance; }
 };
 
-#if VERSION == 4 || VERSION == 5
+#if VERSION == 4 || VERSION == 5 || VERSION == 6 || VERSION == 7
 template<typename T> struct indexed_priority_queue
 {
     std::vector<T> data;
@@ -126,6 +129,45 @@ template<typename T> struct indexed_priority_queue
 };
 #endif
 
+#if VERSION == 7
+template<class T> class reverse_forward_list
+{
+public:
+    struct Link
+    {
+        T t;
+        Link *next;
+    };
+
+    struct iterator
+    {
+        Link *link;
+        inline const iterator operator++() { link = link->next; return *this; };
+        inline const iterator operator++(int) { iterator copy = *this; link = link->next; return copy; };
+        inline const T *operator->() { return &link->t; };
+        inline const T &operator*() { return link->t; };
+        inline bool operator==(const iterator &other) const { return link == other.link; };
+        inline bool operator!=(const iterator &other) const { return link != other.link; };
+    };
+
+private:
+    Link *_first = nullptr;
+    Link *_last = nullptr;
+
+public:
+    inline void push_back(const T &element)
+    {
+        Link *new_link = new Link{element, nullptr};
+	if (_first == nullptr) { _first = new_link; _last = new_link; }
+        else { _last->next = new_link; _last = new_link; }
+    };
+    inline iterator begin() const { return { _first }; }
+    inline iterator end() const { return { nullptr }; }
+    inline const iterator cbegin() const { return { _first }; }
+    inline const iterator cend() const { return { nullptr }; }
+};
+#endif
+
 #if VERSION == 1
 std::pair<std::map<unsigned int, std::map<unsigned int, float>>, std::vector<std::pair<unsigned int, unsigned int>>> parse_ver1()
 {
@@ -203,11 +245,23 @@ std::pair<std::vector<std::map<unsigned int, float>>, std::vector<std::pair<unsi
 }
 #endif
 
-#if (VERSION == 3 || VERSION == 5)
+#if VERSION == 3 || VERSION == 5
 std::pair<std::vector<std::vector<std::pair<unsigned int, float>>>, std::vector<std::pair<unsigned int, unsigned int>>> parse_ver3()
 {
     std::vector<std::vector<std::pair<unsigned int, float>>> graph;
     std::vector<std::pair<unsigned int, unsigned int>> benchmarks;
+#elif VERSION == 6
+std::pair<std::vector<std::list<std::pair<unsigned int, float>>>, std::vector<std::pair<unsigned int, unsigned int>>> parse_ver3()
+{
+    std::vector<std::list<std::pair<unsigned int, float>>> graph;
+    std::vector<std::pair<unsigned int, unsigned int>> benchmarks;
+#elif VERSION == 7
+std::pair<std::vector<reverse_forward_list<std::pair<unsigned int, float>>>, std::vector<std::pair<unsigned int, unsigned int>>> parse_ver3()
+{
+    std::vector<reverse_forward_list<std::pair<unsigned int, float>>> graph;
+    std::vector<std::pair<unsigned int, unsigned int>> benchmarks;
+#endif
+#if VERSION == 3 || VERSION == 5 || VERSION == 6 || VERSION == 7
     std::ifstream file("dijkstra.txt");
     if (!file.is_open()) throw std::runtime_error("std::ifstream::ifstream() failed");
 
@@ -340,8 +394,12 @@ void solve_ver3(const std::vector<std::vector<std::pair<unsigned int, float>>> &
 void solve_ver4(const std::vector<std::map<unsigned int, float>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
 #elif VERSION == 5
 void solve_ver5(const std::vector<std::vector<std::pair<unsigned int, float>>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
+#elif VERSION == 6
+void solve_ver6(const std::vector<std::list<std::pair<unsigned int, float>>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
+#elif VERSION == 7
+void solve_ver7(const std::vector<reverse_forward_list<std::pair<unsigned int, float>>> &graph, const std::vector<std::pair<unsigned int, unsigned int>> &benchmarks)
 #endif
-#if VERSION == 4 || VERSION == 5
+#if VERSION == 4 || VERSION == 5 || VERSION == 6 || VERSION == 7
 {
     indexed_priority_queue<Candidate> candidates(graph.size());
 
@@ -415,6 +473,24 @@ int main_ver5()
 }
 #endif
 
+#if VERSION == 6
+int main_ver6()
+{
+    auto graph_and_benchmarks = parse_ver3();
+    solve_ver6(graph_and_benchmarks.first, graph_and_benchmarks.second);
+    return 0;
+}
+#endif
+
+#if VERSION == 7
+int main_ver7()
+{
+    auto graph_and_benchmarks = parse_ver3();
+    solve_ver7(graph_and_benchmarks.first, graph_and_benchmarks.second);
+    return 0;
+}
+#endif
+
 int main()
 {
     try
@@ -429,6 +505,10 @@ int main()
             return main_ver4();
         #elif VERSION == 5
             return main_ver5();
+        #elif VERSION == 6
+            return main_ver6();
+        #elif VERSION == 7
+            return main_ver7();
         #endif
     }
     catch (std::exception &e)
