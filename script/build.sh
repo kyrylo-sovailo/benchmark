@@ -169,12 +169,14 @@ fi
 if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
     copy "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c.cpp" || exit 1
     compile_release "g++ -Drestrict=" "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_gcc_release_cpp" || exit 1 #C as C++
+    compile_release "g++ -Drestrict=__restrict__" "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_gcc_release_cpp_restrict" || exit 1 #C as C++
 fi
 if [ $(type clang++ 2>/dev/null | wc -l) -gt 0 ]; then
     copy "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c.cpp" || exit 1
     compile_release "clang++ -Drestrict=" "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_clang_release_cpp" || exit 1 #C as C++
+    compile_release "clang++ -Drestrict=__restrict__" "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_clang_release_cpp_restrict" || exit 1 #C as C++
 fi
-
+exit
 # C#
 if [ $(type mcs 2>/dev/null | wc -l) -gt 0 ]; then
     copy "$SOURCE/dijkstra_csharp.cs" "$BUILD/dijkstra_csharp_debug.cs" || exit 1

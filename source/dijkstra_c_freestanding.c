@@ -354,7 +354,7 @@ static void *__malloc(uint64_t size)
     }
     void *memory = malloc_memory_end;
     malloc_memory_end = (char*)malloc_memory_end + size;
-    for (uint64_t i = 0; i < size; i++) ((unsigned char*)memory)[i] = 0xCC;
+    //for (uint64_t i = 0; i < size; i++) ((unsigned char*)memory)[i] = 0xCC;
     return memory;
 }
 

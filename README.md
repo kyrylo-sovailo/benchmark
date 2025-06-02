@@ -37,8 +37,9 @@ The tests were composed in such a way that `C` and `C++` spend approximately the
 The names of the bars on the chart are pretty self-explanatory. Except for:
  - `C, gcc, freestanding` is a `x86_64`-specific C code that uses custom memory management, custom I/O and no standard library. It is therefore considered **CHEATING**. The reason this version is present is because I can translate this version in Assembly (coming soon). Since there is no standard I/O in Assembly, the Assembly translation of this version would be considered legit. Also it is worth knowing whether the improvement of the Assembly version comes from it being written in Assembly or from not using standard I/O.
  - `C, gcc, freestanding/mapping` is same but using memory mapping rather than standard file I/O.
- - `C, g++` is a C program compiled with g++ as valid C++.
- - `C, clang++` is same but for clang++.
+ - `C, g++` is a `C` program compiled with `g++` as valid `C++`.
+ - `C, g++, restrict` is a `C` program compiled with `g++` as valid `C++` with the compiler-specific `__restrict__` keyword.
+ - `C, clang++` and `C, clang++, restrict` are same but for `clang++`.
 
 My knowledge of programming languages is not on the same level, and not all implementations are created equally. Here are my comments on the probability of improvement:
  - All interpreted languages do little optimizations, therefore it is always possible to optimize the code by using fewer variables, shorter names and otherwise making code less readable. I will call it "micromanagement". Some minor improvements with help of micromanagement are to be expected.

@@ -184,10 +184,12 @@ class Graphics:
             "C, gcc, release, freestanding/mapping" : ("dijkstra_c_gcc_release_freestanding_mapping.txt", gpp_present)
         })
         if not self.no_extras: label_to_filename.update({
-            "C, g++, release" : ("dijkstra_c_gcc_release_cpp.txt", gpp_present)
+            "C, g++, release" : ("dijkstra_c_gcc_release_cpp.txt", gpp_present),
+            "C, g++, release, restrict" : ("dijkstra_c_gcc_release_cpp_restrict.txt", gpp_present)
         })
         if not self.no_extras: label_to_filename.update({
-            "C, clang++, release" : ("dijkstra_c_clang_release_cpp.txt", clangpp_present)
+            "C, clang++, release" : ("dijkstra_c_clang_release_cpp.txt", clangpp_present),
+            "C, clang++, release, restrict" : ("dijkstra_c_clang_release_cpp_restrict.txt", clangpp_present)
         })
         if self.no_debug:
             label_to_filename = { key: value for key, value in label_to_filename.items() if not "debug" in key }
