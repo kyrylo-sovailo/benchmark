@@ -9,11 +9,11 @@ compile_debug()
 {
     if [ "$2" -nt "$3" ]; then
         if [ $( echo "$2" | grep -e '.*.cpp$' | wc -l) -gt 0 ]; then #C++
-            FLAGS="-std=c++11 -g -Wall -Wextra -pedantic"
+            FLAGS="-std=c++11 -Wall -Wextra -Wconversion -Wsign-conversion -pedantic -g"
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.c$' | wc -l) -gt 0 ]; then #C
-            FLAGS="-std=c11 -g -Wall -Wextra -pedantic"
+            FLAGS="-std=c11 -Wall -Wextra -Wconversion -Wsign-conversion -pedantic -g"
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.cs$' | wc -l) -gt 0 -a "$1" == "dotnet" ]; then #C#
@@ -69,11 +69,11 @@ compile_release()
 {
     if [ "$2" -nt "$3" ]; then
         if [ $( echo "$2" | grep -e '.*.cpp$' | wc -l) -gt 0 ]; then #C++
-            FLAGS="-std=c++11 -O3 -DNDEBUG -fno-rtti -flto -march=native -Drestrict="
+            FLAGS="-std=c++11 -Wall -Wextra -Wconversion -Wsign-conversion -O3 -DNDEBUG -fno-rtti -flto -march=native"
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.c$' | wc -l) -gt 0 ]; then #C
-            FLAGS="-std=c11 -O3 -DNDEBUG -flto -march=native"
+            FLAGS="-std=c11 -Wall -Wextra -Wconversion -Wsign-conversion -O3 -DNDEBUG -flto -march=native"
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.cs$' | wc -l) -gt 0 -a "$1" == "dotnet" ]; then #C#
@@ -162,13 +162,17 @@ if [ $(type clang 2>/dev/null | wc -l) -gt 0 ]; then
 fi
 
 # Extras
+if [ $(type gcc 2>/dev/null | wc -l) -gt 0 ]; then
+    compile_release "gcc -nostdlib -ffreestanding -Wno-unused-parameter -Wno-implicit-function-declaration" "$SOURCE/dijkstra_c_freestanding.c" "$BUILD/dijkstra_c_gcc_release_freestanding" || exit 1
+    compile_release "gcc -DUSE_MAPPING -nostdlib -ffreestanding -Wno-unused-parameter -Wno-implicit-function-declaration" "$SOURCE/dijkstra_c_freestanding.c" "$BUILD/dijkstra_c_gcc_release_freestanding_mapping" || exit 1
+fi
 if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
     copy "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c.cpp" || exit 1
-    compile_release g++ "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_gcc_release_cpp" || exit 1 #C as C++
+    compile_release "g++ -Drestrict=" "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_gcc_release_cpp" || exit 1 #C as C++
 fi
 if [ $(type clang++ 2>/dev/null | wc -l) -gt 0 ]; then
     copy "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c.cpp" || exit 1
-    compile_release clang++ "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_clang_release_cpp" || exit 1 #C as C++
+    compile_release "clang++ -Drestrict=" "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_clang_release_cpp" || exit 1 #C as C++
 fi
 
 # C#

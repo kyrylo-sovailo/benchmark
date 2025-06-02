@@ -93,6 +93,10 @@ if [ $(type fpc 2>/dev/null | wc -l) -gt 0 ]; then
 fi
 
 # Testing extras
+if [ $(type gcc 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/dijkstra_c_gcc_release_freestanding" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_gcc_release_freestanding.txt" || exit 1
+    run_benchmark "$BUILD/dijkstra_c_gcc_release_freestanding_mapping" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_gcc_release_freestanding_mapping.txt" || exit 1
+fi
 if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_c_gcc_release_cpp" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_gcc_release_cpp.txt" || exit 1
 fi

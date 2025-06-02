@@ -101,7 +101,7 @@ template<typename T> struct indexed_priority_queue
         unsigned int i = indices[element.id];
         if (i == static_cast<unsigned int>(-1))
         {
-            i = data.size();
+            i = static_cast<unsigned int>(data.size());
             indices[element.id] = i;
             data.push_back(element);
         }

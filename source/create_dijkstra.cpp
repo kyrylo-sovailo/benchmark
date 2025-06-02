@@ -9,7 +9,7 @@
 
 void write(std::ofstream *file, const std::string &string)
 {
-    if (!file->write(string.c_str(), string.size())) throw std::runtime_error("std::ofstream::write() failed");
+    if (!file->write(string.c_str(), static_cast<std::streamsize>(string.size()))) throw std::runtime_error("std::ofstream::write() failed");
 }
 
 int _main()

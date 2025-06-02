@@ -177,6 +177,12 @@ class Graphics:
         label_to_filename.update({
             "Matlab" : ("dijkstra_matlab_matlab.txt", bool(shutil.which("matlab")))
         })
+        label_to_filename.update({ #Important, doesn't count as extra
+            "C, gcc, release, freestanding" : ("dijkstra_c_gcc_release_freestanding.txt", gpp_present)
+        })
+        if not self.no_extras: label_to_filename.update({
+            "C, gcc, release, freestanding/mapping" : ("dijkstra_c_gcc_release_freestanding_mapping.txt", gpp_present)
+        })
         if not self.no_extras: label_to_filename.update({
             "C, g++, release" : ("dijkstra_c_gcc_release_cpp.txt", gpp_present)
         })

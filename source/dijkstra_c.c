@@ -23,7 +23,7 @@ typedef struct \
 } T ## Vector;
 
 #define DECLARE_VECTOR_RESERVE(T) \
-void reserve_ ## T ## Vector(T ## Vector *vector, unsigned int capacity) \
+static void reserve_ ## T ## Vector(T ## Vector *vector, unsigned int capacity) \
 { \
     if (capacity <= vector->capacity) return; \
     vector->capacity = capacity; \
@@ -32,7 +32,7 @@ void reserve_ ## T ## Vector(T ## Vector *vector, unsigned int capacity) \
 }
 
 #define DECLARE_VECTOR_GROW(T) \
-void grow_ ## T ## Vector(T ## Vector *vector, unsigned int length) \
+static void grow_ ## T ## Vector(T ## Vector *vector, unsigned int length) \
 { \
     if (length <= vector->length) return; \
     if (length > vector->capacity) \
@@ -47,7 +47,7 @@ void grow_ ## T ## Vector(T ## Vector *vector, unsigned int length) \
 }
 
 #define DECLARE_VECTOR_PUSH(T) \
-void push_ ## T ## Vector(T ## Vector *vector, T item) \
+static void push_ ## T ## Vector(T ## Vector *vector, T item) \
 { \
     vector->length++; \
     if (vector->length > vector->capacity) \
@@ -61,7 +61,7 @@ void push_ ## T ## Vector(T ## Vector *vector, T item) \
 }
 
 #define DECLARE_VECTOR_UNSAFE_PUSH(T) \
-void unsafe_push_ ## T ## Vector(T ## Vector *vector, T item) \
+static void unsafe_push_ ## T ## Vector(T ## Vector *vector, T item) \
 { \
     vector->begin[vector->length] = item; \
     vector->length++; \
@@ -141,7 +141,7 @@ typedef struct
     float distance;
 } Candidate;
 
-void push_indexed_heap(Candidate *restrict data, unsigned int *restrict length, unsigned int *restrict indices, Candidate element)
+static void push_indexed_heap(Candidate *restrict data, unsigned int *restrict length, unsigned int *restrict indices, Candidate element)
 {
     unsigned int i = indices[element.id];
     if (i == (unsigned int)-1)
@@ -173,7 +173,7 @@ void push_indexed_heap(Candidate *restrict data, unsigned int *restrict length, 
     }
 }
 
-Candidate pop_indexed_heap(Candidate *restrict data, unsigned int *restrict length, unsigned int *restrict indices)
+static Candidate pop_indexed_heap(Candidate *restrict data, unsigned int *restrict length, unsigned int *restrict indices)
 {
     Candidate top = data[0];
     indices[data[0].id] = (unsigned int)-2;
@@ -230,7 +230,7 @@ Candidate pop_indexed_heap(Candidate *restrict data, unsigned int *restrict leng
 }
 
 #if VERSION == 5
-void parse_ver5(ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
+static void parse_ver5(ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
 {
     FILE *file = fopen("dijkstra.txt", "r");
     if (file == NULL) { printf("fopen() failed"); exit(2); }
@@ -278,12 +278,12 @@ void parse_ver5(ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
 #endif
 
 #if VERSION == 8
-int parse_ver8_sort(const void *a, const void *b)
+static int parse_ver8_sort(const void *a, const void *b)
 {
     return ((const UnassignedConnection*)a)->source - ((const UnassignedConnection*)b)->source;
 }
 
-void parse_ver8(ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
+static void parse_ver8(ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
 {
     UnassignedConnectionVector connections; memset(&connections, 0, sizeof(connections));
     unsigned int max_node_id = 0;
@@ -359,12 +359,12 @@ void parse_ver8(ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
 #endif
 
 #if VERSION == 9
-int parse_ver9_sort(const void *a, const void *b)
+static int parse_ver9_sort(const void *a, const void *b)
 {
     return ((const UnassignedConnection*)a)->source - ((const UnassignedConnection*)b)->source;
 }
 
-void parse_ver9(UnassignedConnectionVector *connections, ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
+static void parse_ver9(UnassignedConnectionVector *connections, ConnectionVectorVector *graph, BenchmarkVector *benchmarks)
 {
     unsigned int max_node_id = 0;
     FILE *file = fopen("dijkstra.txt", "r");
@@ -431,7 +431,7 @@ void parse_ver9(UnassignedConnectionVector *connections, ConnectionVectorVector 
 }
 #endif
 
-void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benchmarks)
+static void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benchmarks)
 {
     Candidate *candidates = (Candidate*)malloc(graph->length * sizeof(Candidate));
     unsigned int candidates_length = 0;
@@ -447,12 +447,12 @@ void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benc
         memset(candidate_indices, 0xFF, graph->length * sizeof(unsigned int));
         Candidate candidate = { .id = source, .int_distance = 0, .distance = 0.0 };
         push_indexed_heap(candidates, &candidates_length, candidate_indices, candidate);
-        float distance = INFINITY;
-        unsigned int int_distance = 0;
+        candidate.distance = INFINITY;
+        candidate.int_distance = 0;
         while (candidates_length != 0)
         {
             candidate = pop_indexed_heap(candidates, &candidates_length, candidate_indices);
-            if (candidate.id == destination) { int_distance = candidate.int_distance; distance = candidate.distance; break; }
+            if (candidate.id == destination) break;
             ConnectionVector *connections = &graph->begin[candidate.id];
 
             for (const
@@ -472,14 +472,14 @@ void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVector *benc
                 push_indexed_heap(candidates, &candidates_length, candidate_indices, new_candidate);
             }
         }
-        printf("%u -> %u: %f (%u) \n", source, destination, distance, int_distance);
+        printf("%u -> %u: %f (%u) \n", source, destination, candidate.distance, candidate.int_distance);
     }
 
     free(candidates);
     free(candidate_indices);
 }
 
-int main_ver5(void)
+static int main_ver5(void)
 {
     ConnectionVectorVector graph; memset(&graph, 0, sizeof(graph));
     BenchmarkVector benchmarks; memset(&benchmarks, 0, sizeof(benchmarks));
