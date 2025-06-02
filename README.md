@@ -35,7 +35,7 @@ The benchmark does not focus on only one of these aspects. Finding out which exa
 The tests were composed in such a way that `C` and `C++` spend approximately the same time on parsing the file and solving the problem, therefore equating the impact of all parts of the program. The comparison chart is known to be qualitatively different when using smaller problem.
 
 The names of the bars on the chart are pretty self-explanatory. Except for:
- - `C, gcc, freestanding` is a `x86_64`-specific C code that uses custom memory management, custom I/O and no standard library. It is therefore considered **cheating**. The reason this version is present is because I can translate this version in Assembly (coming soon). Since there is no standard I/O in Assembly, the Assembly translation of this version be considered **legit**. Also it is worth knowing whether the improvement of the Assembly version comes from it being written in Assembly or from not using standard I/O.
+ - `C, gcc, freestanding` is a `x86_64`-specific C code that uses custom memory management, custom I/O and no standard library. It is therefore considered **CHEATING**. The reason this version is present is because I can translate this version in Assembly (coming soon). Since there is no standard I/O in Assembly, the Assembly translation of this version would be considered legit. Also it is worth knowing whether the improvement of the Assembly version comes from it being written in Assembly or from not using standard I/O.
  - `C, gcc, freestanding/mapping` is same but using memory mapping rather than standard file I/O.
  - `C, g++` is a C program compiled with g++ as valid C++.
  - `C, clang++` is same but for clang++.
