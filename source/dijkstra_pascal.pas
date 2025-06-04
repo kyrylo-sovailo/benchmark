@@ -130,8 +130,8 @@ var
     b2: TCandidate;
 begin
     PopIndexHeap := data[0];
-    indices[data[0].id] := Cardinal(-2);
     indices[data[size - 1].id] := 0;
+    indices[data[0].id] := Cardinal(-2);
     data[0] := data[size - 1];
     Dec(size);
 

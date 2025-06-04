@@ -66,8 +66,8 @@ class IndexedPriorityQueue
     public Candidate dequeue()
     {
         Candidate top = data.get(0);
-        indices[data.get(0).id] = -2;
         indices[data.get(data.size() - 1).id] = 0;
+        indices[data.get(0).id] = -2;
         data.set(0, data.get(data.size() - 1));
         data.remove(data.size() - 1);
 

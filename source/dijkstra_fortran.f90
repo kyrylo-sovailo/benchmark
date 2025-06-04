@@ -173,8 +173,8 @@ contains
         logical :: left_exists, right_exists
 
         top = data(1)
-        indices(data(1)%id) = -2
         indices(data(data_length)%id) = 1
+        indices(data(1)%id) = -2
         data(1) = data(data_length)
         data_length = data_length - 1
 

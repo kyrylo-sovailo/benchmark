@@ -30,8 +30,8 @@ end
 
 local function indexed_heap_pop(data, indices)
     local top = data[1]
-    indices[data[1].id] = 0
     indices[data[#data].id] = 1
+    indices[data[1].id] = 0
     data[1] = data[#data]
     table.remove(data)
 

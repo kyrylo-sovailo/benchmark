@@ -176,8 +176,8 @@ static void push_indexed_heap(Candidate *restrict data, unsigned int *restrict l
 static Candidate pop_indexed_heap(Candidate *restrict data, unsigned int *restrict length, unsigned int *restrict indices)
 {
     Candidate top = data[0];
-    indices[data[0].id] = (unsigned int)-2;
     indices[data[*length - 1].id] = 0;
+    indices[data[0].id] = (unsigned int)-2;
     data[0] = data[*length - 1];
     (*length)--;
 

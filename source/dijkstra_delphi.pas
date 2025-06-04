@@ -93,8 +93,8 @@ var
     b2: TCandidate;
 begin
     Pop := fdata[0];
-    findices[fdata[0].id] := Cardinal(-2);
     findices[fdata[fdata.Count - 1].id] := 0;
+    findices[fdata[0].id] := Cardinal(-2);
     fdata[0] := fdata[fdata.Count - 1];
     fdata.Delete(fdata.Count - 1);
 

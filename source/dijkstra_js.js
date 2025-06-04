@@ -17,8 +17,8 @@ class IndexedPriorityQueue
     pop()
     {
         let top = this.data[0];
-        this.indices[this.data[0].id] = -2;
         this.indices[this.data[this.data.length - 1].id] = 0;
+        this.indices[this.data[0].id] = -2;
         this.data[0] = this.data[this.data.length - 1];
         this.data.pop();
 

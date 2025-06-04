@@ -151,8 +151,8 @@ class IndexedPriorityQueue
     public Candidate Dequeue()
     {
         Candidate top = data[0];
-        indices[data[0].id] = -2;
         indices[data[data.Count - 1].id] = 0;
+        indices[data[0].id] = -2;
         data[0] = data[data.Count - 1];
         data.RemoveAt(data.Count - 1);
 

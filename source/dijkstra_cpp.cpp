@@ -59,8 +59,8 @@ template<typename T> struct indexed_priority_queue
 
     inline void pop()
     {
-        indices[data.front().id] = static_cast<unsigned int>(-2);
         indices[data.back().id] = 0;
+        indices[data.front().id] = static_cast<unsigned int>(-2);
         data.front() = data.back();
         data.pop_back();
 

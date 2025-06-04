@@ -458,8 +458,8 @@ static struct Candidate pop_indexed_heap(struct Candidate *data, uint64_t length
 {
     const uint64_t length_minus_1 = length - 1;
     struct Candidate top = data[0];
-    indices[data[0].id] = (uint32_t)-2;
     indices[data[length_minus_1].id] = 0;
+    indices[data[0].id] = (uint32_t)-2;
     data[0] = data[length_minus_1];
 
     uint64_t i = 0;
