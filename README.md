@@ -32,6 +32,8 @@ A "balanced" program is a program that does all types of operations that you'd e
 The benchmark does not focus on only one of these aspects. Finding out which exact part is faster in which languages is outside of the scope of this repository.
 
 ### Notes
+**LATEST** I recently discovered an improvement to the indexed heap algorithm that could bring a 2x speed-up. Many implementations (but not `Python` or `Haskell`) may benefit from it. If I find out that any of the compilers were able to optimize it out, implementing this improvement will be given higher priority.
+
 The tests were composed in such a way that `C` and `C++` spend approximately the same time on parsing the file and solving the problem, therefore equating the impact of all parts of the program. The comparison chart is known to be qualitatively different when using smaller problem.
 
 The names of the bars on the chart are pretty self-explanatory. Except for:
