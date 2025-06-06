@@ -61,6 +61,7 @@ class Graphics:
     def __init__(self):
         self.inverse_diagram = False
         self.inverse_labels = False
+        self.alphabetic = False
         self.reverse = False
         self.log = False
         self.no_extras = False
@@ -81,6 +82,7 @@ class Graphics:
                 print("  --help")
                 print("  --inverse-diagram")
                 print("  --inverse-labels")
+                print("  --alphabetic")
                 print("  --reverse")
                 print("  --log")
                 print("  --no-extras")
@@ -92,6 +94,7 @@ class Graphics:
             elif arg == "--demo": demonstration = True
             elif arg == "--inverse-diagram": self.inverse_diagram = options_set = True
             elif arg == "--inverse-labels": self.inverse_labels = options_set = True
+            elif arg == "--alphabetic": self.alphabetic = options_set = True
             elif arg == "--reverse": self.reverse = options_set = True
             elif arg == "--log": self.log = options_set = True
             elif arg == "--no-extras": self.no_extras = options_set = True
@@ -227,8 +230,9 @@ class Graphics:
                 try: m = Measurement(label, filename)
                 except: continue
             if m.mean <= self.faster_threshold and m.mean >= self.slower_threshold: measurements.append(m)
-        if not self.reverse: measurements.sort(key=lambda m: m.mean)
-        else: measurements.sort(key=lambda m: -m.mean)
+        if self.alphabetic: measurements.sort(key=lambda m: m.label, reverse=True)
+        else: measurements.sort(key=lambda m: m.mean)
+        if self.reverse: measurements = reversed(measurements)
         
         labels = [ m.label for m in measurements ]
         text_values = [ m.inv_mean for m in measurements ] if self.inverse_labels else [ m.mean for m in measurements ]
