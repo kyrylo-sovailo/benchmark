@@ -7,6 +7,10 @@ if [ $(type clang 2>/dev/null | wc -l) -gt 0 ]; then
     VERSION=$(clang --version | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
     echo "Clang                ${VERSION}"
 fi
+if [ $(type nasm 2>/dev/null | wc -l) -gt 0 ]; then
+    VERSION=$(nasm --version | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+    echo "NASM                 ${VERSION}"
+fi
 if [ $(type gfortran 2>/dev/null | wc -l) -gt 0 ]; then
     VERSION=$(gfortran --version | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
     echo "GFortran             ${VERSION}"

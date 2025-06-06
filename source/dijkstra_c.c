@@ -447,10 +447,15 @@ static void solve_ver5(const ConnectionVectorVector *graph, const BenchmarkVecto
         memset(candidate_indices, 0xFF, graph->length * sizeof(unsigned int));
         Candidate candidate = { .id = source, .int_distance = 0, .distance = 0.0 };
         push_indexed_heap(candidates, &candidates_length, candidate_indices, candidate);
-        candidate.distance = INFINITY;
-        candidate.int_distance = 0;
-        while (candidates_length != 0)
+        while (true)
         {
+            if (candidates_length == 0)
+            {
+                candidate.distance = INFINITY;
+                candidate.int_distance = 0;
+                break;
+            }
+
             candidate = pop_indexed_heap(candidates, &candidates_length, candidate_indices);
             if (candidate.id == destination) break;
             ConnectionVector *connections = &graph->begin[candidate.id];

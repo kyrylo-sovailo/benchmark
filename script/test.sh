@@ -12,19 +12,19 @@ run_benchmark()
     if [ "$1" -nt "$3" -o "$2" -nt "$3" ]; then
         if [ ! -z "$5" ]; then
             LAUNCH="$5"
-        elif [ $( echo "$1" | grep -e '.*.exe$' | wc -l) -gt 0 ]; then
+        elif [ $( echo "$1" | grep -e '.*\.exe$' | wc -l) -gt 0 ]; then
             LAUNCH="mono"
-        elif [ $( echo "$1" | grep -e '.*.dll$' | wc -l) -gt 0 ]; then
+        elif [ $( echo "$1" | grep -e '.*\.dll$' | wc -l) -gt 0 ]; then
             LAUNCH="dotnet"
-        elif [ $( echo "$1" | grep -e '.*.class$' | wc -l) -gt 0 ]; then
+        elif [ $( echo "$1" | grep -e '.*\.class$' | wc -l) -gt 0 ]; then
             LAUNCH="java"
-        elif [ $( echo "$1" | grep -e '.*.js$' | wc -l) -gt 0 ]; then
+        elif [ $( echo "$1" | grep -e '.*\.js$' | wc -l) -gt 0 ]; then
             LAUNCH="node"
-        elif [ $( echo "$1" | grep -e '.*.lua$' | wc -l) -gt 0 ]; then
+        elif [ $( echo "$1" | grep -e '.*\.lua$' | wc -l) -gt 0 ]; then
             LAUNCH="lua"
-        elif [ $( echo "$1" | grep -e '.*.py$' | wc -l) -gt 0 ]; then
+        elif [ $( echo "$1" | grep -e '.*\.py$' | wc -l) -gt 0 ]; then
             LAUNCH="python"
-        elif [ $( echo "$1" | grep -e '.*.m$' | wc -l) -gt 0 ]; then
+        elif [ $( echo "$1" | grep -e '.*\.m$' | wc -l) -gt 0 ]; then
             LAUNCH="matlab"
         else
             LAUNCH=""
@@ -72,10 +72,17 @@ if [ $(type clang 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_c_clang_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_release.txt" || exit 1
 fi
 
+# Assembly
+if [ $(uname -m) == "x86_64" -a $(type nasm 2>/dev/null | wc -l) -gt 0 -a $(type ld 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/dijkstra_asm_nasm_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_asm_nasm_debug.txt" || exit 1
+    run_benchmark "$BUILD/dijkstra_asm_nasm_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_asm_nasm_release.txt" || exit 1
+fi
+
 # Extras
 if [ $(type gcc 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_c_gcc_release_freestanding" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_gcc_release_freestanding.txt" || exit 1
     run_benchmark "$BUILD/dijkstra_c_gcc_release_freestanding_mapping" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_gcc_release_freestanding_mapping.txt" || exit 1
+    run_benchmark "$BUILD/dijkstra_c_gcc_release_freestanding_asm" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_gcc_release_freestanding_asm.txt" || exit 1
 fi
 if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_c_gcc_release_cpp" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_gcc_release_cpp.txt" || exit 1

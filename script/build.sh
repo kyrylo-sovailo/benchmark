@@ -16,6 +16,12 @@ compile_debug()
             FLAGS="-std=c11 -Wall -Wextra -Wconversion -Wsign-conversion -pedantic -g"
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
+        elif [ $( echo "$2" | grep -e '.*.asm$' | wc -l) -gt 0 ]; then #Assembly
+            FLAGS="-f elf64 -F dwarf -g"
+            echo $1 $FLAGS "$2" -o "$3.o"
+            $1 $FLAGS "$2" -o "$3.o" || exit 1
+            echo ld "$3.o" -o "$3"
+            ld "$3.o" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.cs$' | wc -l) -gt 0 -a "$1" == "dotnet" ]; then #C#
             #Actual destination is ignored, assuming destination has form $DIRECTORY/$NAME/Debug/$NAME.dll
             DIRECTORY=$(dirname $(dirname $(dirname "$3")))
@@ -76,6 +82,12 @@ compile_release()
             FLAGS="-std=c11 -Wall -Wextra -Wconversion -Wsign-conversion -O3 -DNDEBUG -flto -march=native"
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
+        elif [ $( echo "$2" | grep -e '.*.asm$' | wc -l) -gt 0 ]; then #Assembly
+            FLAGS="-f elf64"
+            echo $1 $FLAGS "$2" -o "$3.o"
+            $1 $FLAGS "$2" -o "$3.o" || exit 1
+            echo ld "$3.o" -o "$3"
+            ld "$3.o" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.cs$' | wc -l) -gt 0 -a "$1" == "dotnet" ]; then #C#
             #Actual destination is ignored, assuming destination has form $DIRECTORY/$NAME/Debug/$NAME.dll
             DIRECTORY=$(dirname $(dirname $(dirname "$3")))
@@ -150,7 +162,7 @@ else
     echo "Either g++ or clang++ needs to be present" && exit 1
 fi
 create_benchmark "$BUILD/create_dijkstra" "$BUILD/dijkstra.txt" || exit 1
-exit
+
 # C++
 if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
     compile_debug g++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_gcc_debug" || exit 1
@@ -171,10 +183,17 @@ if [ $(type clang 2>/dev/null | wc -l) -gt 0 ]; then
     compile_release clang "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c_clang_release" || exit 1
 fi
 
+# Assembly
+if [ $(uname -m) == "x86_64" -a $(type nasm 2>/dev/null | wc -l) -gt 0 -a $(type ld 2>/dev/null | wc -l) -gt 0 ]; then
+    compile_debug nasm "$SOURCE/dijkstra_asm.asm" "$BUILD/dijkstra_asm_nasm_debug" || exit 1
+    compile_release nasm "$SOURCE/dijkstra_asm.asm" "$BUILD/dijkstra_asm_nasm_release" || exit 1
+fi
+
 # Extras
-if [ $(type gcc 2>/dev/null | wc -l) -gt 0 ]; then
+if [ $(uname -m) == "x86_64" -a $(type gcc 2>/dev/null | wc -l) -gt 0 ]; then
     compile_release "gcc -nostdlib -ffreestanding -Wno-unused-parameter -Wno-implicit-function-declaration" "$SOURCE/dijkstra_c_freestanding.c" "$BUILD/dijkstra_c_gcc_release_freestanding" || exit 1
     compile_release "gcc -DUSE_MAPPING -nostdlib -ffreestanding -Wno-unused-parameter -Wno-implicit-function-declaration" "$SOURCE/dijkstra_c_freestanding.c" "$BUILD/dijkstra_c_gcc_release_freestanding_mapping" || exit 1
+    compile_release "gcc -nostdlib -ffreestanding -Wno-unused-parameter -Wno-implicit-function-declaration" "$SOURCE/dijkstra_c_freestanding_asm.c" "$BUILD/dijkstra_c_gcc_release_freestanding_asm" || exit 1
 fi
 if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
     copy "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c.cpp" || exit 1
@@ -186,13 +205,13 @@ if [ $(type clang++ 2>/dev/null | wc -l) -gt 0 ]; then
     compile_release "clang++ -Drestrict=" "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_clang_release_cpp" || exit 1 #C as C++
     compile_release "clang++ -Drestrict=__restrict__" "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_clang_release_cpp_restrict" || exit 1 #C as C++
 fi
-exit
+
 # C#
 if [ $(type mcs 2>/dev/null | wc -l) -gt 0 ]; then
     copy "$SOURCE/dijkstra_csharp.cs" "$BUILD/dijkstra_csharp_debug.cs" || exit 1
-    compile_debug mcs "$BUILD/dijkstra_csharp_debug.cs" "$BUILD/dijkstra_csharp_mcs_debug.exe" || exit 1
+    compile_debug "mcs -define:NON_NULLABLE_STRING" "$BUILD/dijkstra_csharp_debug.cs" "$BUILD/dijkstra_csharp_mcs_debug.exe" || exit 1
     copy "$SOURCE/dijkstra_csharp.cs" "$BUILD/dijkstra_csharp_release.cs" || exit 1
-    compile_release mcs "$BUILD/dijkstra_csharp_release.cs" "$BUILD/dijkstra_csharp_mcs_release.exe" || exit 1
+    compile_release "mcs -define:NON_NULLABLE_STRING" "$BUILD/dijkstra_csharp_release.cs" "$BUILD/dijkstra_csharp_mcs_release.exe" || exit 1
 fi
 if [ $(type dotnet 2>/dev/null | wc -l) -gt 0 ]; then
     compile_debug dotnet "$SOURCE/dijkstra_csharp.cs" "$BUILD/Dotnet/Debug/Dotnet.dll" dotnet || exit 1

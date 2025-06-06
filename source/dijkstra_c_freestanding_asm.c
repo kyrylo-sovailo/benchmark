@@ -370,7 +370,7 @@ static void *__malloc(uint64_t size)
     if (size > available_memory)
     {
         bytes_to_request = size - available_memory;
-        bytes_to_request = (bytes_to_request + CHUNK_SIZE - 1) & ~(CHUNK_SIZE - 1);
+        bytes_to_request = (bytes_to_request + CHUNK_SIZE - 1) & (uint64_t)~(CHUNK_SIZE - 1);
         memory_capacity_end = (char*)memory_capacity_end + bytes_to_request;
         memory_capacity_end_copy = __brk(memory_capacity_end);
         if (memory_capacity_end_copy != memory_capacity_end) { __write(1, "brk error 2\n", 12); __exit(1); }
@@ -488,7 +488,7 @@ static float push_bi_connection(struct ConnectionVectorVector *connections, uint
     //i - RCX
 
     connections_begin = connections->begin; //borrow connections->begin
-    source_destination_max = ((source > destination) ? source : destination);
+    source_destination_max = (uint32_t)((source > destination) ? source : destination);
     if (source_destination_max >= connections->length)
     {
         new_connections_length = source_destination_max + 1;
@@ -546,7 +546,7 @@ static uint64_t push_indexed_heap(struct Candidate *data, uint64_t length, uint3
         if (index == 0)
         {
             *index_pointer = element;
-            indices[element.id] = index;
+            indices[element.id] = (uint32_t)index;
             break;
         }
 
@@ -555,14 +555,14 @@ static uint64_t push_indexed_heap(struct Candidate *data, uint64_t length, uint3
         if (element.distance < c->distance)
         {
             *index_pointer = *c;
-            indices[index_pointer->id] = index;
+            indices[index_pointer->id] = (uint32_t)index;
             index = parent_i;
             index_pointer = c;
         }
         else
         {
             *index_pointer = element;
-            indices[element.id] = index;
+            indices[element.id] = (uint32_t)index;
             break;
         }
     }
@@ -589,13 +589,13 @@ static struct Candidate pop_indexed_heap(struct Candidate *data, uint64_t length
     {
         const uint64_t left_index = 2 * index + 1; //R8
         const uint64_t right_index = 2 * index + 2;
-        const bool left_exists = left_index <= length_minus_1;
-        const bool right_exists = right_index <= length_minus_1; //implies left_exists
+        //const bool left_exists = left_index <= length_minus_1;
+        //const bool right_exists = right_index <= length_minus_1; //implies left_exists
 
         if (left_index > length_minus_1) // if (*!left_exists && !right_exists)
         {
             *index_pointer = buffer;
-            indices[buffer.id] = index;
+            indices[buffer.id] = (uint32_t)index;
             break;
         }
         
@@ -622,14 +622,14 @@ static struct Candidate pop_indexed_heap(struct Candidate *data, uint64_t length
         if (c->distance < buffer.distance)
         {
             *index_pointer = *c;
-            indices[index_pointer->id] = index;
+            indices[index_pointer->id] = (uint32_t)index;
             index = next_index;
             index_pointer = c;
         }
         else
         {
             *index_pointer = buffer;
-            indices[buffer.id] = index;
+            indices[buffer.id] = (uint32_t)index;
             break;
         }
     }
@@ -709,7 +709,7 @@ static void parse_ver5(struct ConnectionVectorVector *graph, struct BenchmarkVec
         #else
         if (p >= buffer_end)
         {
-            uint64_t buffer_size = __read(file, buffer, sizeof(buffer));
+            int64_t buffer_size = __read(file, buffer, sizeof(buffer));
             p = buffer;
             buffer_end = buffer + buffer_size;
             eof = (buffer_size == 0);
@@ -820,7 +820,7 @@ static void parse_ver5(struct ConnectionVectorVector *graph, struct BenchmarkVec
         
         default:
             #ifdef USE_MAPPING
-            code = __munmap(buffer, buffer_size);
+            code = __munmap(buffer, (uint64_t)(p - buffer));
             if (code < 0) { __write(1, "munmap error\n", 13); __exit(6); }
             #endif
             code = __close(file);
@@ -850,7 +850,7 @@ static void solve_ver5(const struct ConnectionVectorVector *graph, const struct 
         candidates_length = push_indexed_heap(candidates, candidates_length, candidate_indices, candidate);
         while (1)
         {
-            if (candidates_length != 0)
+            if (candidates_length == 0)
             {
                 candidate.distance = 1.0f / 0.0f;
                 candidate.int_distance = 0;

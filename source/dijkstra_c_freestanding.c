@@ -696,10 +696,14 @@ static void solve_ver5(const struct ConnectionVectorVector *graph, const struct 
         for (uint64_t i = 0; i < graph->length; i++) candidate_indices[i] = (uint32_t)-1;
         struct Candidate candidate = { .id = source, .int_distance = 0, .distance = 0.0 };
         candidates_length = push_indexed_heap(candidates, candidates_length, candidate_indices, candidate);
-        candidate.distance = 1.0f / 0.0f;
-        candidate.int_distance = 0;
-        while (candidates_length != 0)
+        for (;;)
         {
+            if (candidates_length == 0)
+            {
+                candidate.distance = 1.0f / 0.0f;
+                candidate.int_distance = 0;
+                break;
+            }
             candidate = pop_indexed_heap(candidates, candidates_length, candidate_indices);
             candidates_length--;
             if (candidate.id == destination) break;

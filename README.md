@@ -13,7 +13,7 @@ A "reasonable" code is a code that:
  - In particular, accesses structure members by names rather than by index
  - Stays native, does not delegate the task to other programming languages
  - Does not use third party libraries
- - Does not use assembler optimizations
+ - Does not use assembler snippets
  - Does not use hardware acceleration
  - Does not use multithreading
  - Uses standard I/O
@@ -32,13 +32,14 @@ A "balanced" program is a program that does all types of operations that you'd e
 The benchmark does not focus on only one of these aspects. Finding out which exact part is faster in which languages is outside of the scope of this repository.
 
 ### Notes
-**LATEST** I recently discovered an improvement to the indexed heap algorithm that could bring a 2x speed-up. Many implementations (but not `Python` or `Haskell`) may benefit from it. If I find out that any of the compilers were able to optimize it out, implementing this improvement will be given higher priority.
+**LATEST** I recently discovered an improvement to the indexed heap algorithm that could bring a 2x speed-up. Many implementations (but not `Python` or `Haskell`) may benefit from it. If I find out that any of the compilers were able to optimize it out (and it seems to be the case for `gcc`), implementing this improvement will be given higher priority.
 
 The tests were composed in such a way that `C` and `C++` spend approximately the same time on parsing the file and solving the problem, therefore equating the impact of all parts of the program. The comparison chart is known to be qualitatively different when using smaller problem.
 
 The names of the bars on the chart are pretty self-explanatory. Except for:
- - `C, gcc, freestanding` is a `x86_64`-specific C code that uses custom memory management, custom I/O and no standard library. It is therefore considered **CHEATING**. The reason this version is present is because I can translate this version in Assembly (coming soon). Since there is no standard I/O in Assembly, the Assembly translation of this version would be considered legit. Also it is worth knowing whether the improvement of the Assembly version comes from it being written in Assembly or from not using standard I/O.
+ - `C, gcc, freestanding` and `C, gcc, freestanding/asm` are `x86_64`-specific C code that use custom memory management, custom I/O and no standard library. They are therefore considered **CHEATING**. The reason these versions are present at all is because they were used for development of the `NASM` version. `C, gcc, freestanding/asm` is much closer to the the final `NASM` version and contains a lot of annotations.
  - `C, gcc, freestanding/mapping` is same but using memory mapping rather than standard file I/O.
+ - Since there is no standard library in Assembly, the Assembly version is considered **LEGIT**.
  - `C, g++` is a `C` program compiled with `g++` as valid `C++`.
  - `C, g++, restrict` is a `C` program compiled with `g++` as valid `C++` with the compiler-specific `__restrict__` keyword.
  - `C, clang++` and `C, clang++, restrict` are same but for `clang++`.
@@ -61,6 +62,7 @@ The measurements were performed on Intel Pentium 4415U. To reduce noise, the ker
 ```
 GCC                  14.2.1
 Clang                19.1.7
+NASM                 2.16.03
 GFortran             14.2.1
 Free Pascal Compiler 3.2.2
 MCS                  6.12.0.199, Target 4.5
@@ -79,3 +81,4 @@ Kernel               6.12.10-zen1-x86_64
  - C++ is faster than C (on this benchmark, under "reasonability" constraint, due to faster I/O [read further](https://github.com/kyrylo-sovailo/benchmark_masterrace))
  - Fortran is not that fast
  - Clang is faster than GCC
+ - C code compiled as C++ is slower than pure C

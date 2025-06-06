@@ -505,8 +505,8 @@ parse_ver5:
             syscall
             mov r12, rbp
             sub r12, rax                            ; p = buffer
-            test rax, rax
-            jnz parse_ver5_file_not_empty
+            cmp rax, 0
+            jg parse_ver5_file_not_empty
                 or r13b, 0x01                       ; eof = (buffer_size == 0);
                 jmp parse_ver5_restore_read
             parse_ver5_file_not_empty:

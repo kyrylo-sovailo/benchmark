@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import matplotlib.pyplot as plt
-import math, shutil, sys
+import math, platform, shutil, sys
 
 def find_closest_color(desired_color):
     import matplotlib.colors as mcolors
@@ -46,6 +46,7 @@ class Measurement:
         if "C" in labels: self.color = "xkcd:gunmetal" if find_closest else "#555555"
         elif "C++" in labels: self.color = "xkcd:warm pink" if find_closest else "#f34b7d"
         elif "C#" in labels: self.color = "green" if find_closest else "#178600"
+        elif "NASM" in labels: self.color = "xkcd:mud" if find_closest else "#6E4C13"
         elif "Java" in labels: self.color = "xkcd:caramel" if find_closest else "#b07219"
         elif "Fortran" in labels: self.color = "xkcd:blue with a hint of purple" if find_closest else "#4d41b1"
         elif "Pascal" in labels or "Delphi" in labels: self.color = "xkcd:sandy yellow" if find_closest else "#e3f171"
@@ -106,55 +107,77 @@ class Graphics:
         if self.faster_threshold < self.slower_threshold: raise Exception("Maximum threshold is lower than minium threshold")
 
     def run(self):
-        label_to_filename = dict()
+        x86_64 = (platform.architecture == "x86_64" and platform.system == "Linux")
         gpp_present = bool(shutil.which("g++"))
+        llvmpp_present = bool(shutil.which("clang++"))
+        gcc_present = bool(shutil.which("gcc"))
+        clang_present = bool(shutil.which("clang"))
+        nasm_present = bool(shutil.which("nasm")) and bool(shutil.which("ld"))
+        mcs_present = bool(shutil.which("mcs"))
+        dotnet_present = bool(shutil.which("dotnet"))
+        javac_present = bool(shutil.which("javac"))
+        gfortran_present = bool(shutil.which("gfortran"))
+        fpc_present = bool(shutil.which("fpc"))
+        ghc_present = bool(shutil.which("ghc"))
+
+        label_to_filename = dict()
         label_to_filename.update({
             "C++, g++, debug" : ("dijkstra_cpp_gcc_debug.txt", gpp_present),
             "C++, g++, release" : ("dijkstra_cpp_gcc_release.txt", gpp_present)
         })
-        clangpp_present = bool(shutil.which("clang++"))
         label_to_filename.update({
-            "C++, clang++, debug" : ("dijkstra_cpp_clang_debug.txt", clangpp_present),
-            "C++, clang++, release" : ("dijkstra_cpp_clang_release.txt", clangpp_present),
+            "C++, clang++, debug" : ("dijkstra_cpp_clang_debug.txt", llvmpp_present),
+            "C++, clang++, release" : ("dijkstra_cpp_clang_release.txt", llvmpp_present),
         })
-        gcc_present = bool(shutil.which("gcc"))
         label_to_filename.update({
             "C, gcc, debug" : ("dijkstra_c_gcc_debug.txt", gcc_present),
             "C, gcc, release" : ("dijkstra_c_gcc_release.txt", gcc_present),
         })
-        clang_present = bool(shutil.which("clang"))
         label_to_filename.update({
             "C, clang, debug" : ("dijkstra_c_clang_debug.txt", clang_present),
             "C, clang, release" : ("dijkstra_c_clang_release.txt", clang_present),
         })
-        mcs_present = bool(shutil.which("mcs"))
+        label_to_filename.update({
+            "NASM, debug" : ("dijkstra_asm_nasm_debug.txt", nasm_present and x86_64),
+            "NASM, release" : ("dijkstra_asm_nasm_release.txt", nasm_present and x86_64),
+        })
+        label_to_filename.update({ #Important, doesn't count as extra
+            "C, gcc, release, freestanding" : ("dijkstra_c_gcc_release_freestanding.txt", gpp_present)
+        })
+        if not self.no_extras: label_to_filename.update({
+            "C, gcc, release, freestanding/asm" : ("dijkstra_c_gcc_release_freestanding_asm.txt", gpp_present and x86_64),
+            "C, gcc, release, freestanding/mapping" : ("dijkstra_c_gcc_release_freestanding_mapping.txt", gpp_present and x86_64)
+        })
+        if not self.no_extras: label_to_filename.update({
+            "C, g++, release" : ("dijkstra_c_gcc_release_cpp.txt", gpp_present),
+            "C, g++, release, restrict" : ("dijkstra_c_gcc_release_cpp_restrict.txt", gpp_present)
+        })
+        if not self.no_extras: label_to_filename.update({
+            "C, clang++, release" : ("dijkstra_c_clang_release_cpp.txt", llvmpp_present),
+            "C, clang++, release, restrict" : ("dijkstra_c_clang_release_cpp_restrict.txt", llvmpp_present)
+        })
         label_to_filename.update({
             "C#, mcs, debug" : ("dijkstra_csharp_mcs_debug.txt", mcs_present),
             "C#, mcs, release" : ("dijkstra_csharp_mcs_release.txt", mcs_present),
         })
-        dotnet_present = bool(shutil.which("dotnet"))
         label_to_filename.update({
             "C#, .NET, debug" : ("dijkstra_csharp_dotnet_debug.txt", dotnet_present),
             "C#, .NET, release" : ("dijkstra_csharp_dotnet_release.txt", dotnet_present),
         })
-        javac_present = bool(shutil.which("mcs"))
         label_to_filename.update({
             "Java, OpenJDK, debug" : ("dijkstra_java_openjdk_debug.txt", javac_present),
             "Java, OpenJDK, release" : ("dijkstra_java_openjdk_release.txt", javac_present),
         })
-        gfortran_present = bool(shutil.which("gfortran"))
         label_to_filename.update({
             "Fortran, gfortran, debug" : ("dijkstra_fortran_gfortran_debug.txt", gfortran_present),
             "Fortran, gfortran, release" : ("dijkstra_fortran_gfortran_release.txt", gfortran_present),
         })
-        fpc_present = bool(shutil.which("fpc"))
         label_to_filename.update({
             "Pascal, FPC, debug" : ("dijkstra_pascal_fpc_debug.txt", fpc_present),
             "Pascal, FPC, release" : ("dijkstra_pascal_fpc_release.txt", fpc_present),
             "Delphi, FPC, debug" : ("dijkstra_delphi_fpc_debug.txt", fpc_present),
             "Delphi, FPC, release" : ("dijkstra_delphi_fpc_release.txt", fpc_present),
         })
-        ghc_present = bool(shutil.which("ghc"))
         if shutil.which("ghc"): label_to_filename.update({
             "Haskell, ghc, debug" : ("dijkstra_haskell_ghc_debug.txt", ghc_present),
             "Haskell, ghc, release" : ("dijkstra_haskell_ghc_release.txt", ghc_present),
@@ -176,20 +199,6 @@ class Graphics:
         })
         label_to_filename.update({
             "Matlab" : ("dijkstra_matlab_matlab.txt", bool(shutil.which("matlab")))
-        })
-        label_to_filename.update({ #Important, doesn't count as extra
-            "C, gcc, release, freestanding" : ("dijkstra_c_gcc_release_freestanding.txt", gpp_present)
-        })
-        if not self.no_extras: label_to_filename.update({
-            "C, gcc, release, freestanding/mapping" : ("dijkstra_c_gcc_release_freestanding_mapping.txt", gpp_present)
-        })
-        if not self.no_extras: label_to_filename.update({
-            "C, g++, release" : ("dijkstra_c_gcc_release_cpp.txt", gpp_present),
-            "C, g++, release, restrict" : ("dijkstra_c_gcc_release_cpp_restrict.txt", gpp_present)
-        })
-        if not self.no_extras: label_to_filename.update({
-            "C, clang++, release" : ("dijkstra_c_clang_release_cpp.txt", clangpp_present),
-            "C, clang++, release, restrict" : ("dijkstra_c_clang_release_cpp_restrict.txt", clangpp_present)
         })
         if self.no_debug:
             label_to_filename = { key: value for key, value in label_to_filename.items() if not "debug" in key }
@@ -238,7 +247,11 @@ class Graphics:
             axes.text(i, position, text, ha="center")
         axes.set_xlabel("Language/compiler")
         axes.set_xticks(range(len(labels)))
-        axes.set_xticklabels(labels, rotation=15)
+        if self.no_debug:
+            axes.set_xticklabels(labels, rotation=20)
+        else:
+            axes.set_xticklabels(labels, rotation=90)
+            figure.subplots_adjust(bottom=0.25)
         axes.set_ylabel("Time, s" if not self.inverse else "Speed, $s^{-1}$")
         if self.log: axes.set_yscale('log')
         plt.show()

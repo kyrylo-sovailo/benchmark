@@ -255,7 +255,11 @@ class Program
         bool read_benchmarks = false;
         while (true)
         {
+            #if NON_NULLABLE_STRING
             string line = file.ReadLine();
+            #else
+            string? line = file.ReadLine();
+            #endif
             if (line == null) break;
             if (line.Contains("GRAPH")) { read_benchmarks = false; continue; }
             if (line.Contains("BENCHMARK")) { read_benchmarks = true; continue; }
