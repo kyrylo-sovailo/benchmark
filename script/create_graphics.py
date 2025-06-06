@@ -59,7 +59,8 @@ class Measurement:
 
 class Graphics:
     def __init__(self):
-        self.inverse = False
+        self.inverse_diagram = False
+        self.inverse_labels = False
         self.reverse = False
         self.log = False
         self.no_extras = False
@@ -70,13 +71,16 @@ class Graphics:
         self.slower_threshold = -math.inf
 
         i = 1
+        demonstration = False
+        options_set = False
         while i < len(sys.argv):
             arg = sys.argv[i]
             if arg == "--help":
-                print("Usage: ./create_graphics.py <options>")
+                print("Usage: ./create_graphics.py [ <options> | --demo ]")
                 print("Options:")
                 print("  --help")
-                print("  --inverse")
+                print("  --inverse-diagram")
+                print("  --inverse-labels")
                 print("  --reverse")
                 print("  --log")
                 print("  --no-extras")
@@ -85,26 +89,38 @@ class Graphics:
                 print("  --slower TIME")
                 print("  --faster TIME")
                 sys.exit(0)
-            elif arg == "--inverse": self.inverse = True
-            elif arg == "--reverse": self.reverse = True
-            elif arg == "--log": self.log = True
-            elif arg == "--no-extras": self.no_extras = True
-            elif arg == "--no-debug": self.no_debug = True
+            elif arg == "--demo": demonstration = True
+            elif arg == "--inverse-diagram": self.inverse_diagram = options_set = True
+            elif arg == "--inverse-labels": self.inverse_labels = options_set = True
+            elif arg == "--reverse": self.reverse = options_set = True
+            elif arg == "--log": self.log = options_set = True
+            elif arg == "--no-extras": self.no_extras = options_set = True
+            elif arg == "--no-debug": self.no_debug = options_set = True
             elif arg == "--faster":
                 i += 1
                 if i >= len(sys.argv): raise Exception("Expected time after --faster")
                 self.faster_threshold = float(sys.argv[i])
+                options_set = True
             elif arg == "--slower":
                 i += 1
                 if i >= len(sys.argv): raise Exception("Expected time after --slower")
                 self.slower_threshold = float(sys.argv[i])
-            elif arg == "--relative-fastest": self.relative_fastest = True
-            elif arg == "--relative-slowest": self.relative_slowest = True
+                options_set = True
+            elif arg == "--relative-fastest": self.relative_fastest = options_set = True
+            elif arg == "--relative-slowest": self.relative_slowest = options_set = True
             else: raise Exception("Invalid argument")
             i += 1
-                
-        if self.relative_slowest and self.relative_fastest: raise Exception("--relative-fastest incompatible with --relative-fastest")
+        
+        if demonstration and options_set: raise Exception("--demo is incompatible with any other options")
+        if self.relative_slowest and self.relative_fastest: raise Exception("--relative-slowest incompatible with --relative-fastest")
         if self.faster_threshold < self.slower_threshold: raise Exception("Maximum threshold is lower than minium threshold")
+        if demonstration:
+            self.inverse_diagram = True
+            self.reverse = True
+            self.no_extras = True
+            self.no_debug = True
+            self.relative_slowest = True
+            print("--demo is alias for --reverse --relative-slowest --inverse-diagram --no-debug --no-extras")
 
     def run(self):
         x86_64 = (platform.architecture == "x86_64" and platform.system == "Linux")
@@ -215,35 +231,39 @@ class Graphics:
         else: measurements.sort(key=lambda m: -m.mean)
         
         labels = [ m.label for m in measurements ]
-        values = [ m.mean for m in measurements ] if not self.inverse else [ m.inv_mean for m in measurements ]
-        deviations = [ m.deviation for m in measurements ] if not self.inverse else [ m.inv_deviation for m in measurements ]
+        text_values = [ m.inv_mean for m in measurements ] if self.inverse_labels else [ m.mean for m in measurements ]
+        diagram_values = [ m.inv_mean for m in measurements ] if self.inverse_diagram else [ m.mean for m in measurements ]
+        diagram_deviations = [ m.inv_deviation for m in measurements ] if self.inverse_diagram else [ m.deviation for m in measurements ]
         colors = [ m.color for m in measurements ]
 
         if self.relative_fastest:
             fastest_i = -1 if self.reverse else 0
-            fastest = values[fastest_i]
-            for i in range(len(values)):
-                values[i] /= fastest
-                deviations[i] /= fastest
-            values[fastest_i] = 1
+            fastest = diagram_values[fastest_i]
+            for i in range(len(diagram_values)):
+                diagram_values[i] /= fastest
+                diagram_deviations[i] /= fastest
+            diagram_values[fastest_i] = 1
         elif self.relative_slowest:
             slowest_i = 0 if self.reverse else -1
-            slowest = values[slowest_i]
-            for i in range(len(values)):
-                values[i] /= slowest
-                deviations[i] /= slowest
-            values[slowest_i] = 1
+            slowest = diagram_values[slowest_i]
+            for i in range(len(diagram_values)):
+                diagram_values[i] /= slowest
+                diagram_deviations[i] /= slowest
+            diagram_values[slowest_i] = 1
 
-        title = "Execution time diagram" if not self.inverse else "Execution speed diagram"
+        if self.inverse_diagram: title = "Execution speed diagram"
+        else: title = "Execution time diagram"
         figure, axes = plt.subplots(1, 1, num=title)
-        axes.bar(labels, values, yerr=deviations, color=colors)
+        axes.bar(labels, diagram_values, yerr=diagram_deviations, color=colors)
         axes.set_title(title)
-        for i, (value, deviation) in enumerate(zip(values, deviations)):
-            position = value + deviation
-            if self.log: position *= math.exp(math.log(max(values)) / 100)
-            else: position += max(values) / 100
-            if self.relative_fastest or self.relative_slowest: text = f"{value:0.2f}x" if self.relative_slowest == self.inverse else f"{1/value:0.2f}x"
-            else: text = f"{value:0.2f}s" if not self.inverse else f"{value:0.3f}$s^{{-1}}$"
+        for i, (text_value, diagram_value, diagram_deviation) in enumerate(zip(text_values, diagram_values, diagram_deviations)):
+            position = diagram_value + diagram_deviation
+            if self.log: position *= math.exp(math.log(max(diagram_values)) / 100)
+            else: position += max(diagram_values) / 100
+            if self.relative_fastest or self.relative_slowest:
+                text = f"{diagram_value:0.2f}x"
+            else:
+                text = f"{text_value:0.3f}$s^{{-1}}$" if self.inverse_labels else f"{text_value:0.2f}s"
             axes.text(i, position, text, ha="center")
         axes.set_xlabel("Language/compiler")
         axes.set_xticks(range(len(labels)))
@@ -252,7 +272,10 @@ class Graphics:
         else:
             axes.set_xticklabels(labels, rotation=90)
             figure.subplots_adjust(bottom=0.25)
-        axes.set_ylabel("Time, s" if not self.inverse else "Speed, $s^{-1}$")
+        if self.relative_fastest or self.relative_slowest:
+            axes.set_ylabel("Speed" if self.inverse_diagram else "Time")
+        else:
+            axes.set_ylabel("Speed, $s^{-1}$" if self.inverse_diagram else "Time, s")
         if self.log: axes.set_yscale('log')
         plt.show()
 
