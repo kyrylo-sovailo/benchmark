@@ -66,53 +66,61 @@ class IndexedPriorityQueue
     public Candidate dequeue()
     {
         Candidate top = data.get(0);
-        indices[data.get(data.size() - 1).id] = 0;
-        indices[data.get(0).id] = -2;
-        data.set(0, data.get(data.size() - 1));
-        data.remove(data.size() - 1);
+        indices[top.id] = -2;
 
-        int i = 0;
+        if (data.size() == 1)
+        {
+            data.remove(0);
+            return top;
+        }
+
+        Candidate back = data.get(data.size() - 1);
+        int index = 0;
+
         while (true)
         {
-            int left_i = 2 * i + 1;
-            int right_i = 2 * i + 2;
-            boolean left_exists = left_i < data.size();
-            boolean right_exists = right_i < data.size();
+            int left_index = 2 * index + 1;
+            int right_index = 2 * index + 2;
+            boolean left_exists = left_index < data.size();
+            boolean right_exists = right_index < data.size();
 
-            if (/*left_exists &&*/ right_exists)
+            boolean index_moved = false;
+
+            if (left_exists || right_exists)
             {
-                if (data.get(left_i).get_priority() < data.get(right_i).get_priority())
+                int next_index;
+                if (left_exists && right_exists)
                 {
-                    if (data.get(left_i).get_priority() < data.get(i).get_priority())
+                    if (data.get(left_index).get_priority() < data.get(right_index).get_priority())
                     {
-                        int b1 = indices[data.get(i).id]; indices[data.get(i).id] = indices[data.get(left_i).id]; indices[data.get(left_i).id] = b1;
-                        Candidate b2 = data.get(i); data.set(i, data.get(left_i)); data.set(left_i, b2);
-                        i = left_i;
+                        next_index = left_index;
                     }
-                    else break;
+                    else
+                    {
+                        next_index = right_index;
+                    }
                 }
                 else
                 {
-                    if (data.get(right_i).get_priority() < data.get(i).get_priority())
-                    {
-                        int b1 = indices[data.get(i).id]; indices[data.get(i).id] = indices[data.get(right_i).id]; indices[data.get(right_i).id] = b1;
-                        Candidate b2 = data.get(i); data.set(i, data.get(right_i)); data.set(right_i, b2);
-                        i = right_i;
-                    }
-                    else break;
+                    next_index = left_index;
                 }
-            }
-            else if (left_exists /*&& !right_exists*/)
-            {
-                if (data.get(left_i).get_priority() < data.get(i).get_priority())
+
+                if (data.get(next_index).get_priority() < back.get_priority())
                 {
-                    int b1 = indices[data.get(i).id]; indices[data.get(i).id] = indices[data.get(left_i).id]; indices[data.get(left_i).id] = b1;
-                    Candidate b2 = data.get(i); data.set(i, data.get(left_i)); data.set(left_i, b2);
-                    i = left_i;
+                    data.set(index, data.get(next_index));
+                    indices[data.get(index).id] = index;
+                    index = next_index;
+                    index_moved = true;
                 }
-                else break;
             }
-            else break;
+
+            if (!index_moved)
+            {
+                data.set(index, back);
+                indices[back.id] = index;
+                data.remove(data.size() - 1);
+                break;
+            }
         }
 
         return top;
@@ -120,32 +128,45 @@ class IndexedPriorityQueue
 
     public void enqueue(Candidate candidate)
     {
-        int i = indices[candidate.id];
-        if (i == -1)
+        int index = indices[candidate.id];
+
+        if (index == -1)
         {
-            i = data.size();
-            indices[candidate.id] = i;
-            data.add(candidate);
+            index = data.size();
+            data.add(candidate); //value used only when size == 0, otherwise only for allocation
         }
-        else if (i == -2)
+        else if (index == -2)
         {
             return;
         }
         else
         {
-            if (candidate.get_priority() < data.get(i).get_priority()) data.set(i, candidate);
-            else return;
+            if (candidate.get_priority() >= data.get(index).get_priority()) return;
         }
-        while (i > 0)
+
+        while (true)
         {
-            int parent_i = (i - 1) / 2;
-            if (data.get(i).get_priority() < data.get(parent_i).get_priority())
+            boolean parent_exists = index > 0;
+            boolean index_moved = false;
+
+            if (parent_exists)
             {
-                int b1 = indices[data.get(i).id]; indices[data.get(i).id] = indices[data.get(parent_i).id]; indices[data.get(parent_i).id] = b1;
-                Candidate b2 = data.get(i); data.set(i, data.get(parent_i)); data.set(parent_i, b2);
-                i = parent_i;
+                int parent_index = (index - 1) / 2;
+                if (candidate.get_priority() < data.get(parent_index).get_priority())
+                {
+                    data.set(index, data.get(parent_index));
+                    indices[data.get(index).id] = index;
+                    index = parent_index;
+                    index_moved = true;
+                }
             }
-            else break;
+
+            if (!index_moved)
+            {
+                data.set(index, candidate);
+                indices[candidate.id] = index;
+                break;
+            }
         }
     }
 

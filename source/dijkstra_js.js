@@ -17,53 +17,52 @@ class IndexedPriorityQueue
     pop()
     {
         let top = this.data[0];
-        this.indices[this.data[this.data.length - 1].id] = 0;
-        this.indices[this.data[0].id] = -2;
-        this.data[0] = this.data[this.data.length - 1];
-        this.data.pop();
+        this.indices[top.id] = -2;
+        if (this.data.length == 1) { this.data.pop(); return top; }
 
-        let i = 0;
+        let back = this.data[this.data.length - 1];
+        let index = 0;
         while (true)
         {
-            let parent_i = 2 * i + 1;
-            let right_i = 2 * i + 2;
-            let left_exists = parent_i < this.data.length;
-            let right_exists = right_i < this.data.length;
-            if (/*left_exists &&*/ right_exists)
+            let left_index = 2 * index + 1;
+            let right_index = 2 * index + 2;
+            let left_exists = left_index < this.data.length;
+            let right_exists = right_index < this.data.length;
+
+            let index_moved = false;
+            if (left_exists || right_exists)
             {
-                if (this.data[parent_i].distance < this.data[right_i].distance)
+                let next_index;
+                if (left_exists && right_exists)
                 {
-                    if (this.data[parent_i].distance < this.data[i].distance)
+                    if (this.data[left_index].distance < this.data[right_index].distance)
                     {
-                        let b1 = this.indices[this.data[i].id]; this.indices[this.data[i].id] = this.indices[this.data[parent_i].id]; this.indices[this.data[parent_i].id] = b1;
-                        let b2 = this.data[i]; this.data[i] = this.data[parent_i]; this.data[parent_i] = b2;
-                        i = parent_i;
+                        next_index = left_index;
                     }
-                    else break;
+                    else
+                    {
+                        next_index = right_index;
+                    }
                 }
                 else
                 {
-                    if (this.data[right_i].distance < this.data[i].distance)
-                    {
-                        let b1 = this.indices[this.data[i].id]; this.indices[this.data[i].id] = this.indices[this.data[right_i].id]; this.indices[this.data[right_i].id] = b1;
-                        let b2 = this.data[i]; this.data[i] = this.data[right_i]; this.data[right_i] = b2;
-                        i = right_i;
-                    }
-                    else break;
+                    next_index = left_index;
                 }
-            }
-            else if (left_exists /*&& !right_exists*/)
-            {
-                if (this.data[parent_i].distance < this.data[i].distance)
+
+                if (this.data[next_index].distance < back.distance)
                 {
-                    let b1 = this.indices[this.data[i].id]; this.indices[this.data[i].id] = this.indices[this.data[parent_i].id]; this.indices[this.data[parent_i].id] = b1;
-                    let b2 = this.data[i]; this.data[i] = this.data[parent_i]; this.data[parent_i] = b2;
-                    i = parent_i;
+                    this.data[index] = this.data[next_index];
+                    this.indices[this.data[index].id] = index;
+                    index = next_index;
+                    index_moved = true;
                 }
-                else break;
             }
-            else
+
+            if (!index_moved)
             {
+                this.data[index] = back;
+                this.indices[back.id] = index;
+                this.data.pop();
                 break;
             }
         }
@@ -73,32 +72,42 @@ class IndexedPriorityQueue
 
     push(candidate)
     {
-        let i = this.indices[candidate.id];
-        if (i == -1)
+        let index = this.indices[candidate.id];
+        if (index == -1)
         {
-            i = this.data.length;
-            this.indices[candidate.id] = i;
-            this.data.push(candidate);
+            index = this.data.length;
+            this.data.push(candidate); //value used only when length == 0, otherwise only for allocation
         }
-        else if (i == -2)
+        else if (index == -2)
         {
             return;
         }
         else
         {
-            if (candidate.distance < this.data[i].distance) this.data[i] = candidate;
-            else return;
+            if (candidate.distance >= this.data[index].distance) return;
         }
-        while (i > 0)
+        
+        while (true)
         {
-            let parent_i = (i - 1) >> 2;
-            if (this.data[i].distance < this.data[parent_i].distance)
+            let parent_exists = index > 0;
+            let index_moved = false;
+            if (parent_exists)
             {
-                let b1 = this.indices[this.data[i].id]; this.indices[this.data[i].id] = this.indices[this.data[parent_i].id]; this.indices[this.data[parent_i].id] = b1;
-                let b2 = this.data[i]; this.data[i] = this.data[parent_i]; this.data[parent_i] = b2;
-                i = parent_i;
+                let parent_index = (index - 1) >> 1;
+                if (candidate.distance < this.data[parent_index].distance)
+                {
+                    this.data[index] = this.data[parent_index];
+                    this.indices[this.data[index].id] = index;
+                    index = parent_index;
+                    index_moved = true;
+                }
             }
-            else break;
+            if (!index_moved)
+            {
+                this.data[index] = candidate;
+                this.indices[candidate.id] = index;
+                break;
+            }
         }
     }
 

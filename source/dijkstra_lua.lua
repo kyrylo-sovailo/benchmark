@@ -1,77 +1,84 @@
 #!/usr/bin/lua
 
 local function indexed_heap_push(data, indices, element)
-    local i = indices[element.id]
-    if i == nil then
-        i = #data + 1
-        indices[element.id] = i
-        table.insert(data, element)
-    elseif i == 0 then
+    local index = indices[element.id]
+    if index == nil then
+        index = #data + 1
+        table.insert(data, element) --value used only when #data == 0, otherwise only for allocation
+    elseif index == 0 then
         return
     else
-        if element.distance < data[i].distance then
-            data[i] = element
-        else
+        if element.distance >= data[index].distance then
             return
         end
     end
 
-    while i > 1 do
-        local parent_i = math.floor(i / 2)
-        if data[i].distance < data[parent_i].distance then
-            indices[data[i].id], indices[data[parent_i].id] = indices[data[parent_i].id], indices[data[i].id]
-            data[i], data[parent_i] = data[parent_i], data[i]
-            i = parent_i
-        else
-            return
+    while true do
+        local parent_exists = index > 1
+        local index_moved = false
+        if parent_exists then
+            local parent_index = math.floor(index / 2)
+            if element.distance < data[parent_index].distance then
+                data[index] = data[parent_index]
+                indices[data[index].id] = index
+                index = parent_index
+                index_moved = true
+            end
+        end
+        if not index_moved then
+            data[index] = element
+            indices[element.id] = index
+            break
         end
     end
 end
 
 local function indexed_heap_pop(data, indices)
     local top = data[1]
-    indices[data[#data].id] = 1
-    indices[data[1].id] = 0
-    data[1] = data[#data]
-    table.remove(data)
-
-    local i = 1
+    indices[top.id] = 0
+    if #data == 1 then
+        table.remove(data)
+        return top
+    end
+    
+    local back = data[#data]
+    local index = 1
     while true do
-        local left_i = 2 * i
-        local right_i = 2 * i + 1
-        local left_exists = left_i <= #data
-        local right_exists = right_i <= #data
+        local left_index = 2 * index
+        local right_index = 2 * index + 1
+        local left_exists = left_index <= #data
+        local right_exists = right_index <= #data
 
-        if right_exists then
-            if data[left_i].distance < data[right_i].distance then
-                if data[left_i].distance < data[i].distance then
-                    indices[data[i].id], indices[data[left_i].id] = indices[data[left_i].id], indices[data[i].id]
-                    data[i], data[left_i] = data[left_i], data[i]
-                    i = left_i
+        local index_moved = false
+        if left_exists or right_exists then
+            local next_index = 0
+            if left_exists and right_exists then
+                if data[left_index].distance < data[right_index].distance then
+                    next_index = left_index
                 else
-                    return top
+                    next_index = right_index
                 end
             else
-                if data[right_i].distance < data[i].distance then
-                    indices[data[i].id], indices[data[right_i].id] = indices[data[right_i].id], indices[data[i].id]
-                    data[i], data[right_i] = data[right_i], data[i]
-                    i = right_i
-                else
-                    return top
-                end
+                next_index = left_index
             end
-        elseif left_exists then
-            if data[left_i].distance < data[i].distance then
-                indices[data[i].id], indices[data[left_i].id] = indices[data[left_i].id], indices[data[i].id]
-                data[i], data[left_i] = data[left_i], data[i]
-                i = left_i
-            else
-                return top
+
+            if data[next_index].distance < back.distance then
+                data[index] = data[next_index]
+                indices[data[index].id] = index
+                index = next_index
+                index_moved = true
             end
-        else
-            return top
+        end
+
+        if not index_moved then
+            data[index] = back
+            indices[data[index].id] = index
+            table.remove(data)
+            break
         end
     end
+
+    return top
 end
 
 local function parse_ver2()

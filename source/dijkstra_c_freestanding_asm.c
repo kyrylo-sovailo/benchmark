@@ -577,7 +577,7 @@ static struct Candidate pop_indexed_heap(struct Candidate *data, uint64_t length
     //indices - RDX
 
     const uint64_t length_minus_1 = length - 1; //RSI
-    struct Candidate top = data[0]; //XMM0, XMM1/RAX temporarily
+    const struct Candidate top = data[0]; //XMM0, XMM1/RAX temporarily
     indices[top.id] = (uint32_t)-2;
     if (length_minus_1 == 0) return top;
     

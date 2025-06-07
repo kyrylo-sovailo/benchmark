@@ -17,7 +17,7 @@ A "reasonable" code is a code that:
  - Does not use hardware acceleration
  - Does not use multithreading
  - Uses standard I/O
- - Does not leak memory
+ - Does not leak resources
  - Does not assume any prior knowledge about the program input
 
 A "balanced" program is a program that does all types of operations that you'd expect a non-computation-heavy utility to do, in close-to-real-life proportions. It includes:
@@ -32,28 +32,26 @@ A "balanced" program is a program that does all types of operations that you'd e
 The benchmark does not focus on only one of these aspects. Finding out which exact part is faster in which languages is outside of the scope of this repository.
 
 ### Notes
-**LATEST** I recently discovered an improvement to the indexed heap algorithm that could bring a 2x speed-up. Many implementations (but not `Python` or `Haskell`) may benefit from it. If I find out that any of the compilers were able to optimize it out (and it seems to be the case for `gcc`), implementing this improvement will be given higher priority.
-
 The tests were composed in such a way that `C` and `C++` spend approximately the same time on parsing the file and solving the problem, therefore equating the impact of all parts of the program. The comparison chart is known to be qualitatively different when using smaller problem.
 
 The names of the bars on the chart are pretty self-explanatory. Except for:
- - `C, gcc, freestanding` and `C, gcc, freestanding/asm` are `x86_64`-specific C code that use custom memory management, custom I/O and no standard library. They are therefore considered **CHEATING**. The reason these versions are present at all is because they were used for development of the `NASM` version. `C, gcc, freestanding/asm` is much closer to the the final `NASM` version and contains a lot of annotations.
- - `C, gcc, freestanding/mapping` is same but using memory mapping rather than standard file I/O.
- - Since there is no standard library in Assembly, the Assembly version is considered **LEGIT**.
+ - `C, gcc, freestanding` and `C, gcc, freestanding/asm` are `x86_64`-specific `C` code that use custom memory management, custom I/O and no standard library. They are therefore considered **CHEATING**. The reason these versions are present at all is because they were used for development of the `NASM` version. `C, gcc, freestanding/asm` is much closer to the the final `NASM` version and contains a lot of annotations.
+ - `C, gcc, freestanding/mapping` is same as `freestanding` but using memory mapping rather than stream-based file I/O.
  - `C, g++` is a `C` program compiled with `g++` as valid `C++`.
  - `C, g++, restrict` is a `C` program compiled with `g++` as valid `C++` with the compiler-specific `__restrict__` keyword.
  - `C, clang++` and `C, clang++, restrict` are same but for `clang++`.
 
 My knowledge of programming languages is not on the same level, and not all implementations are created equally. Here are my comments on the probability of improvement:
  - All interpreted languages do little optimizations, therefore it is always possible to optimize the code by using fewer variables, shorter names and otherwise making code less readable. I will call it "micromanagement". Some minor improvements with help of micromanagement are to be expected.
- - `C++`: reference implementation, well-researched and well-optimized.
+ - `C++`: reference implementation, extensively researched and well optimized.
  - `C`, `Fortran`: direct translation, the optimizing compiler is powerful, no improvement is expected.
  - `Pascal`, `C#`, `Java`: direct translation, the optimizing compiler is not great, improvement may be achieved by micromanagement.
+ - `NASM`: some very minor improvements are still achievable by abandoning System V ABI, inlining functions and using mapping. But I'm almost sure that I reached the bottom of it.
  - `Python`, `JS`, `Lua`: not well-researched, improvement may be achieved by micromanagement and different data structures.
- - `PyPy`: the implementation in `Python` relied on the fact that native priority queue is available, but indexed priority queue is not. Therefore `PyPy`'s optimal algorithm may be different from the `Python`'s one.
+ - `PyPy`: the implementation in `Python` relied on the fact that standard priority queue is faster than any user-implemented structures, which may not be the case with `PyPy`'s JIT. Improvement is therefore possible.
  - `Matlab`: I highly doubt that something can be done to the algorithm, though improvement through micromanagement is extremely likely.
- - `Delphi`: since Pascal is (roughly) a subset of Delphi, the improvement can be achieved by simply downgrading to Pascal.
- - `Haskell`: further improvements are probable. Better Haskell knowledge is required.
+ - `Delphi`: since Pascal is (roughly) a subset of Delphi, the improvement can be achieved by simply downgrading to `Pascal`.
+ - `Haskell`: further improvements are probable. Better `Haskell` knowledge is required.
 
 ### Hardware
 The measurements were performed on Intel Pentium 4415U. To reduce noise, the kernel was booted with `isolcpus=1,3`, where 1 and 3 are logical cores that correspond to physical core 1.
@@ -78,7 +76,8 @@ Kernel               6.12.10-zen1-x86_64
 ```
 
 ### Conclusions
- - C++ is faster than C (on this benchmark, under "reasonability" constraint, due to faster I/O [read further](https://github.com/kyrylo-sovailo/benchmark_masterrace))
+ - C++ is faster than C (on this benchmark, under "reasonability" constraint, due to faster I/O, [learn more](https://github.com/kyrylo-sovailo/benchmark_masterrace))
+ - It is still possible to write Assembly better than the compiler
  - Fortran is not that fast
  - Clang is faster than GCC
  - C code compiled as C++ is slower than pure C

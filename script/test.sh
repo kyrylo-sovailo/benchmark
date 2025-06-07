@@ -92,7 +92,7 @@ if [ $(type clang++ 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_c_clang_release_cpp" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_release_cpp.txt" || exit 1
     run_benchmark "$BUILD/dijkstra_c_clang_release_cpp_restrict" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_c_clang_release_cpp_restrict.txt" || exit 1
 fi
-exit
+
 # C#
 if [ $(type mcs 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_csharp_mcs_debug.exe" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_csharp_mcs_debug.txt" || exit 1

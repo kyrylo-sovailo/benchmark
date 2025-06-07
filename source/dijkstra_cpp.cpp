@@ -59,38 +59,51 @@ template<typename T> struct indexed_priority_queue
 
     inline void pop()
     {
-        indices[data.back().id] = 0;
         indices[data.front().id] = static_cast<unsigned int>(-2);
-        data.front() = data.back();
-        data.pop_back();
+        if (data.size() == 1) { data.pop_back(); return; }
+        unsigned int index = 0;
 
-        unsigned int i = 0;
-        while (true)
+        for (;;)
         {
-            const unsigned int left_i = 2 * i + 1;
-            const unsigned int right_i = 2 * i + 2;
-            const bool left_exists = left_i < data.size();
-            const bool right_exists = right_i < data.size();
-            if (/*left_exists &&*/ right_exists)
+            const unsigned int left_index = 2 * index + 1;
+            const unsigned int right_index = 2 * index + 2;
+            const bool left_exists = left_index < data.size();
+            const bool right_exists = right_index < data.size();
+
+            bool index_moved = false;
+            if (left_exists || right_exists)
             {
-                if (data[left_i] < data[right_i])
+                unsigned int next_index;
+                if (left_exists && right_exists)
                 {
-                    if (data[left_i] < data[i]) { std::swap(indices[data[i].id], indices[data[left_i].id]); std::swap(data[i], data[left_i]); i = left_i; }
-                    else break;
+                    if (data[left_index].distance < data[right_index].distance)
+                    {
+                        next_index = left_index;
+                    }
+                    else
+                    {
+                        next_index = right_index;
+                    }
                 }
                 else
                 {
-                    if (data[right_i] < data[i]) { std::swap(indices[data[i].id], indices[data[right_i].id]); std::swap(data[i], data[right_i]); i = right_i; }
-                    else break;
+                    next_index = left_index;
+                }
+
+                if (data[next_index].distance < data.back().distance)
+                {
+                    data[index] = data[next_index];
+                    indices[data[index].id] = index;
+                    index = next_index;
+                    index_moved = true;
                 }
             }
-            else if (left_exists /*&& !right_exists*/)
+
+            if (!index_moved)
             {
-                if (data[left_i] < data[i]) { std::swap(indices[data[i].id], indices[data[left_i].id]); std::swap(data[i], data[left_i]); i = left_i; }
-                else break;
-            }
-            else
-            {
+                data[index] = data.back();
+                indices[data.back().id] = index;
+                data.pop_back();
                 break;
             }
         }
@@ -98,27 +111,42 @@ template<typename T> struct indexed_priority_queue
 
     inline void push(T &&element)
     {
-        unsigned int i = indices[element.id];
-        if (i == static_cast<unsigned int>(-1))
+        unsigned int index = indices[element.id];
+        if (index == static_cast<unsigned int>(-1))
         {
-            i = static_cast<unsigned int>(data.size());
-            indices[element.id] = i;
-            data.push_back(element);
+            index = static_cast<unsigned int>(data.size());
+            data.push_back(element); //allocating space, element does not go to the back
         }
-        else if (i == static_cast<unsigned int>(-2))
+        else if (index == static_cast<unsigned int>(-2))
         {
             return;
         }
         else
         {
-            if (element < data[i]) data[i] = element;
-            else return;
+            if (element.distance >= data[index].distance) return;
         }
-        while (i > 0)
+        
+        while (true)
         {
-            const unsigned int parent_i = (i - 1) / 2;
-            if (data[i] < data[parent_i]) { std::swap(indices[data[i].id], indices[data[parent_i].id]); std::swap(data[i], data[parent_i]); i = parent_i; }
-            else break;
+            const bool parent_exists = index > 0;
+            bool index_moved = false;
+            if (parent_exists)
+            {
+                const unsigned int parent_i = (index - 1) / 2;
+                if (element < data[parent_i])
+                {
+                    data[index] = data[parent_i];
+                    indices[data[index].id] = index;
+                    index = parent_i;
+                    index_moved = true;
+                }
+            }
+            if (!index_moved)
+            {
+                data[index] = element;
+                indices[element.id] = index;
+                break;
+            }
         }
     }
 

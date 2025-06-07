@@ -423,33 +423,42 @@ static void push_undirected_connection(struct ConnectionVectorVector *connection
 
 static uint64_t push_indexed_heap(struct Candidate *data, uint64_t length, uint32_t *indices, struct Candidate element) //returns new length
 {
-    uint64_t i = indices[element.id];
-    if (i == (uint32_t)-1)
+    uint64_t index = indices[element.id];
+    if (index == (uint32_t)-1)
     {
-        i = length;
-        indices[element.id] = (uint32_t)length;
-        data[length] = element;
+        index = length;
         length++;
     }
-    else if (i == (uint32_t)-2)
+    else if (index == (uint32_t)-2)
     {
         return length;
     }
     else
     {
-        if (element.distance < data[i].distance) data[i] = element;
-        else return length;
+        if (element.distance >= data[index].distance) return length;
     }
-    while (i > 0)
+    
+    for (;;)
     {
-        const uint64_t parent_i = (i - 1) / 2;
-        if (data[i].distance < data[parent_i].distance)
+        const bool parent_exists = index != 0;
+        bool index_moved = 0;
+        if (parent_exists)
         {
-            const uint32_t b1 = indices[data[i].id]; indices[data[i].id] = indices[data[parent_i].id]; indices[data[parent_i].id] = b1;
-            const struct Candidate b2 = data[i]; data[i] = data[parent_i]; data[parent_i] = b2;
-            i = parent_i;
+            const uint64_t parent_i = (index - 1) / 2;
+            if (element.distance < data[parent_i].distance)
+            {
+                data[index] = data[parent_i];
+                indices[data[index].id] = (uint32_t)index;
+                index = parent_i;
+                index_moved = 1;
+            }
         }
-        else break;
+        if (!index_moved)
+        {
+            data[index] = element;
+            indices[element.id] = (uint32_t)index;
+            break;
+        }
     }
     return length;
 }
@@ -457,53 +466,53 @@ static uint64_t push_indexed_heap(struct Candidate *data, uint64_t length, uint3
 static struct Candidate pop_indexed_heap(struct Candidate *data, uint64_t length, uint32_t *indices) //length should be reduced by 1
 {
     const uint64_t length_minus_1 = length - 1;
-    struct Candidate top = data[0];
-    indices[data[length_minus_1].id] = 0;
-    indices[data[0].id] = (uint32_t)-2;
-    data[0] = data[length_minus_1];
+    const struct Candidate top = data[0];
+    indices[top.id] = (uint32_t)-2;
+    if (length_minus_1 == 0) return top;
+    
+    struct Candidate buffer = data[length_minus_1];
+    uint64_t index = 0;
 
-    uint64_t i = 0;
     for (;;)
     {
-        const uint64_t left_i = 2 * i + 1;
-        const uint64_t right_i = 2 * i + 2;
-        const bool left_exists = left_i <= length_minus_1;
-        const bool right_exists = right_i <= length_minus_1;
-        if (/*left_exists &&*/ right_exists)
+        const uint64_t left_index = 2 * index + 1;
+        const uint64_t right_index = 2 * index + 2;
+        const bool left_exists = left_index <= length_minus_1;
+        const bool right_exists = right_index <= length_minus_1; //implies left_exists
+
+        bool index_moved = 0;
+        if (left_exists || right_exists)
         {
-            if (data[left_i].distance < data[right_i].distance)
+            uint64_t next_index;
+            if (left_exists && right_exists)
             {
-                if (data[left_i].distance < data[i].distance)
+                if (data[left_index].distance < data[right_index].distance)
                 {
-                    const uint32_t b1 = indices[data[i].id]; indices[data[i].id] = indices[data[left_i].id]; indices[data[left_i].id] = b1;
-                    const struct Candidate b2 = data[i]; data[i] = data[left_i]; data[left_i] = b2;
-                    i = left_i;
+                    next_index = left_index;
                 }
-                else break;
+                else
+                {
+                    next_index = right_index;
+                }
             }
             else
             {
-                if (data[right_i].distance < data[i].distance)
-                {
-                    const uint32_t b1 = indices[data[i].id]; indices[data[i].id] = indices[data[right_i].id]; indices[data[right_i].id] = b1;
-                    const struct Candidate b2 = data[i]; data[i] = data[right_i]; data[right_i] = b2;
-                    i = right_i;
-                }
-                else break;
+                next_index = left_index;
             }
-        }
-        else if (left_exists /*&& !right_exists*/)
-        {
-            if (data[left_i].distance < data[i].distance)
+
+            if (data[next_index].distance < buffer.distance)
             {
-                const uint32_t b1 = indices[data[i].id]; indices[data[i].id] = indices[data[left_i].id]; indices[data[left_i].id] = b1;
-                const struct Candidate b2 = data[i]; data[i] = data[left_i]; data[left_i] = b2;
-                i = left_i;
+                data[index] = data[next_index];
+                indices[data[index].id] = (uint32_t)index;
+                index = next_index;
+                index_moved = 1;
             }
-            else break;
         }
-        else
+
+        if (!index_moved)
         {
+            data[index] = buffer;
+            indices[buffer.id] = (uint32_t)index;
             break;
         }
     }

@@ -9,6 +9,8 @@ classdef dijkstra_matlab < handle
         queue
         queue_length
         indices
+        label_new
+        label_deleted
     end
     methods
         function obj = dijkstra_matlab()
@@ -19,6 +21,9 @@ classdef dijkstra_matlab < handle
 
             obj.graph = obj.dummy_graph(1:0);
             obj.benchmarks = obj.dummy_benchmark(1:0);
+
+            obj.label_new = intmax('uint32');
+            obj.label_deleted = intmax('uint32') - 1;
         end
 
         function parse_ver5(obj)
@@ -27,7 +32,7 @@ classdef dijkstra_matlab < handle
             benchmarks_length = 0;
 
             file = fopen("dijkstra.txt");
-            read_benchmarks = true;
+            read_benchmarks = false;
             while true
                 line = fgetl(file);
                 if ~ischar(line)
@@ -91,79 +96,78 @@ classdef dijkstra_matlab < handle
             obj.benchmarks = obj.benchmarks(1:benchmarks_length);
         end
 
-
-        function swap_queue(obj, index1, index2)
-            [ node1, node2 ] = deal(obj.queue(index1).destination, obj.queue(index2).destination);
-            [ obj.queue(index1), obj.queue(index2) ] = deal(obj.queue(index2), obj.queue(index1));
-            [ obj.indices(node1), obj.indices(node2) ] = deal(obj.indices(node2), obj.indices(node1));
-        end
-
         function push_queue(obj, candidate)
-            i = obj.indices(candidate.destination);
-            if i == intmax('uint32')
-                i = obj.queue_length + 1;
-                obj.indices(candidate.destination) = i;
+            index = obj.indices(candidate.destination);
+            if index == obj.label_new
+                index = obj.queue_length + 1;
                 obj.queue_length = obj.queue_length + 1;
-                obj.queue(obj.queue_length) = candidate;
-            elseif i == intmax('uint32') - 1
+            elseif index == obj.label_deleted
                 return;
             else
-                if candidate.distance < obj.queue(i).distance
-                    obj.queue(i) = candidate;
-                else
+                if candidate.distance >= obj.queue(index).distance
                     return;
                 end
             end
 
-            while i > 1
-                parent_i = (i - 1) / 2;
-                if obj.queue(i).distance < obj.queue(parent_i).distance
-                    obj.swap_queue(i, parent_i);
-                    i = parent_i;
-                else
+            while true
+                parent_exists = index > 1;
+                index_moved = false;
+                if parent_exists
+                    parent_index = (index - 1) / 2;
+                    if candidate.distance < obj.queue(parent_index).distance
+                        obj.queue(index) = obj.queue(parent_index);
+                        obj.indices(obj.queue(index).destination) = index;
+                        index = parent_index;
+                        index_moved = true;
+                    end
+                end
+
+                if ~index_moved
+                    obj.queue(index) = candidate;
+                    obj.indices(candidate.destination) = index;
                     break;
                 end
             end
         end
 
         function top = pop_queue(obj)
-            top = obj.queue(1);
-            obj.indices(obj.queue(obj.queue_length).destination) = 1;
-            obj.indices(obj.queue(1).destination) = intmax('uint32')-1;
-            obj.queue(1) = obj.queue(obj.queue_length);
             obj.queue_length = obj.queue_length - 1;
+            top = obj.queue(1);
+            obj.indices(top.destination) = obj.label_deleted;
+            if obj.queue_length == 0
+                return;
+            end
 
-            i = uint32(1);
+            buffer = obj.queue(obj.queue_length + 1);
+            index = uint32(1);
             while true
-                left_i = 2 * i;
-                right_i = 2 * i + 1;
-                left_exists = left_i <= obj.queue_length;
-                right_exists = right_i <= obj.queue_length;
+                left_index = 2 * index;
+                right_index = 2 * index + 1;
+                left_exists = left_index <= obj.queue_length;
+                right_exists = right_index <= obj.queue_length;
+                
+                index_moved = false;
+                if left_exists || right_exists
+                    if left_exists && right_exists
+                        if obj.queue(left_index).distance < obj.queue(right_index).distance
+                            next_index = left_index;
+                        else
+                            next_index = right_index;
+                        end
+                    else
+                        next_index = left_index;
+                    end
+                    if obj.queue(next_index).distance < buffer.distance
+                        obj.queue(index) = obj.queue(next_index);
+                        obj.indices(obj.queue(index).destination) = index;
+                        index = next_index;
+                        index_moved = true;
+                    end
+                end
 
-                if right_exists
-                    if obj.queue(left_i).distance < obj.queue(right_i).distance
-                        if obj.queue(left_i).distance < obj.queue(i).distance
-                            obj.swap_queue(i, left_i);
-                            i = left_i;
-                        else
-                            break;
-                        end
-                    else
-                        if obj.queue(right_i).distance < obj.queue(i).distance
-                            obj.swap_queue(i, right_i);
-                            i = right_i;
-                        else
-                            break;
-                        end
-                    end
-                elseif left_exists
-                    if obj.queue(left_i).distance < obj.queue(i).distance
-                        obj.swap_queue(i, left_i);
-                        i = left_i;
-                    else
-                        break;
-                    end
-                else
+                if ~index_moved
+                    obj.queue(index) = buffer;
+                    obj.indices(obj.queue(index).destination) = index;
                     break;
                 end
             end
@@ -176,7 +180,7 @@ classdef dijkstra_matlab < handle
             for benchmark_i = 1 : size(obj.benchmarks, 2)
                 source = obj.benchmarks(benchmark_i).source;
                 destination = obj.benchmarks(benchmark_i).destination;
-                obj.indices = intmax('uint32') * ones(size(obj.graph), 'uint32');
+                obj.indices = obj.label_new * ones(size(obj.graph), 'uint32');
                 obj.queue_length = uint32(0);
                 obj.push_queue(struct('destination', source, 'int_distance', uint32(0), 'distance', 0.0));
                 int_distance = uint32(0);

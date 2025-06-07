@@ -114,51 +114,42 @@ contains
         vector%length = length
     end subroutine grow_ConnectionVectorVector
 
-    subroutine swap_candidates(index1, index2, candidate1, candidate2)
-        integer, intent(inout) :: index1, index2
-        type(Candidate), intent(inout) :: candidate1, candidate2
-        
-        integer :: b1
-        type(Candidate) :: b2
-
-        b1 = index1
-        index1 = index2
-        index2 = b1
-        b2 = candidate1
-        candidate1 = candidate2
-        candidate2 = b2
-    end subroutine swap_candidates
-
     subroutine push_indexed_heap(data, data_length, indices, element)
         type(Candidate), intent(inout), dimension(:) :: data
         integer, intent(inout) :: data_length
         integer, intent(inout), dimension(:) :: indices
         type(Candidate), intent(in) :: element
-        integer :: i, parent_i
+        integer :: index, parent_index
+        logical :: parent_exists, index_moved
 
-        i = indices(element%id)
-        if (i == -1) then
-            i = data_length + 1
-            indices(element%id) = i
+        index = indices(element%id)
+        if (index == -1) then
+            index = data_length + 1
             data_length = data_length + 1
-            data(data_length) = element
-        else if (i == -2) then
+        else if (index == -2) then
             return
         else
-            if (element%distance < data(i)%distance) then
-                data(i) = element
-            else
+            if (element%distance >= data(index)%distance) then
                 return
             end if
         end if
 
-        do while (i > 1)
-            parent_i = i / 2
-            if (data(i)%distance < data(parent_i)%distance) then
-                call swap_candidates(indices(data(i)%id), indices(data(parent_i)%id), &
-                    data(i), data(parent_i))
-                i = parent_i
-            else
+        do while (.true.)
+            parent_exists = index > 1
+            index_moved = .false.
+            if (parent_exists) then
+                parent_index = index / 2
+                if (element%distance < data(parent_index)%distance) then
+                    data(index) = data(parent_index)
+                    indices(data(index)%id) = index
+                    index = parent_index
+                    index_moved = .true.
+                end if
+            end if
+
+            if (.not. index_moved) then
+                data(index) = element
+                indices(element%id) = index
                 exit
             end if
         end do
@@ -168,50 +159,49 @@ contains
         type(Candidate), intent(inout), dimension(:) :: data
         integer, intent(inout) :: data_length
         integer, intent(inout), dimension(:) :: indices
-        type(Candidate) :: top
-        integer :: i, left_i, right_i
-        logical :: left_exists, right_exists
+        type(Candidate) :: top, buffer
+        integer :: index, left_index, right_index, next_index
+        logical :: left_exists, right_exists, index_moved
 
-        top = data(1)
-        indices(data(data_length)%id) = 1
-        indices(data(1)%id) = -2
-        data(1) = data(data_length)
         data_length = data_length - 1
+        top = data(1)
+        indices(top%id) = -2
+        if (data_length == 0) then
+            return
+        end if
 
-        i = 1
+        buffer = data(data_length)
+        index = 1
         do while (.true.)
-            left_i = 2 * i
-            right_i = 2 * i + 1
-            left_exists = (left_i <= data_length)
-            right_exists = (right_i <= data_length)
+            left_index = 2 * index
+            right_index = 2 * index + 1
+            left_exists = (left_index <= data_length)
+            right_exists = (right_index <= data_length)
 
-            if (right_exists) then
-                if (data(left_i)%distance < data(right_i)%distance) then
-                    if (data(left_i)%distance < data(i)%distance) then
-                        call swap_candidates(indices(data(i)%id), indices(data(left_i)%id), &
-                            data(i), data(left_i))
-                        i = left_i
+            index_moved = .false.
+            if (left_exists .or. right_exists) then
+                index_moved = .false.
+                if (left_exists .and. right_exists) then
+                    if (data(left_index)%distance < data(right_index)%distance) then
+                        next_index = left_index
                     else
-                        exit
+                        next_index = right_index
                     end if
                 else
-                    if (data(right_i)%distance < data(i)%distance) then
-                        call swap_candidates(indices(data(i)%id), indices(data(right_i)%id), &
-                            data(i), data(right_i))
-                        i = right_i
-                    else
-                        exit
-                    end if
+                    next_index = left_index
                 end if
-            else if (left_exists) then
-                if (data(left_i)%distance < data(i)%distance) then
-                    call swap_candidates(indices(data(i)%id), indices(data(left_i)%id), &
-                        data(i), data(left_i))
-                    i = left_i
-                else
-                    exit
+
+                if (data(next_index)%distance < buffer%distance) then
+                    data(index) = data(next_index)
+                    indices(data(index)%id) = index
+                    index = next_index
+                    index_moved = .true.
                 end if
-            else
+            end if
+
+            if (.not. index_moved) then
+                data(index) = buffer
+                indices(buffer%id) = index
                 exit
             end if
         end do

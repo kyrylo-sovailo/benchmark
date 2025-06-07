@@ -87,96 +87,97 @@ end;
 
 procedure PushIndexHeap(var data: array of TCandidate; var size: Cardinal; var indices: array of Cardinal; item: TCandidate);
 var
-    i, parent_i: Cardinal;
-    b1: Cardinal;
-    b2: TCandidate;
+    index, parent_index: Cardinal;
+    parent_exists, index_moved: Boolean;
 begin
-    i := indices[item.id];
-    if i = Cardinal(-1) then
+    index := indices[item.id];
+    if index = Cardinal(-1) then
     begin
-        i := size;
-        indices[item.id] := i;
-        data[i] := item;
+        index := size;
         Inc(size);
     end
-    else if i = Cardinal(-2) then
+    else if index = Cardinal(-2) then
         Exit
     else
     begin
-        if item.distance < data[i].distance then
-            data[i] := item
-        else
+        if item.distance >= data[index].distance then
             Exit;
     end;
 
-    while i > 0 do
+    while True do
     begin
-        parent_i := (i - 1) div 2;
-        if data[i].distance < data[parent_i].distance then
+        parent_exists := index <> 0;
+        index_moved := False;
+        if parent_exists then
         begin
-            b1 := indices[data[i].id]; indices[data[i].id] := indices[data[parent_i].id]; indices[data[parent_i].id] := b1;
-            b2 := data[i]; data[i] := data[parent_i]; data[parent_i] := b2;
-            i := parent_i;
-        end
-        else
+            parent_index := (index - 1) div 2;
+            if item.distance < data[parent_index].distance then
+            begin
+                data[index] := data[parent_index];
+                indices[data[index].id] := index;
+                index := parent_index;
+                index_moved := True;
+            end;
+        end;
+        if not index_moved then
+        begin
+            data[index] := item;
+            indices[item.id] := index;
             Break;
+        end;
     end;
 end;
 
 function PopIndexHeap(var data: array of TCandidate; var size: Cardinal; var indices: array of Cardinal): TCandidate;
 var
-    i, left_i, right_i: Cardinal;
-    b1: Cardinal;
-    b2: TCandidate;
+    index, left_index, right_index, next_index: Cardinal;
+    left_exists, right_exists, index_moved: Boolean;
+    back: TCandidate;
 begin
-    PopIndexHeap := data[0];
-    indices[data[size - 1].id] := 0;
-    indices[data[0].id] := Cardinal(-2);
-    data[0] := data[size - 1];
     Dec(size);
+    PopIndexHeap := data[0];
+    indices[data[0].id] := Cardinal(-2);
+    if size = 0 then
+        Exit;
 
-    i := 0;
+    back := data[size];
+    index := 0;
+
     while True do
     begin
-        left_i := 2 * i + 1;
-        right_i := 2 * i + 2;
-        if (left_i < size) and (right_i < size) then
+        left_index := 2 * index + 1;
+        right_index := 2 * index + 2;
+        left_exists := left_index <= size;
+        right_exists := right_index <= size;
+
+        index_moved := False;
+        if left_exists or right_exists then
         begin
-            if data[left_i].distance < data[right_i].distance then
+            if left_exists and right_exists then
             begin
-                if data[left_i].distance < data[i].distance then
-                begin
-                    b1 := indices[data[i].id]; indices[data[i].id] := indices[data[left_i].id]; indices[data[left_i].id] := b1;
-                    b2 := data[i]; data[i] := data[left_i]; data[left_i] := b2;
-                    i := left_i;
-                end
+                if data[left_index].distance < data[right_index].distance then
+                    next_index := left_index
                 else
-                    Break;
+                    next_index := right_index;
             end
             else
+                next_index := left_index;
+
+            if data[next_index].distance < back.distance then
             begin
-                if data[right_i].distance < data[i].distance then
-                begin
-                    b1 := indices[data[i].id]; indices[data[i].id] := indices[data[right_i].id]; indices[data[right_i].id] := b1;
-                    b2 := data[i]; data[i] := data[right_i]; data[right_i] := b2;
-                    i := right_i;
-                end
-                else Break;
+                data[index] := data[next_index];
+                indices[data[index].id] := index;
+                index := next_index;
+                index_moved := True;
             end;
-        end
-        else if left_i < size then
+        end;
+
+        if not index_moved then
         begin
-            if data[left_i].distance < data[i].distance then
-            begin
-                b1 := indices[data[i].id]; indices[data[i].id] := indices[data[left_i].id]; indices[data[left_i].id] := b1;
-                b2 := data[i]; data[i] := data[left_i]; data[left_i] := b2;
-                i := left_i;
-            end
-            else
-                Break;
-        end
-        else
+            data[index] := back;
+            indices[back.id] := index;
             Break;
+        end;
     end;
 end;
 

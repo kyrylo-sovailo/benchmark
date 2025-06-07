@@ -151,53 +151,52 @@ class IndexedPriorityQueue
     public Candidate Dequeue()
     {
         Candidate top = data[0];
-        indices[data[data.Count - 1].id] = 0;
-        indices[data[0].id] = -2;
-        data[0] = data[data.Count - 1];
-        data.RemoveAt(data.Count - 1);
+        indices[top.id] = -2;
+        if (data.Count == 1) { data.RemoveAt(0); return top; }
 
-        int i = 0;
+        Candidate back = data[data.Count - 1];
+        int index = 0;
         while (true)
         {
-            int parent_i = 2 * i + 1;
-            int right_i = 2 * i + 2;
-            bool left_exists = parent_i < data.Count;
-            bool right_exists = right_i < data.Count;
-            if (/*left_exists &&*/ right_exists)
+            int left_index = 2 * index + 1;
+            int right_index = 2 * index + 2;
+            bool left_exists = left_index < data.Count;
+            bool right_exists = right_index < data.Count;
+
+            bool index_moved = false;
+            if (left_exists || right_exists)
             {
-                if (data[parent_i].Priority < data[right_i].Priority)
+                int next_index;
+                if (left_exists && right_exists)
                 {
-                    if (data[parent_i].Priority < data[i].Priority)
+                    if (data[left_index].distance < data[right_index].distance)
                     {
-                        int b1 = indices[data[i].id]; indices[data[i].id] = indices[data[parent_i].id]; indices[data[parent_i].id] = b1;
-                        Candidate b2 = data[i]; data[i] = data[parent_i]; data[parent_i] = b2;
-                        i = parent_i;
+                        next_index = left_index;
                     }
-                    else break;
+                    else
+                    {
+                        next_index = right_index;
+                    }
                 }
                 else
                 {
-                    if (data[right_i].Priority < data[i].Priority)
-                    {
-                        int b1 = indices[data[i].id]; indices[data[i].id] = indices[data[right_i].id]; indices[data[right_i].id] = b1;
-                        Candidate b2 = data[i]; data[i] = data[right_i]; data[right_i] = b2;
-                        i = right_i;
-                    }
-                    else break;
+                    next_index = left_index;
                 }
-            }
-            else if (left_exists /*&& !right_exists*/)
-            {
-                if (data[parent_i].Priority < data[i].Priority)
+
+                if (data[next_index].distance < back.distance)
                 {
-                    int b1 = indices[data[i].id]; indices[data[i].id] = indices[data[parent_i].id]; indices[data[parent_i].id] = b1;
-                    Candidate b2 = data[i]; data[i] = data[parent_i]; data[parent_i] = b2;
-                    i = parent_i;
+                    data[index] = data[next_index];
+                    indices[data[index].id] = index;
+                    index = next_index;
+                    index_moved = true;
                 }
-                else break;
             }
-            else
+
+            if (!index_moved)
             {
+                data[index] = back;
+                indices[back.id] = index;
+                data.RemoveAt(data.Count - 1);
                 break;
             }
         }
@@ -207,32 +206,42 @@ class IndexedPriorityQueue
 
     public void Enqueue(Candidate candidate)
     {
-        int i = indices[candidate.id];
-        if (i == -1)
+        int index = indices[candidate.id];
+        if (index == -1)
         {
-            i = data.Count;
-            indices[candidate.id] = i;
-            data.Add(candidate);
+            index = data.Count;
+            data.Add(candidate); //value used only when Count == 0, otherwise only for allocation
         }
-        else if (i == -2)
+        else if (index == -2)
         {
             return;
         }
         else
         {
-            if (candidate.Priority < data[i].Priority) data[i] = candidate;
-            else return;
+            if (candidate.distance >= data[index].distance) return;
         }
-        while (i > 0)
+        
+        while (true)
         {
-            int parent_i = (i - 1) / 2;
-            if (data[i].Priority < data[parent_i].Priority)
+            bool parent_exists = index > 0;
+            bool index_moved = false;
+            if (parent_exists)
             {
-                int b1 = indices[data[i].id]; indices[data[i].id] = indices[data[parent_i].id]; indices[data[parent_i].id] = b1;
-                Candidate b2 = data[i]; data[i] = data[parent_i]; data[parent_i] = b2;
-                i = parent_i;
+                int parent_index = (index - 1) / 2;
+                if (candidate.distance < data[parent_index].distance)
+                {
+                    data[index] = data[parent_index];
+                    indices[data[index].id] = index;
+                    index = parent_index;
+                    index_moved = true;
+                }
             }
-            else break;
+            if (!index_moved)
+            {
+                data[index] = candidate;
+                indices[candidate.id] = index;
+                break;
+            }
         }
     }
 

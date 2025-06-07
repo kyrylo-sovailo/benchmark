@@ -143,86 +143,95 @@ typedef struct
 
 static void push_indexed_heap(Candidate *restrict data, unsigned int *restrict length, unsigned int *restrict indices, Candidate element)
 {
-    unsigned int i = indices[element.id];
-    if (i == (unsigned int)-1)
+    unsigned int index = indices[element.id];
+    if (index == (unsigned int)-1)
     {
-        i = *length;
-        indices[element.id] = i;
-        data[i] = element;
+        index = (*length);
         (*length)++;
     }
-    else if (i == (unsigned int)-2)
+    else if (index == (unsigned int)-2)
     {
         return;
     }
     else
     {
-        if (element.distance < data[i].distance) data[i] = element;
-        else return;
+        if (element.distance >= data[index].distance) return;
     }
-    while (i > 0)
+    
+    for (;;)
     {
-        const unsigned int parent_i = (i - 1) / 2;
-        if (data[i].distance < data[parent_i].distance)
+        const bool parent_exists = index != 0;
+        bool index_moved = 0;
+        if (parent_exists)
         {
-            const unsigned int b1 = indices[data[i].id]; indices[data[i].id] = indices[data[parent_i].id]; indices[data[parent_i].id] = b1;
-            const Candidate b2 = data[i]; data[i] = data[parent_i]; data[parent_i] = b2;
-            i = parent_i;
+            const unsigned int parent_index = (index - 1) / 2;
+            if (element.distance < data[parent_index].distance)
+            {
+                data[index] = data[parent_index];
+                indices[data[index].id] = index;
+                index = parent_index;
+                index_moved = 1;
+            }
         }
-        else break;
+        if (!index_moved)
+        {
+            data[index] = element;
+            indices[element.id] = index;
+            break;
+        }
     }
 }
 
 static Candidate pop_indexed_heap(Candidate *restrict data, unsigned int *restrict length, unsigned int *restrict indices)
 {
-    Candidate top = data[0];
-    indices[data[*length - 1].id] = 0;
-    indices[data[0].id] = (unsigned int)-2;
-    data[0] = data[*length - 1];
     (*length)--;
+    const Candidate top = data[0];
+    indices[top.id] = (unsigned int)-2;
+    if (*length == 0) return top;
+    
+    const Candidate buffer = data[*length];
+    unsigned int index = 0;
 
-    unsigned int i = 0;
-    while (true)
+    for (;;)
     {
-        const unsigned int left_i = 2 * i + 1;
-        const unsigned int right_i = 2 * i + 2;
-        const bool left_exists = left_i < *length;
-        const bool right_exists = right_i < *length;
-        if (/*left_exists &&*/ right_exists)
+        const unsigned int left_index = 2 * index + 1;
+        const unsigned int right_index = 2 * index + 2;
+        const bool left_exists = left_index <= *length;
+        const bool right_exists = right_index <= *length;
+
+        bool index_moved = 0;
+        if (left_exists || right_exists)
         {
-            if (data[left_i].distance < data[right_i].distance)
+            unsigned int next_index;
+            if (left_exists && right_exists)
             {
-                if (data[left_i].distance < data[i].distance)
+                if (data[left_index].distance < data[right_index].distance)
                 {
-                    const unsigned int b1 = indices[data[i].id]; indices[data[i].id] = indices[data[left_i].id]; indices[data[left_i].id] = b1;
-                    const Candidate b2 = data[i]; data[i] = data[left_i]; data[left_i] = b2;
-                    i = left_i;
+                    next_index = left_index;
                 }
-                else break;
+                else
+                {
+                    next_index = right_index;
+                }
             }
             else
             {
-                if (data[right_i].distance < data[i].distance)
-                {
-                    const unsigned int b1 = indices[data[i].id]; indices[data[i].id] = indices[data[right_i].id]; indices[data[right_i].id] = b1;
-                    const Candidate b2 = data[i]; data[i] = data[right_i]; data[right_i] = b2;
-                    i = right_i;
-                }
-                else break;
+                next_index = left_index;
             }
-        }
-        else if (left_exists /*&& !right_exists*/)
-        {
-            if (data[left_i].distance < data[i].distance)
+
+            if (data[next_index].distance < buffer.distance)
             {
-                const unsigned int b1 = indices[data[i].id]; indices[data[i].id] = indices[data[left_i].id]; indices[data[left_i].id] = b1;
-                const Candidate b2 = data[i]; data[i] = data[left_i]; data[left_i] = b2;
-                i = left_i;
+                data[index] = data[next_index];
+                indices[data[index].id] = index;
+                index = next_index;
+                index_moved = 1;
             }
-            else break;
         }
-        else
+
+        if (!index_moved)
         {
+            data[index] = buffer;
+            indices[buffer.id] = index;
             break;
         }
     }

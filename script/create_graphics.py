@@ -232,7 +232,7 @@ class Graphics:
             if m.mean <= self.faster_threshold and m.mean >= self.slower_threshold: measurements.append(m)
         if self.alphabetic: measurements.sort(key=lambda m: m.label, reverse=True)
         else: measurements.sort(key=lambda m: m.mean)
-        if self.reverse: measurements = reversed(measurements)
+        if self.reverse: measurements = [ m for m in reversed(measurements) ]
         
         labels = [ m.label for m in measurements ]
         text_values = [ m.inv_mean for m in measurements ] if self.inverse_labels else [ m.mean for m in measurements ]

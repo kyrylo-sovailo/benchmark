@@ -45,38 +45,44 @@ end;
 
 procedure TIndexedQueue.Push(item: TCandidate);
 var
-    i, parent_i: Cardinal;
-    b1: Cardinal;
-    b2: TCandidate;
+    index, parent_index: Cardinal;
+    parent_exists, index_moved: Boolean;
 begin
-    i := findices[item.id];
-    if i = Cardinal(-1) then
+    index := findices[item.id];
+    if index = Cardinal(-1) then
     begin
-        i := fdata.Count;
-        findices[item.id] := i;
+        index := fdata.Count; //value used only when Count == 0, otherwise only for allocation
         fdata.Add(item);
     end
-    else if i = Cardinal(-2) then
+    else if index = Cardinal(-2) then
         Exit
     else
     begin
-        if item.distance < fdata[i].distance then
-            fdata[i] := item
-        else
+        if item.distance >= fdata[index].distance then
             Exit;
     end;
 
-    while i > 0 do
+    while True do
     begin
-        parent_i := (i - 1) div 2;
-        if fdata[i].distance < fdata[parent_i].distance then
+        parent_exists := index > 0;
+        index_moved := False;
+        if parent_exists then
         begin
-            b1 := findices[fdata[i].id]; findices[fdata[i].id] := findices[fdata[parent_i].id]; findices[fdata[parent_i].id] := b1;
-            b2 := fdata[i]; fdata[i] := fdata[parent_i]; fdata[parent_i] := b2;
-            i := parent_i;
+            parent_index := (index - 1) div 2;
+            if item.distance < fdata[parent_index].distance then
+            begin
+                fdata[index] := fdata[parent_index];
+                findices[fdata[index].id] := index;
+                index := parent_index;
+                index_moved := True;
+            end
+        end;
+        if not index_moved then
+        begin
+            fdata[index] := item;
+            findices[item.id] := index;
+            break;
         end
-        else
-            Break;
     end;
 end;
 
@@ -88,58 +94,56 @@ end;
 
 function TIndexedQueue.Pop : TCandidate;
 var
-    i, left_i, right_i: Cardinal;
-    b1: Cardinal;
-    b2: TCandidate;
+    index, left_index, right_index, next_index: Cardinal;
+    left_exists, right_exists, index_moved: Boolean;
+    back: TCandidate;
 begin
     Pop := fdata[0];
-    findices[fdata[fdata.Count - 1].id] := 0;
     findices[fdata[0].id] := Cardinal(-2);
-    fdata[0] := fdata[fdata.Count - 1];
-    fdata.Delete(fdata.Count - 1);
+    if fdata.Count = 1 then
+    begin
+        fdata.Delete(0);
+        Exit;
+    end;
 
-    i := 0;
+    back := fdata[fdata.Count - 1];
+    index := 0;
     while True do
     begin
-        left_i := 2 * i + 1;
-        right_i := 2 * i + 2;
-        if (left_i < fdata.Count) and (right_i < fdata.Count) then
+        left_index := 2 * index + 1;
+        right_index := 2 * index + 2;
+        left_exists := left_index < fdata.Count;
+        right_exists := right_index < fdata.Count;
+
+        index_moved := False;
+        if left_exists or right_exists then
         begin
-            if fdata[left_i].distance < fdata[right_i].distance then
+            if left_exists and right_exists then
             begin
-                if fdata[left_i].distance < fdata[i].distance then
-                begin
-                    b1 := findices[fdata[i].id]; findices[fdata[i].id] := findices[fdata[left_i].id]; findices[fdata[left_i].id] := b1;
-                    b2 := fdata[i]; fdata[i] := fdata[left_i]; fdata[left_i] := b2;
-                    i := left_i;
-                end
+                if fdata[left_index].distance < fdata[right_index].distance then
+                    next_index := left_index
                 else
-                    Break;
+                    next_index := right_index;
             end
             else
+                next_index := left_index;
+
+            if fdata[next_index].distance < back.distance then
             begin
-                if fdata[right_i].distance < fdata[i].distance then
-                begin
-                    b1 := findices[fdata[i].id]; findices[fdata[i].id] := findices[fdata[right_i].id]; findices[fdata[right_i].id] := b1;
-                    b2 := fdata[i]; fdata[i] := fdata[right_i]; fdata[right_i] := b2;
-                    i := right_i;
-                end
-                else Break;
+                fdata[index] := fdata[next_index];
+                findices[fdata[index].id] := index;
+                index := next_index;
+                index_moved := True;
             end;
-        end
-        else if left_i < fdata.Count then
+        end;
+
+        if not index_moved then
         begin
-            if fdata[left_i].distance < fdata[i].distance then
-            begin
-                b1 := findices[fdata[i].id]; findices[fdata[i].id] := findices[fdata[left_i].id]; findices[fdata[left_i].id] := b1;
-                b2 := fdata[i]; fdata[i] := fdata[left_i]; fdata[left_i] := b2;
-                i := left_i;
-            end
-            else
-                Break;
-        end
-        else
+            fdata[index] := back;
+            findices[back.id] := index;
+            fdata.Delete(fdata.Count - 1);
             Break;
+        end;
     end;
 end;
 
