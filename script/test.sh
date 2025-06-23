@@ -18,12 +18,16 @@ run_benchmark()
             LAUNCH="dotnet"
         elif [ $( echo "$1" | grep -e '.*\.class$' | wc -l) -gt 0 ]; then
             LAUNCH="java"
+        elif [ $( echo "$1" | grep -e '.*\.py$' | wc -l) -gt 0 ]; then
+            LAUNCH="python"
         elif [ $( echo "$1" | grep -e '.*\.js$' | wc -l) -gt 0 ]; then
             LAUNCH="node"
         elif [ $( echo "$1" | grep -e '.*\.lua$' | wc -l) -gt 0 ]; then
             LAUNCH="lua"
-        elif [ $( echo "$1" | grep -e '.*\.py$' | wc -l) -gt 0 ]; then
-            LAUNCH="python"
+        elif [ $( echo "$1" | grep -e '.*\.pl$' | wc -l) -gt 0 ]; then
+            LAUNCH="pl"
+        elif [ $( echo "$1" | grep -e '.*\.php$' | wc -l) -gt 0 ]; then
+            LAUNCH="php"
         elif [ $( echo "$1" | grep -e '.*\.m$' | wc -l) -gt 0 ]; then
             LAUNCH="matlab"
         else
@@ -36,7 +40,7 @@ run_benchmark()
         else
             CORES="1"
         fi
-        RUNS=1
+        RUNS=10
         if [ "$LAUNCH" == "matlab" ]; then
             echo "{ { taskset -c ${CORES} bash -c \"for i in \\\$(seq 1 ${RUNS}); do time matlab -batch 'm = dijkstra_matlab(); m.main();'; done } 3>&2 2>&1 1>&3 | grep -v -e "^\$" | tee \"$3\"; } 2>&1"
             { { taskset -c ${CORES} bash -c "for i in \$(seq 1 ${RUNS}); do time matlab -batch 'm = dijkstra_matlab(); m.main();'; done"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
@@ -129,8 +133,6 @@ if [ $(type fpc 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_delphi_fpc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_delphi_fpc_release.txt" || exit 1
 fi
 
-exit
-
 # Haskell
 if [ $(type ghc 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_haskell_ghc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_haskell_ghc_debug.txt" || exit 1
@@ -152,6 +154,12 @@ if [ $(type lua 2>/dev/null | wc -l) -gt 0 ]; then
 fi
 if [ $(type luajit 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$SOURCE/dijkstra_lua.lua" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_lua_luajit.txt" "" luajit || exit 1
+fi
+if [ $(type perl 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$SOURCE/dijkstra_perl.pl" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_perl_perl.txt" || exit 1
+fi
+if [ $(type php 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$SOURCE/dijkstra_php.php" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_php_zend.txt" || exit 1
 fi
 if [ $(type matlab 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_matlab.m" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_matlab_matlab.txt" || exit 1

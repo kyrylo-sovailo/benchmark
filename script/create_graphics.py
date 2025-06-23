@@ -55,6 +55,8 @@ class Measurement:
         elif "Python" in labels: self.color = "xkcd:flat blue" if find_closest else "#3572a5"
         elif "Javascript" in labels: self.color = "xkcd:dull yellow" if find_closest else "#f1e05a"
         elif "Lua" in labels: self.color = "navy" if find_closest else "#000080"
+        elif "Perl" in labels: self.color = "xkcd:turquoise blue" if find_closest else "#0298c3"
+        elif "PHP" in labels: self.color = "xkcd:dusky blue" if find_closest else "#4f5d95"
         elif "Matlab" in labels: self.color = "xkcd:terra cotta" if find_closest else "#e16737"
         else: self.color = "black" if find_closest else "#000000"
 
@@ -221,6 +223,12 @@ class Graphics:
         })
         label_to_filename.update({
             "Python, PyPy" : ("dijkstra_python_pypy.txt", bool(shutil.which("pypy3")))
+        })
+        label_to_filename.update({
+            "Perl, Perl" : ("dijkstra_perl_perl.txt", bool(shutil.which("perl")))
+        })
+        label_to_filename.update({
+            "PHP, Zend" : ("dijkstra_php_zend.txt", bool(shutil.which("php")))
         })
         label_to_filename.update({
             "Matlab" : ("dijkstra_matlab_matlab.txt", bool(shutil.which("matlab")))

@@ -1,4 +1,4 @@
-#!/usr/bin/lua
+#!/usr/bin/env lua
 
 local function indexed_heap_push(data, indices, element)
     local index = indices[element.id]

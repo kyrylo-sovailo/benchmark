@@ -58,10 +58,10 @@ The measurements were performed on Intel Pentium 4415U. To reduce noise, the ker
 
 ### Software
 ```
-GCC                  14.2.1
-Clang                19.1.7
+GCC                  14.3.0
+Clang                20.1.7
 NASM                 2.16.03
-GFortran             14.2.1
+GFortran             14.3.0
 Rust                 1.87.0
 Free Pascal Compiler 3.2.2
 MCS                  6.12.0.199, Target 4.5
@@ -72,8 +72,10 @@ GHC                  9.8.4
 Node                 22.13.1
 Lua                  5.4.6
 LuaJIT               2.1.1731601260
+Perl                 5.40.2
+PHP                  8.3.21, Zend Engine 4.3.21
 Matlab               24.2.0.2833386 (R2024b) Update 4
-Kernel               6.12.10-zen1-x86_64
+Kernel               6.13.8-zen1-x86_64
 ```
 
 ### Conclusions
