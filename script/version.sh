@@ -15,6 +15,10 @@ if [ $(type gfortran 2>/dev/null | wc -l) -gt 0 ]; then
     VERSION=$(gfortran --version | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
     echo "GFortran             ${VERSION}"
 fi
+if [ $(type rustc 2>/dev/null | wc -l) -gt 0 ]; then
+    VERSION=$(rustc --version | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+    echo "Rust                 ${VERSION}"
+fi
 if [ $(type fpc 2>/dev/null | wc -l) -gt 0 ]; then
     VERSION=$(fpc -iV)
     echo "Free Pascal Compiler ${VERSION}"

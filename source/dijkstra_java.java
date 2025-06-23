@@ -27,16 +27,21 @@ class Benchmark
     }
 }
 
-class Candidate
+interface Indexed
+{
+    int get_id();
+}
+
+interface Prioritized
+{
+    float get_priority();
+}
+
+class Candidate implements Indexed, Prioritized
 {
     public int id;
     public int int_distance;
     public float distance;
-
-    public float get_priority()
-    {
-        return distance;
-    }
 
     public Candidate(int id, int int_distance, float distance)
     {
@@ -44,16 +49,28 @@ class Candidate
         this.int_distance = int_distance;
         this.distance = distance;
     }
+
+    @Override
+    public int get_id()
+    {
+        return this.id;
+    }
+
+    @Override
+    public float get_priority()
+    {
+        return this.distance;
+    }
 }
 
-class IndexedPriorityQueue
+class IndexedPriorityQueue<T extends Indexed & Prioritized>
 {
-    private ArrayList<Candidate> data;
+    private ArrayList<T> data;
     private int[] indices;
 
     public IndexedPriorityQueue(int size)
     {
-        data = new ArrayList<Candidate>(size);
+        data = new ArrayList<T>(size);
         indices = new int[size];
     }
 
@@ -63,10 +80,10 @@ class IndexedPriorityQueue
         for (int i = 0; i < indices.length; i++) indices[i] = -1;
     }
 
-    public Candidate dequeue()
+    public T dequeue()
     {
-        Candidate top = data.get(0);
-        indices[top.id] = -2;
+        T top = data.get(0);
+        indices[top.get_id()] = -2;
 
         if (data.size() == 1)
         {
@@ -74,7 +91,7 @@ class IndexedPriorityQueue
             return top;
         }
 
-        Candidate back = data.get(data.size() - 1);
+        T back = data.get(data.size() - 1);
         int index = 0;
 
         while (true)
@@ -108,7 +125,7 @@ class IndexedPriorityQueue
                 if (data.get(next_index).get_priority() < back.get_priority())
                 {
                     data.set(index, data.get(next_index));
-                    indices[data.get(index).id] = index;
+                    indices[data.get(index).get_id()] = index;
                     index = next_index;
                     index_moved = true;
                 }
@@ -117,7 +134,7 @@ class IndexedPriorityQueue
             if (!index_moved)
             {
                 data.set(index, back);
-                indices[back.id] = index;
+                indices[back.get_id()] = index;
                 data.remove(data.size() - 1);
                 break;
             }
@@ -126,14 +143,14 @@ class IndexedPriorityQueue
         return top;
     }
 
-    public void enqueue(Candidate candidate)
+    public void enqueue(T item)
     {
-        int index = indices[candidate.id];
+        int index = indices[item.get_id()];
 
         if (index == -1)
         {
             index = data.size();
-            data.add(candidate); //value used only when size == 0, otherwise only for allocation
+            data.add(item); //value used only when size == 0, otherwise only for allocation
         }
         else if (index == -2)
         {
@@ -141,7 +158,7 @@ class IndexedPriorityQueue
         }
         else
         {
-            if (candidate.get_priority() >= data.get(index).get_priority()) return;
+            if (item.get_priority() >= data.get(index).get_priority()) return;
         }
 
         while (true)
@@ -152,10 +169,10 @@ class IndexedPriorityQueue
             if (parent_exists)
             {
                 int parent_index = (index - 1) / 2;
-                if (candidate.get_priority() < data.get(parent_index).get_priority())
+                if (item.get_priority() < data.get(parent_index).get_priority())
                 {
                     data.set(index, data.get(parent_index));
-                    indices[data.get(index).id] = index;
+                    indices[data.get(index).get_id()] = index;
                     index = parent_index;
                     index_moved = true;
                 }
@@ -163,8 +180,8 @@ class IndexedPriorityQueue
 
             if (!index_moved)
             {
-                data.set(index, candidate);
-                indices[candidate.id] = index;
+                data.set(index, item);
+                indices[item.get_id()] = index;
                 break;
             }
         }
@@ -210,7 +227,7 @@ public class Dijkstra
 
     public static void solve_ver5(ArrayList<ArrayList<Connection>> graph, ArrayList<Benchmark> benchmarks)
     {
-        IndexedPriorityQueue candidates = new IndexedPriorityQueue(graph.size());
+        IndexedPriorityQueue<Candidate> candidates = new IndexedPriorityQueue<Candidate>(graph.size());
 
         for (Benchmark benchmark : benchmarks)
         {

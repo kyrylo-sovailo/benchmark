@@ -109,7 +109,7 @@ template<typename T> struct indexed_priority_queue
         }
     }
 
-    inline void push(T &&element)
+    inline void push(const T &element)
     {
         unsigned int index = indices[element.id];
         if (index == static_cast<unsigned int>(-1))
@@ -132,12 +132,12 @@ template<typename T> struct indexed_priority_queue
             bool index_moved = false;
             if (parent_exists)
             {
-                const unsigned int parent_i = (index - 1) / 2;
-                if (element < data[parent_i])
+                const unsigned int parent_index = (index - 1) / 2;
+                if (element < data[parent_index])
                 {
-                    data[index] = data[parent_i];
+                    data[index] = data[parent_index];
                     indices[data[index].id] = index;
-                    index = parent_i;
+                    index = parent_index;
                     index_moved = true;
                 }
             }

@@ -27,12 +27,23 @@ class Benchmark
     }
 };
 
-class Candidate
+interface IIndexed
+{
+    int Id { get; }
+};
+
+interface IPrioritized
+{
+    float Priority { get; }
+};
+
+class Candidate : IIndexed, IPrioritized
 {
     public int id;
     public int int_distance;
     public float distance;
 
+    public int Id { get { return id; } }
     public float Priority { get { return distance; } }
 
     public Candidate(int id, int int_distance, float distance)
@@ -44,13 +55,13 @@ class Candidate
 };
 
 #if VERSION3
-class PriorityQueue
+class PriorityQueue<T> where T: IPrioritized
 {
-    List<Candidate> data;
+    List<T> data;
 
     public PriorityQueue(int size)
     {
-        data = new List<Candidate>(size);
+        data = new List<T>(size);
     }
 
     public void Clear()
@@ -58,103 +69,12 @@ class PriorityQueue
         data.Clear();
     }
 
-    public Candidate Dequeue()
+    public T Dequeue()
     {
-        Candidate top = data[0];
-        data[0] = data[data.Count - 1];
-        data.RemoveAt(data.Count - 1);
-
-        int i = 0;
-        while (true)
-        {
-            int left_i = 2 * i + 1;
-            int right_i = 2 * i + 2;
-            bool left_exists = left_i < data.Count;
-            bool right_exists = right_i < data.Count;
-            if (/*left_exists &&*/ right_exists)
-            {
-                if (data[left_i].Priority < data[right_i].Priority)
-                {
-                    if (data[left_i].Priority < data[i].Priority)
-                    {
-                        Candidate b1 = data[i]; data[i] = data[left_i]; data[left_i] = b1;
-                        i = left_i;
-                    }
-                    else break;
-                }
-                else
-                {
-                    if (data[right_i].Priority < data[i].Priority)
-                    {
-                        Candidate b1 = data[i]; data[i] = data[right_i]; data[right_i] = b1;
-                        i = right_i;
-                    }
-                    else break;
-                }
-            }
-            else if (left_exists /*&& !right_exists*/)
-            {
-                if (data[left_i].Priority < data[i].Priority)
-                {
-                    Candidate b1 = data[i]; data[i] = data[left_i]; data[left_i] = b1;
-                    i = left_i;
-                }
-                else break;
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        return top;
-    }
-
-    public void Enqueue(Candidate candidate)
-    {
-        int i = data.Count;
-        data.Add(candidate);
-        while (i > 0)
-        {
-            int parent_i = (i - 1) / 2;
-            if (data[i].Priority < data[parent_i].Priority)
-            {
-                Candidate b1 = data[i]; data[i] = data[parent_i]; data[parent_i] = b1;
-                i = parent_i;
-            }
-            else break;
-        }
-    }
-
-    public int Count { get { return data.Count; } }
-};
-#endif
-
-#if VERSION5
-class IndexedPriorityQueue
-{
-    List<Candidate> data;
-    int[] indices;
-
-    public IndexedPriorityQueue(int size)
-    {
-        data = new List<Candidate>(size);
-        indices = new int[size];
-    }
-
-    public void Clear()
-    {
-        data.Clear();
-        for (int i = 0; i < indices.Length; i++) indices[i] = -1;
-    }
-
-    public Candidate Dequeue()
-    {
-        Candidate top = data[0];
-        indices[top.id] = -2;
+        T top = data[0];
         if (data.Count == 1) { data.RemoveAt(0); return top; }
 
-        Candidate back = data[data.Count - 1];
+        T back = data[data.Count - 1];
         int index = 0;
         while (true)
         {
@@ -169,7 +89,7 @@ class IndexedPriorityQueue
                 int next_index;
                 if (left_exists && right_exists)
                 {
-                    if (data[left_index].distance < data[right_index].distance)
+                    if (data[left_index].Priority < data[right_index].Priority)
                     {
                         next_index = left_index;
                     }
@@ -183,10 +103,9 @@ class IndexedPriorityQueue
                     next_index = left_index;
                 }
 
-                if (data[next_index].distance < back.distance)
+                if (data[next_index].Priority < back.Priority)
                 {
                     data[index] = data[next_index];
-                    indices[data[index].id] = index;
                     index = next_index;
                     index_moved = true;
                 }
@@ -195,7 +114,6 @@ class IndexedPriorityQueue
             if (!index_moved)
             {
                 data[index] = back;
-                indices[back.id] = index;
                 data.RemoveAt(data.Count - 1);
                 break;
             }
@@ -204,13 +122,117 @@ class IndexedPriorityQueue
         return top;
     }
 
-    public void Enqueue(Candidate candidate)
+    public void Enqueue(T item)
     {
-        int index = indices[candidate.id];
+        int index = data.Count;
+        data.Add(item); //value used only when Count == 0, otherwise only for allocation
+        while (true)
+        {
+            bool parent_exists = index > 0;
+            bool index_moved = false;
+            if (parent_exists)
+            {
+                int parent_index = (index - 1) / 2;
+                if (item.Priority < data[parent_index].Priority)
+                {
+                    data[index] = data[parent_index];
+                    index = parent_index;
+                    index_moved = true;
+                }
+            }
+            if (!index_moved)
+            {
+                data[index] = item;
+                break;
+            }
+        }
+    }
+
+    public int Count { get { return data.Count; } }
+};
+#endif
+
+#if VERSION5
+class IndexedPriorityQueue<T> where T: IPrioritized, IIndexed
+{
+    List<T> data;
+    int[] indices;
+
+    public IndexedPriorityQueue(int size)
+    {
+        data = new List<T>(size);
+        indices = new int[size];
+    }
+
+    public void Clear()
+    {
+        data.Clear();
+        for (int i = 0; i < indices.Length; i++) indices[i] = -1;
+    }
+
+    public T Dequeue()
+    {
+        T top = data[0];
+        indices[top.Id] = -2;
+        if (data.Count == 1) { data.RemoveAt(0); return top; }
+
+        T back = data[data.Count - 1];
+        int index = 0;
+        while (true)
+        {
+            int left_index = 2 * index + 1;
+            int right_index = 2 * index + 2;
+            bool left_exists = left_index < data.Count;
+            bool right_exists = right_index < data.Count;
+
+            bool index_moved = false;
+            if (left_exists || right_exists)
+            {
+                int next_index;
+                if (left_exists && right_exists)
+                {
+                    if (data[left_index].Priority < data[right_index].Priority)
+                    {
+                        next_index = left_index;
+                    }
+                    else
+                    {
+                        next_index = right_index;
+                    }
+                }
+                else
+                {
+                    next_index = left_index;
+                }
+
+                if (data[next_index].Priority < back.Priority)
+                {
+                    data[index] = data[next_index];
+                    indices[data[index].Id] = index;
+                    index = next_index;
+                    index_moved = true;
+                }
+            }
+
+            if (!index_moved)
+            {
+                data[index] = back;
+                indices[back.Id] = index;
+                data.RemoveAt(data.Count - 1);
+                break;
+            }
+        }
+
+        return top;
+    }
+
+    public void Enqueue(T item)
+    {
+        int index = indices[item.Id];
         if (index == -1)
         {
             index = data.Count;
-            data.Add(candidate); //value used only when Count == 0, otherwise only for allocation
+            data.Add(item); //value used only when Count == 0, otherwise only for allocation
         }
         else if (index == -2)
         {
@@ -218,7 +240,7 @@ class IndexedPriorityQueue
         }
         else
         {
-            if (candidate.distance >= data[index].distance) return;
+            if (item.Priority >= data[index].Priority) return;
         }
         
         while (true)
@@ -228,18 +250,18 @@ class IndexedPriorityQueue
             if (parent_exists)
             {
                 int parent_index = (index - 1) / 2;
-                if (candidate.distance < data[parent_index].distance)
+                if (item.Priority < data[parent_index].Priority)
                 {
                     data[index] = data[parent_index];
-                    indices[data[index].id] = index;
+                    indices[data[index].Id] = index;
                     index = parent_index;
                     index_moved = true;
                 }
             }
             if (!index_moved)
             {
-                data[index] = candidate;
-                indices[candidate.id] = index;
+                data[index] = item;
+                indices[item.Id] = index;
                 break;
             }
         }
@@ -295,7 +317,7 @@ class Program
     #if VERSION3
     static void SolveVer3(List<List<Connection>> graph, List<Benchmark> benchmarks)
     {
-        PriorityQueue candidates = new PriorityQueue(graph.Count);
+        PriorityQueue<Candidate> candidates = new PriorityQueue<Candidate>(graph.Count);
         bool[] explored = new bool[graph.Count];
 
         foreach (Benchmark benchmark in benchmarks)
@@ -327,7 +349,7 @@ class Program
     #if VERSION5
     static void SolveVer5(List<List<Connection>> graph, List<Benchmark> benchmarks)
     {
-        IndexedPriorityQueue candidates = new IndexedPriorityQueue(graph.Count);
+        IndexedPriorityQueue<Candidate> candidates = new IndexedPriorityQueue<Candidate>(graph.Count);
 
         foreach (Benchmark benchmark in benchmarks)
         {

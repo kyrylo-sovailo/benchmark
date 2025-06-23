@@ -23,27 +23,27 @@ type
         distance: Single;
     end;
 
-    TIndexedQueue = class
+    TIndexedQueue<T> = class
     private
-        fdata: TList<TCandidate>;
+        fdata: TList<T>;
         findices: array of Cardinal;
     public
         constructor Create(count: Integer);
         destructor Destroy; override;
-        procedure Push(item: TCandidate);
-        function Pop : TCandidate;
+        procedure Push(item: T);
+        function Pop : T;
         function Count : Integer;
         procedure Clear;
     end;
 
-constructor TIndexedQueue.Create(count: Integer);
+constructor TIndexedQueue<T>.Create(count: Integer);
 begin
-    fdata := TList<TCandidate>.Create;
+    fdata := TList<T>.Create;
     fdata.Capacity := count;
     SetLength(findices, count);
 end;
 
-procedure TIndexedQueue.Push(item: TCandidate);
+procedure TIndexedQueue<T>.Push(item: T);
 var
     index, parent_index: Cardinal;
     parent_exists, index_moved: Boolean;
@@ -86,17 +86,11 @@ begin
     end;
 end;
 
-destructor TIndexedQueue.Destroy;
-begin
-    fdata.Free;
-    inherited;
-end;
-
-function TIndexedQueue.Pop : TCandidate;
+function TIndexedQueue<T>.Pop : T;
 var
     index, left_index, right_index, next_index: Cardinal;
     left_exists, right_exists, index_moved: Boolean;
-    back: TCandidate;
+    back: T;
 begin
     Pop := fdata[0];
     findices[fdata[0].id] := Cardinal(-2);
@@ -147,12 +141,18 @@ begin
     end;
 end;
 
-function TIndexedQueue.Count : Integer;
+destructor TIndexedQueue<T>.Destroy;
+begin
+    fdata.Free;
+    inherited;
+end;
+
+function TIndexedQueue<T>.Count : Integer;
 begin
     Count := fdata.Count;
 end;
 
-procedure TIndexedQueue.Clear;
+procedure TIndexedQueue<T>.Clear;
 var
     i: Cardinal;
 begin
@@ -226,7 +226,7 @@ end;
 procedure SolveVer5(graph: TList<TConnections>; benchmarks: TList<TBenchmark>);
 var
     //Queue of candidates
-    candidates: TIndexedQueue;
+    candidates: TIndexedQueue<TCandidate>;
     candidate: TCandidate;
     //Temporary values
     new_candidate: TCandidate;
@@ -237,7 +237,7 @@ var
     distance: Single;
     int_distance: Cardinal;
 begin
-    candidates := TIndexedQueue.Create(graph.Count);
+    candidates := TIndexedQueue<TCandidate>.Create(graph.Count);
     
     for benchmark in benchmarks do
     begin

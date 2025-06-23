@@ -36,7 +36,7 @@ run_benchmark()
         else
             CORES="1"
         fi
-        RUNS=10
+        RUNS=1
         if [ "$LAUNCH" == "matlab" ]; then
             echo "{ { taskset -c ${CORES} bash -c \"for i in \\\$(seq 1 ${RUNS}); do time matlab -batch 'm = dijkstra_matlab(); m.main();'; done } 3>&2 2>&1 1>&3 | grep -v -e "^\$" | tee \"$3\"; } 2>&1"
             { { taskset -c ${CORES} bash -c "for i in \$(seq 1 ${RUNS}); do time matlab -batch 'm = dijkstra_matlab(); m.main();'; done"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
@@ -115,6 +115,12 @@ if [ $(type gfortran 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_fortran_gfortran_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_fortran_gfortran_release.txt" || exit 1
 fi
 
+# Rust
+if [ $(type rustc 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/dijkstra_rust_rustc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_rust_rustc_debug.txt" || exit 1
+    run_benchmark "$BUILD/dijkstra_rust_rustc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_rust_rustc_release.txt" || exit 1
+fi
+
 # Pascal/Delphi
 if [ $(type fpc 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_pascal_fpc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_pascal_fpc_debug.txt" || exit 1
@@ -122,6 +128,8 @@ if [ $(type fpc 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_delphi_fpc_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_delphi_fpc_debug.txt" || exit 1
     run_benchmark "$BUILD/dijkstra_delphi_fpc_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_delphi_fpc_release.txt" || exit 1
 fi
+
+exit
 
 # Haskell
 if [ $(type ghc 2>/dev/null | wc -l) -gt 0 ]; then

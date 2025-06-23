@@ -46,9 +46,10 @@ class Measurement:
         if "C" in labels: self.color = "xkcd:gunmetal" if find_closest else "#555555"
         elif "C++" in labels: self.color = "xkcd:warm pink" if find_closest else "#f34b7d"
         elif "C#" in labels: self.color = "green" if find_closest else "#178600"
-        elif "NASM" in labels: self.color = "xkcd:mud" if find_closest else "#6E4C13"
+        elif "NASM" in labels: self.color = "xkcd:mud" if find_closest else "#6e4c13"
         elif "Java" in labels: self.color = "xkcd:caramel" if find_closest else "#b07219"
         elif "Fortran" in labels: self.color = "xkcd:blue with a hint of purple" if find_closest else "#4d41b1"
+        elif "Rust" in labels: self.color = "xkcd:pinkish tan" if find_closest else "#dea584"
         elif "Pascal" in labels or "Delphi" in labels: self.color = "xkcd:sandy yellow" if find_closest else "#e3f171"
         elif "Haskell" in labels: self.color = "xkcd:twilight" if find_closest else "#5e5086"
         elif "Python" in labels: self.color = "xkcd:flat blue" if find_closest else "#3572a5"
@@ -136,6 +137,7 @@ class Graphics:
         dotnet_present = bool(shutil.which("dotnet"))
         javac_present = bool(shutil.which("javac"))
         gfortran_present = bool(shutil.which("gfortran"))
+        rust_present = bool(shutil.which("rustc"))
         fpc_present = bool(shutil.which("fpc"))
         ghc_present = bool(shutil.which("ghc"))
 
@@ -146,19 +148,19 @@ class Graphics:
         })
         label_to_filename.update({
             "C++, clang++, debug" : ("dijkstra_cpp_clang_debug.txt", llvmpp_present),
-            "C++, clang++, release" : ("dijkstra_cpp_clang_release.txt", llvmpp_present),
+            "C++, clang++, release" : ("dijkstra_cpp_clang_release.txt", llvmpp_present)
         })
         label_to_filename.update({
             "C, gcc, debug" : ("dijkstra_c_gcc_debug.txt", gcc_present),
-            "C, gcc, release" : ("dijkstra_c_gcc_release.txt", gcc_present),
+            "C, gcc, release" : ("dijkstra_c_gcc_release.txt", gcc_present)
         })
         label_to_filename.update({
             "C, clang, debug" : ("dijkstra_c_clang_debug.txt", clang_present),
-            "C, clang, release" : ("dijkstra_c_clang_release.txt", clang_present),
+            "C, clang, release" : ("dijkstra_c_clang_release.txt", clang_present)
         })
         label_to_filename.update({
             "NASM, debug" : ("dijkstra_asm_nasm_debug.txt", nasm_present and x86_64),
-            "NASM, release" : ("dijkstra_asm_nasm_release.txt", nasm_present and x86_64),
+            "NASM, release" : ("dijkstra_asm_nasm_release.txt", nasm_present and x86_64)
         })
         label_to_filename.update({ #Important, doesn't count as extra
             "C, gcc, release, freestanding" : ("dijkstra_c_gcc_release_freestanding.txt", gpp_present)
@@ -177,29 +179,33 @@ class Graphics:
         })
         label_to_filename.update({
             "C#, mcs, debug" : ("dijkstra_csharp_mcs_debug.txt", mcs_present),
-            "C#, mcs, release" : ("dijkstra_csharp_mcs_release.txt", mcs_present),
+            "C#, mcs, release" : ("dijkstra_csharp_mcs_release.txt", mcs_present)
         })
         label_to_filename.update({
             "C#, .NET, debug" : ("dijkstra_csharp_dotnet_debug.txt", dotnet_present),
-            "C#, .NET, release" : ("dijkstra_csharp_dotnet_release.txt", dotnet_present),
+            "C#, .NET, release" : ("dijkstra_csharp_dotnet_release.txt", dotnet_present)
         })
         label_to_filename.update({
             "Java, OpenJDK, debug" : ("dijkstra_java_openjdk_debug.txt", javac_present),
-            "Java, OpenJDK, release" : ("dijkstra_java_openjdk_release.txt", javac_present),
+            "Java, OpenJDK, release" : ("dijkstra_java_openjdk_release.txt", javac_present)
         })
         label_to_filename.update({
             "Fortran, gfortran, debug" : ("dijkstra_fortran_gfortran_debug.txt", gfortran_present),
-            "Fortran, gfortran, release" : ("dijkstra_fortran_gfortran_release.txt", gfortran_present),
+            "Fortran, gfortran, release" : ("dijkstra_fortran_gfortran_release.txt", gfortran_present)
+        })
+        label_to_filename.update({
+            "Rust, Rust, debug" : ("dijkstra_rust_rustc_debug.txt", rust_present),
+            "Rust, Rust, release" : ("dijkstra_rust_rustc_release.txt", rust_present)
         })
         label_to_filename.update({
             "Pascal, FPC, debug" : ("dijkstra_pascal_fpc_debug.txt", fpc_present),
             "Pascal, FPC, release" : ("dijkstra_pascal_fpc_release.txt", fpc_present),
             "Delphi, FPC, debug" : ("dijkstra_delphi_fpc_debug.txt", fpc_present),
-            "Delphi, FPC, release" : ("dijkstra_delphi_fpc_release.txt", fpc_present),
+            "Delphi, FPC, release" : ("dijkstra_delphi_fpc_release.txt", fpc_present)
         })
         if shutil.which("ghc"): label_to_filename.update({
             "Haskell, ghc, debug" : ("dijkstra_haskell_ghc_debug.txt", ghc_present),
-            "Haskell, ghc, release" : ("dijkstra_haskell_ghc_release.txt", ghc_present),
+            "Haskell, ghc, release" : ("dijkstra_haskell_ghc_release.txt", ghc_present)
         })
         label_to_filename.update({
             "Javascript, Node" : ("dijkstra_js_node.txt", bool(shutil.which("node")))

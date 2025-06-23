@@ -62,6 +62,7 @@ GCC                  14.2.1
 Clang                19.1.7
 NASM                 2.16.03
 GFortran             14.2.1
+Rust                 1.87.0
 Free Pascal Compiler 3.2.2
 MCS                  6.12.0.199, Target 4.5
 .NET                 9.0.101

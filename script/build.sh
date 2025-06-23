@@ -52,6 +52,10 @@ compile_debug()
             FLAGS="-std=f95 -g -fcheck=all"
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
+        elif [ $( echo "$2" | grep -e '.*.rs$' | wc -l) -gt 0 ]; then #Rust
+            FLAGS=""
+            echo $1 $FLAGS "$2" -o "$3"
+            $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.pas$' | wc -l) -gt 0 -a "$4" == "delphi" ]; then #Delphi
             FLAGS="-g -Mdelphi"
             echo $1 $FLAGS "$2" -o"$3"
@@ -75,11 +79,11 @@ compile_release()
 {
     if [ "$2" -nt "$3" ]; then
         if [ $( echo "$2" | grep -e '.*.cpp$' | wc -l) -gt 0 ]; then #C++
-            FLAGS="-std=c++11 -Wall -Wextra -Wconversion -Wsign-conversion -O3 -DNDEBUG -fno-rtti -flto -march=native"
+            FLAGS="-Wall -Wextra -Wconversion -Wsign-conversion -O3 -DNDEBUG -fno-rtti -flto -march=native"
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.c$' | wc -l) -gt 0 ]; then #C
-            FLAGS="-std=c11 -Wall -Wextra -Wconversion -Wsign-conversion -O3 -DNDEBUG -flto -march=native"
+            FLAGS="-Wall -Wextra -Wconversion -Wsign-conversion -O3 -DNDEBUG -flto -march=native"
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.asm$' | wc -l) -gt 0 ]; then #Assembly
@@ -114,7 +118,11 @@ compile_release()
             echo $1 $FLAGS \"$2\" -d \"$DIRECTORY\"
             $1 $FLAGS "$2" -d "$DIRECTORY" || exit 1
         elif [ $( echo "$2" | grep -e '.*.f90$' | wc -l) -gt 0 ]; then #Fortran
-            FLAGS="-std=f95 -O3 -flto -march=native"
+            FLAGS="-O3 -flto -march=native"
+            echo $1 $FLAGS "$2" -o "$3"
+            $1 $FLAGS "$2" -o "$3" || exit 1
+        elif [ $( echo "$2" | grep -e '.*.rs$' | wc -l) -gt 0 ]; then #Rust
+            FLAGS="-C opt-level=3 -C target-cpu=native -C lto=yes"
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.pas$' | wc -l) -gt 0 -a "$4" == "delphi" ]; then #Delphi
@@ -198,12 +206,12 @@ fi
 if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
     copy "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c.cpp" || exit 1
     compile_release "g++ -Drestrict=" "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_gcc_release_cpp" || exit 1 #C as C++
-    compile_release "g++ -Drestrict=__restrict__" "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_gcc_release_cpp_restrict" || exit 1 #C as C++
+    compile_release "g++ -Drestrict=__restrict__ -fno-exceptions" "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_gcc_release_cpp_restrict" || exit 1 #C as C++
 fi
 if [ $(type clang++ 2>/dev/null | wc -l) -gt 0 ]; then
     copy "$SOURCE/dijkstra_c.c" "$BUILD/dijkstra_c.cpp" || exit 1
     compile_release "clang++ -Drestrict=" "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_clang_release_cpp" || exit 1 #C as C++
-    compile_release "clang++ -Drestrict=__restrict__" "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_clang_release_cpp_restrict" || exit 1 #C as C++
+    compile_release "clang++ -Drestrict=__restrict__ -fno-exceptions" "$BUILD/dijkstra_c.cpp" "$BUILD/dijkstra_c_clang_release_cpp_restrict" || exit 1 #C as C++
 fi
 
 # C#
@@ -238,6 +246,12 @@ fi
 if [ $(type gfortran 2>/dev/null | wc -l) -gt 0 ]; then
     compile_debug gfortran "$SOURCE/dijkstra_fortran.f90" "$BUILD/dijkstra_fortran_gfortran_debug" || exit 1
     compile_release gfortran "$SOURCE/dijkstra_fortran.f90" "$BUILD/dijkstra_fortran_gfortran_release" || exit 1
+fi
+
+# Rust
+if [ $(type rustc 2>/dev/null | wc -l) -gt 0 ]; then
+    compile_debug rustc "$SOURCE/dijkstra_rust.rs" "$BUILD/dijkstra_rust_rustc_debug" || exit 1
+    compile_release rustc "$SOURCE/dijkstra_rust.rs" "$BUILD/dijkstra_rust_rustc_release" || exit 1
 fi
 
 # Pascal/Delphi
