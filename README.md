@@ -47,11 +47,11 @@ My knowledge of programming languages is not on the same level, and not all impl
  - `C`, `Fortran`: direct translation, the optimizing compiler is powerful, no improvement is expected.
  - `Pascal`, `C#`, `Java`: direct translation, the optimizing compiler is not great, improvement may be achieved by micromanagement.
  - `NASM`: some very minor improvements are still achievable by abandoning System V ABI, inlining functions and using mapping. But I'm almost sure that I reached the bottom of it.
- - `Python`, `JS`, `Lua`: not well-researched, improvement may be achieved by micromanagement and different data structures.
+ - `Python`, `JS`, `Lua`, `Perl`, `PHP`: not well-researched, improvement may be achieved by micromanagement and different data structures.
  - `PyPy`: the implementation in `Python` relied on the fact that standard priority queue is faster than any user-implemented structures, which may not be the case with `PyPy`'s JIT. Improvement is therefore possible.
  - `Matlab`: I highly doubt that something can be done to the algorithm, though improvement through micromanagement is extremely likely.
  - `Delphi`: since Pascal is (roughly) a subset of Delphi, the improvement can be achieved by simply downgrading to `Pascal`.
- - `Haskell`: further improvements are probable. Better `Haskell` knowledge is required.
+ - `Haskell`, `Rust`: further improvements are probable. Better language knowledge is required.
 
 ### Hardware
 The measurements were performed on Intel Pentium 4415U. To reduce noise, the kernel was booted with `isolcpus=1,3`, where 1 and 3 are logical cores that correspond to physical core 1.

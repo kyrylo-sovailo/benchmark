@@ -25,7 +25,7 @@ run_benchmark()
         elif [ $( echo "$1" | grep -e '.*\.lua$' | wc -l) -gt 0 ]; then
             LAUNCH="lua"
         elif [ $( echo "$1" | grep -e '.*\.pl$' | wc -l) -gt 0 ]; then
-            LAUNCH="pl"
+            LAUNCH="perl"
         elif [ $( echo "$1" | grep -e '.*\.php$' | wc -l) -gt 0 ]; then
             LAUNCH="php"
         elif [ $( echo "$1" | grep -e '.*\.m$' | wc -l) -gt 0 ]; then

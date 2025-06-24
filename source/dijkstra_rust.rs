@@ -72,8 +72,7 @@ impl<T: Clone + PartialOrd + Indexed + Prioritized> IndexedPriorityQueue<T>
 {
     fn new(size: usize) -> Self
     {
-        let mut n = Self{data: Vec::<T>::new(), indices: vec![0; size]};
-        n
+        Self{data: Vec::<T>::new(), indices: vec![0; size]}
     }
 
     fn reset(&mut self) -> ()
