@@ -28,6 +28,8 @@ run_benchmark()
             LAUNCH="perl"
         elif [ $( echo "$1" | grep -e '.*\.php$' | wc -l) -gt 0 ]; then
             LAUNCH="php"
+        elif [ $( echo "$1" | grep -e '.*\.sh$' | wc -l) -gt 0 ]; then
+            LAUNCH="bash"
         elif [ $( echo "$1" | grep -e '.*\.m$' | wc -l) -gt 0 ]; then
             LAUNCH="matlab"
         else
@@ -160,6 +162,9 @@ if [ $(type perl 2>/dev/null | wc -l) -gt 0 ]; then
 fi
 if [ $(type php 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$SOURCE/dijkstra_php.php" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_php_zend.txt" || exit 1
+fi
+if [ $(type bash 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$SOURCE/dijkstra_bash.sh" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_bash_gnu.txt" || exit 1
 fi
 if [ $(type matlab 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$BUILD/dijkstra_matlab.m" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_matlab_matlab.txt" || exit 1

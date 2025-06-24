@@ -74,6 +74,7 @@ Lua                  5.4.6
 LuaJIT               2.1.1731601260
 Perl                 5.40.2
 PHP                  8.3.21, Zend Engine 4.3.21
+GNU bash             5.2.37
 Matlab               24.2.0.2833386 (R2024b) Update 4
 Kernel               6.13.8-zen1-x86_64
 ```

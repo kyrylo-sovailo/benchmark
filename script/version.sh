@@ -74,6 +74,10 @@ if [ $(type php 2>/dev/null | wc -l) -gt 0 ]; then
         echo "PHP                  ${VERSION}, unknown engine"
     fi
 fi
+if [ $(type bash 2>/dev/null | wc -l) -gt 0 ]; then
+    VERSION=$(bash --version | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+    echo "GNU bash             ${VERSION}"
+fi
 if [ $(type matlab 2>/dev/null | wc -l) -gt 0 ]; then
     VERSION=$(matlab -batch 'disp(version)' | head -n 1)
     echo "Matlab               ${VERSION}"
