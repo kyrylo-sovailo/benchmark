@@ -12,6 +12,24 @@ void write(std::ofstream *file, const std::string &string)
     if (!file->write(string.c_str(), static_cast<std::streamsize>(string.size()))) throw std::runtime_error("std::ofstream::write() failed");
 }
 
+void write_separator(std::ofstream *file, std::uniform_int_distribution<unsigned int> *distribution, std::default_random_engine *engine, bool required)
+{
+    if (required) write(file, " ");
+    while ((*distribution)(*engine) == 0)
+    {
+        write(file, ((*distribution)(*engine) == 0) ? "\t" : " ");
+    }
+}
+
+void write_newline(std::ofstream *file, std::uniform_int_distribution<unsigned int> *distribution, std::default_random_engine *engine, bool required)
+{
+    if (required) write(file, "\n");
+    while ((*distribution)(*engine) == 0)
+    {
+        write(file, "\n");
+    }
+}
+
 int _main()
 {
     const unsigned int node_count = 100000;
@@ -25,6 +43,7 @@ int _main()
     std::uniform_int_distribution<unsigned int> node_distribution(0, node_count-1);
     std::uniform_int_distribution<unsigned int> neighbor_distribution(min_node_connections, max_node_connections-1);
     std::uniform_real_distribution<float> weight_distribution(min_weight, max_weight);
+    std::uniform_int_distribution<unsigned int> chaos_distribution(0, 10);
     std::map<unsigned int, std::map<unsigned int, float>> graph;
     for (unsigned int source = 0; source < node_count; source++)
     {
@@ -54,27 +73,37 @@ int _main()
     }
 
     std::ofstream file("dijkstra.txt");
-    write(&file, "GRAPH\n");
+    write_separator(&file, &chaos_distribution, &engine, true);
+    write(&file, "GRAPH");
+    write_separator(&file, &chaos_distribution, &engine, true);
+    write_newline(&file, &chaos_distribution, &engine, true);
     for (const auto &node1 : graph)
     {
         for (const auto &node2 : node1.second)
         {
             if (node1.first > node2.first) continue;
+            write_separator(&file, &chaos_distribution, &engine, false);
             write(&file, std::to_string(node1.first));
-            write(&file, " ");
+            write_separator(&file, &chaos_distribution, &engine, true);
             write(&file, std::to_string(node2.first));
-            write(&file, " ");
+            write_separator(&file, &chaos_distribution, &engine, true);
             write(&file, std::to_string(node2.second));
-            write(&file, "\n");
+            write_separator(&file, &chaos_distribution, &engine, false);
+            write_newline(&file, &chaos_distribution, &engine, true);
         }
     }
-    write(&file, "BENCHMARK\n");
+    write_separator(&file, &chaos_distribution, &engine, true);
+    write(&file, "BENCHMARK");
+    write_separator(&file, &chaos_distribution, &engine, true);
+    write_newline(&file, &chaos_distribution, &engine, true);
     for (const auto &benchmark : benchmarks)
     {
+        write_separator(&file, &chaos_distribution, &engine, false);
         write(&file, std::to_string(benchmark.first));
-        write(&file, " ");
+        write_separator(&file, &chaos_distribution, &engine, true);
         write(&file, std::to_string(benchmark.second));
-        write(&file, "\n");
+        write_separator(&file, &chaos_distribution, &engine, false);
+        write_newline(&file, &chaos_distribution, &engine, true);
     }
 
     return 0;

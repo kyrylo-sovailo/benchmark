@@ -1,6 +1,7 @@
 #!/bin/bash
 SOURCE="$(dirname $(dirname $(readlink -f $0)))/source"
 BUILD="$(dirname $(dirname $(readlink -f $0)))/build"
+TEMPFILE="$(mktemp)"
 if [ ! -d "$BUILD" ]; then mkdir "$BUILD"; fi
 cd "$BUILD"
 
@@ -10,6 +11,8 @@ cd "$BUILD"
 run_benchmark()
 {
     if [ "$1" -nt "$3" -o "$2" -nt "$3" ]; then
+        WARMUP=0 #3
+        RUNS=1 #10
         if [ ! -z "$5" ]; then
             LAUNCH="$5"
         elif [ $( echo "$1" | grep -e '.*\.exe$' | wc -l) -gt 0 ]; then
@@ -30,6 +33,8 @@ run_benchmark()
             LAUNCH="php"
         elif [ $( echo "$1" | grep -e '.*\.sh$' | wc -l) -gt 0 ]; then
             LAUNCH="bash"
+            WARMUP=0
+            RUNS=1
         elif [ $( echo "$1" | grep -e '.*\.m$' | wc -l) -gt 0 ]; then
             LAUNCH="matlab"
         else
@@ -42,21 +47,42 @@ run_benchmark()
         else
             CORES="1"
         fi
-        RUNS=10
         if [ "$LAUNCH" == "matlab" ]; then
-            echo "{ { taskset -c ${CORES} bash -c \"for i in \\\$(seq 1 ${RUNS}); do time matlab -batch 'm = dijkstra_matlab(); m.main();'; done } 3>&2 2>&1 1>&3 | grep -v -e "^\$" | tee \"$3\"; } 2>&1"
-            { { taskset -c ${CORES} bash -c "for i in \$(seq 1 ${RUNS}); do time matlab -batch 'm = dijkstra_matlab(); m.main();'; done"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
+            echo 'stdbuf -oL -eL taskset -c '"${CORES}"' bash -c "for i in \$(seq 1 '"${WARMUP}"'); do bash -c \"time matlab -batch '\''m = dijkstra_matlab(); m.main();'\''; echo; done" > >(tee "'"${TEMPFILE}"'") 2> >(tee "'"$3"'" >&2)'
+            stdbuf -oL -eL taskset -c ${CORES} bash -c "for i in \$(seq 1 ${WARMUP}); do bash -c \"time matlab -batch 'm = dijkstra_matlab(); m.main();'; echo; done" > >(tee "${TEMPFILE}") 2> >(tee "$3" >&2) || exit 1
+            echo 'stdbuf -oL -eL taskset -c '"${CORES}"' bash -c "for i in \$(seq 1 '"${RUNS}"'); do bash -c \"time matlab -batch '\''m = dijkstra_matlab(); m.main();'\''; echo; done" > >(tee "'"${TEMPFILE}"'") 2> >(tee "'"$3"'" >&2)'
+            stdbuf -oL -eL taskset -c ${CORES} bash -c "for i in \$(seq 1 ${RUNS}); do bash -c \"time matlab -batch 'm = dijkstra_matlab(); m.main();'; echo; done" > >(tee "${TEMPFILE}") 2> >(tee "$3" >&2) || exit 1
         elif [ "$LAUNCH" == "java" ]; then
             DIRECTORY=$(dirname "$1")
             CLASS=$(basename "$1" | sed 's/.class$//g')
-            echo "{ { taskset -c ${CORES} bash -c \"cd \\\"$DIRECTORY\\\"\"; for i in \\\$(seq 1 ${RUNS}); do time ${LAUNCH} \\\"$CLASS\\\"\"; done } 3>&2 2>&1 1>&3 | grep -v -e "^\$" | tee \"$3\"; } 2>&1"
-            { { taskset -c ${CORES} bash -c "cd \"$DIRECTORY\"; for i in \$(seq 1 ${RUNS}); do time ${LAUNCH} \"$CLASS\"; done"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
+            echo 'stdbuf -oL -eL taskset -c '"${CORES}"' bash -c "cd \"'"${DIRECTORY}"'\"; for i in \$(seq 1 '"${WARMUP}"'); do bash -c \"time java \\\"'"$CLASS"'\\\"\"; echo; done" > >(tee "'"${TEMPFILE}"'") 2> >(tee "'"$3"'" >&2)'
+            stdbuf -oL -eL taskset -c ${CORES} bash -c "cd \"${DIRECTORY}\"; for i in \$(seq 1 ${WARMUP}); do bash -c \"time java \\\"$CLASS\\\"\"; echo; done" > >(tee "${TEMPFILE}") 2> >(tee "$3" >&2) || exit 1
+            echo 'stdbuf -oL -eL taskset -c '"${CORES}"' bash -c "cd \"'"${DIRECTORY}"'\"; for i in \$(seq 1 '"${RUNS}"'); do bash -c \"time java \\\"'"$CLASS"'\\\"\"; echo; done" > >(tee "'"${TEMPFILE}"'") 2> >(tee "'"$3"'" >&2)'
+            stdbuf -oL -eL taskset -c ${CORES} bash -c "cd \"${DIRECTORY}\"; for i in \$(seq 1 ${RUNS}); do bash -c \"time java \\\"$CLASS\\\"\"; echo; done" > >(tee "${TEMPFILE}") 2> >(tee "$3" >&2) || exit 1
         else
-            echo "{ { taskset -c ${CORES} bash -c \"for i in \\\$(seq 1 ${RUNS}); do time ${LAUNCH} \\\"$1\\\"\"; done } 3>&2 2>&1 1>&3 | grep -v -e "^\$" | tee \"$3\"; } 2>&1"
-            { { taskset -c ${CORES} bash -c "for i in \$(seq 1 ${RUNS}); do time ${LAUNCH} \"$1\"; done"; } 3>&2 2>&1 1>&3 | grep -v -e "^$" | tee "$3"; } 2>&1 || exit 1
+            echo 'stdbuf -oL -eL taskset -c '"${CORES}"' bash -c "for i in \$(seq 1 '"${WARMUP}"'); do bash -c \"time '"${LAUNCH}"' \\\"'"$1"'\\\"\"; echo; done" > >(tee "'"${TEMPFILE}"'") 2> >(tee "'"$3"'" >&2)'
+            stdbuf -oL -eL taskset -c ${CORES} bash -c "for i in \$(seq 1 ${WARMUP}); do bash -c \"time ${LAUNCH} \\\"$1\\\"\"; echo; done" > >(tee "${TEMPFILE}") 2> >(tee "$3" >&2) || exit 1
+            echo 'stdbuf -oL -eL taskset -c '"${CORES}"' bash -c "for i in \$(seq 1 '"${RUNS}"'); do bash -c \"time '"${LAUNCH}"' \\\"'"$1"'\\\"\"; echo; done" > >(tee "'"${TEMPFILE}"'") 2> >(tee "'"$3"'" >&2)'
+            stdbuf -oL -eL taskset -c ${CORES} bash -c "for i in \$(seq 1 ${RUNS}); do bash -c \"time ${LAUNCH} \\\"$1\\\"\"; echo; done" > >(tee "${TEMPFILE}") 2> >(tee "$3" >&2) || exit 1
         fi
+        while read LINE; do
+            IFS=":" read TASK _ <<< "$LINE"
+            IFS="(" read _ SOLUTION <<< "$LINE"
+            IFS=")" read SOLUTION <<< "$SOLUTION"
+            if [ $(cat "$TEMPFILE" | grep -e "$TASK[^()]*($SOLUTION)" | wc -l) -ne $RUNS ]; then
+                rm "$3"
+                echo "Checks failed on task $TASK"
+                echo
+                exit 1
+            fi
+        done <dijkstra_solution.txt
+        echo "Checks passed"
+        echo
     fi
 }
+
+run_benchmark "$BUILD/dijkstra_cpp_clang_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_clang_release.txt" || exit 1
+exit
 
 # C++
 if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then

@@ -9,7 +9,7 @@ compile_debug()
 {
     if [ "$2" -nt "$3" ]; then
         if [ $( echo "$2" | grep -e '.*.cpp$' | wc -l) -gt 0 ]; then #C++
-            FLAGS="-std=c++11 -Wall -Wextra -Wconversion -Wsign-conversion -pedantic -g"
+            FLAGS="-Wall -Wextra -Wconversion -Wsign-conversion -pedantic -g" #-std=c++11 dropped because of std::from_chars. RIP.
             echo $1 $FLAGS "$2" -o "$3"
             $1 $FLAGS "$2" -o "$3" || exit 1
         elif [ $( echo "$2" | grep -e '.*.c$' | wc -l) -gt 0 ]; then #C
@@ -143,13 +143,18 @@ compile_release()
     fi
 }
 
-#create_benchmark(executable, benchmark)
-create_benchmark()
+#execute(source, destination, command, output)
+execute()
 {
     if [ "$1" -nt "$2" ]; then
-        echo "$1"
-        "$1" || exit 1
-    fi    
+        if [ -z "$4" ]; then
+            echo "$3"
+            "$3" || exit 1
+        else
+            echo "$3 > $4"
+            "$3" > "$4" || exit 1
+        fi
+    fi
 }
 
 #copy(source, destination)
@@ -161,15 +166,20 @@ copy()
     fi
 }
 
-# Benchmark
+# C++ && benchmark creation
 if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
     compile_release g++ "$SOURCE/create_dijkstra.cpp" "$BUILD/create_dijkstra" || exit 1
+    compile_release g++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_gcc_release" || exit 1
+    execute "$BUILD/create_dijkstra" "$BUILD/dijkstra.txt" "$BUILD/create_dijkstra" || exit 1
+    #execute "$BUILD/dijkstra_cpp_gcc_release" "$BUILD/dijkstra_solution.txt" "$BUILD/dijkstra_cpp_gcc_release" "$BUILD/dijkstra_solution.txt" || exit 1
 elif [ $(type clang++ 2>/dev/null | wc -l) -gt 0 ]; then
     compile_release clang++ "$SOURCE/create_dijkstra.cpp" "$BUILD/create_dijkstra" || exit 1
+    compile_release clang++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_clang_release" || exit 1
+    execute "$BUILD/create_dijkstra" "$BUILD/dijkstra.txt" "$BUILD/create_dijkstra" || exit 1
+    #execute "$BUILD/dijkstra_cpp_clang_release" "$BUILD/dijkstra_solution.txt" "$BUILD/dijkstra_cpp_clang_release" "$BUILD/dijkstra_solution.txt" || exit 1
 else
     echo "Either g++ or clang++ needs to be present" && exit 1
 fi
-create_benchmark "$BUILD/create_dijkstra" "$BUILD/dijkstra.txt" || exit 1
 
 # C++
 if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
