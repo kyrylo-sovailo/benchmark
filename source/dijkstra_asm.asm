@@ -448,8 +448,9 @@ parse_ver5:
     syscall                                     ; file = __open("dijkstra.txt", /*O_RDONLY*/0);
     jge parse_ver5_open_success
         mov rax, 1
-        mov rdi, string_open_error
-        mov rsi, 12
+        mov rdi, 1
+        mov rsi, string_open_error
+        mov rdx, 11
         syscall                                 ; __write(1, "open error\n", 11);
         mov rax, 60
         mov rdi, 3
@@ -512,13 +513,23 @@ parse_ver5:
             parse_ver5_file_not_empty:
             cmp rax, 0x10000
             je parse_ver5_restore_read
-            cld                                     ; Shifting buffer if it wasn't full
+            std                                     ; Shifting buffer if it wasn't full (is possible to optimize by changing rbp)
+            lea rsi, [rbp - 0x10000 + rax - 8]
+            lea rdi, [rbp - 8]
             mov rcx, rax
-            lea rsi, [rbp - 0x10000]
-            mov rdi, r12
-            parse_ver5_buffer_shift:
+            shr rcx, 3
+            jrcxz parse_ver5_buffer_no_shift8
+            parse_ver5_buffer_shift8:
+                movsq
+                loop parse_ver5_buffer_shift8
+            add rsi, 7
+            add rdi, 7
+            parse_ver5_buffer_no_shift8:
+            mov rcx, rax
+            and rcx, 7
+            parse_ver5_buffer_shift1:
                 movsb
-                loop parse_ver5_buffer_shift
+                loop parse_ver5_buffer_shift1
             parse_ver5_restore_read:
             mov rcx, 10
             cvtsi2ss xmm2, rcx                      ; Constant 10 in xmm2
@@ -529,6 +540,35 @@ parse_ver5:
             mov rcx, [rsp+32]
         parse_ver5_buffer_not_empty:
         movzx rax, BYTE [r12]                       ; c = *p;
+
+        ; DEBUG BGEIN
+            ;push rax
+            ;push rdi
+            ;push rsi
+            ;push rdx
+            ;push rcx
+            ;push r8
+            ;push r9
+            ;push r10
+            ;push r11
+            
+            ;mov rax, 1
+            ;mov rdi, 1
+            ;mov rsi, r12
+            ;mov rdx, 1
+            ;syscall                                 ; __write(1, *p, 1);
+
+            ;pop r11
+            ;pop r10
+            ;pop r9
+            ;pop r8
+            ;pop rcx
+            ;pop rdx
+            ;pop rsi
+            ;pop rdi
+            ;pop rax
+        ; DEBUG END
+
         inc r12                                     ; p++;
         jmp rbx                                     ; switch (state)
 
@@ -797,8 +837,9 @@ parse_ver5:
     syscall                                     ; code = __close(file);
     jge parse_ver5_close_success
         mov rax, 1
-        mov rdi, string_close_error
-        mov rsi, 12
+        mov rdi, 1
+        mov rsi, string_close_error
+        mov rdx, 12
         syscall                                 ; __write(1, "open error\n", 12);
         mov rax, 60
         mov rdi, 7
