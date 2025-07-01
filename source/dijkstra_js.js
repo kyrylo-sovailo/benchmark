@@ -19,9 +19,10 @@ class IndexedPriorityQueue
     {
         let top = this.data[0];
         this.indices[top.id] = -2;
-        if (this.data.length == 1) { this.data.pop(); return top; }
-
         let back = this.data[this.data.length - 1];
+        this.data.pop();
+        if (this.data.length == 0) return top; //If the front is the back, the algorithm no longer works
+
         let index = 0;
         while (true)
         {
@@ -63,7 +64,6 @@ class IndexedPriorityQueue
             {
                 this.data[index] = back;
                 this.indices[back.id] = index;
-                this.data.pop();
                 break;
             }
         }

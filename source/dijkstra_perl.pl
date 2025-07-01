@@ -55,14 +55,10 @@ sub indexed_heap_pop
     my ($data_ref, $indices_ref) = @_;
     my $top = $data_ref->[0];
     $indices_ref->[$top->{id}] = -2;
-
-    if (scalar(@$data_ref) == 1)
-    {
-        pop @$data_ref;
-        return $top;
-    }
-
     my $back = $data_ref->[scalar(@$data_ref) - 1];
+    pop @$data_ref;
+    if (!@$data_ref) { return $top; } #If the front is the back, the algorithm no longer works
+
     my $index = 0;
     while (1)
     {
@@ -104,7 +100,6 @@ sub indexed_heap_pop
         {
             $data_ref->[$index] = $back;
             $indices_ref->[$back->{id}] = $index;
-            pop @$data_ref;
             last;
         }
     }

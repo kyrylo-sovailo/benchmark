@@ -134,15 +134,13 @@ var
     left_exists, right_exists, index_moved: Boolean;
     back: TCandidate;
 begin
-    Dec(size);
     PopIndexHeap := data[0];
     indices[data[0].id] := Cardinal(-2);
-    if size = 0 then
-        Exit;
-
+    Dec(size);
+    if size = 0 then Exit; //If the front is the back, the algorithm no longer works
     back := data[size];
-    index := 0;
 
+    index := 0;
     while True do
     begin
         left_index := 2 * index + 1;

@@ -94,13 +94,10 @@ var
 begin
     Pop := fdata[0];
     findices[fdata[0].id] := Cardinal(-2);
-    if fdata.Count = 1 then
-    begin
-        fdata.Delete(0);
-        Exit;
-    end;
-
     back := fdata[fdata.Count - 1];
+    fdata.Delete(fdata.Count - 1);
+    if fdata.Count = 0 then Exit; //If the front is the back, the algorithm no longer works
+    
     index := 0;
     while True do
     begin
@@ -135,7 +132,6 @@ begin
         begin
             fdata[index] := back;
             findices[back.id] := index;
-            fdata.Delete(fdata.Count - 1);
             Break;
         end;
     end;

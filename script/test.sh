@@ -112,10 +112,10 @@ if [ $(type clang 2>/dev/null | wc -l) -gt 0 ]; then
 fi
 
 # Assembly
-#if [ $(uname -m) == "x86_64" -a $(type nasm 2>/dev/null | wc -l) -gt 0 -a $(type ld 2>/dev/null | wc -l) -gt 0 ]; then
-#    run_benchmark "$BUILD/dijkstra_asm_nasm_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_asm_nasm_debug.txt" || exit 1
-#    run_benchmark "$BUILD/dijkstra_asm_nasm_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_asm_nasm_release.txt" || exit 1
-#fi
+if [ $(uname -m) == "x86_64" -a $(type nasm 2>/dev/null | wc -l) -gt 0 -a $(type ld 2>/dev/null | wc -l) -gt 0 ]; then
+    run_benchmark "$BUILD/dijkstra_asm_nasm_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_asm_nasm_debug.txt" || exit 1
+    run_benchmark "$BUILD/dijkstra_asm_nasm_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_asm_nasm_release.txt" || exit 1
+fi
 
 # Extras
 if [ $(type gcc 2>/dev/null | wc -l) -gt 0 ]; then
@@ -196,6 +196,7 @@ fi
 if [ $(type php 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$SOURCE/dijkstra_php.php" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_php_zend.txt" || exit 1
 fi
+exit
 if [ $(type bash 2>/dev/null | wc -l) -gt 0 ]; then
     run_benchmark "$SOURCE/dijkstra_bash.sh" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_bash_gnu.txt" || exit 1
 fi

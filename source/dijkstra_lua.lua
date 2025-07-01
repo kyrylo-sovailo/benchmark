@@ -36,12 +36,12 @@ end
 local function indexed_heap_pop(data, indices)
     local top = data[1]
     indices[top.id] = 0
-    if #data == 1 then
-        table.remove(data)
-        return top
+    local back = data[#data]
+    table.remove(data)
+    if #data == 0 then
+        return top --If the front is the back, the algorithm no longer works
     end
     
-    local back = data[#data]
     local index = 1
     while true do
         local left_index = 2 * index
@@ -73,7 +73,6 @@ local function indexed_heap_pop(data, indices)
         if not index_moved then
             data[index] = back
             indices[data[index].id] = index
-            table.remove(data)
             break
         end
     end
