@@ -190,6 +190,10 @@ random_set_delete' bit_key bit_mask (RandomSetNode left old_value right) =
 -------------
 -- Parsing --
 -------------
+
+-- Haskell implementation's parsing does not follow the same logic as other implementations
+-- because it ignores lines. It is therefore superior (parses the wider syntax) to all other implementations.
+
 data Benchmark = Benchmark Word32 Word32 deriving (Show)
 data Connection = Connection Word32 Float deriving (Show)
 
@@ -352,7 +356,7 @@ parse_fraction (number, (c:rest)) divider
 parse_space :: String -> String
 parse_space [] = []
 parse_space (c:rest)
-    | c == ' ' || c == '\t' || c == '\n' || c == '\r' = parse_space rest
+    | c == ' ' || c == '\t' || c == '\n' = parse_space rest
     | otherwise = (c:rest)
 
 -------------

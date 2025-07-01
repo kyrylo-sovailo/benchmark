@@ -159,18 +159,18 @@ contains
         type(Candidate), intent(inout), dimension(:) :: data
         integer, intent(inout) :: data_length
         integer, intent(inout), dimension(:) :: indices
-        type(Candidate) :: top, buffer
+        type(Candidate) :: top, back
         integer :: index, left_index, right_index, next_index
         logical :: left_exists, right_exists, index_moved
 
-        data_length = data_length - 1
         top = data(1)
         indices(top%id) = -2
+        back = data(data_length)
+        data_length = data_length - 1
         if (data_length == 0) then
-            return
+            return !If the front is the back, the algorithm no longer works
         end if
 
-        buffer = data(data_length)
         index = 1
         do while (.true.)
             left_index = 2 * index
@@ -191,7 +191,7 @@ contains
                     next_index = left_index
                 end if
 
-                if (data(next_index)%distance < buffer%distance) then
+                if (data(next_index)%distance < back%distance) then
                     data(index) = data(next_index)
                     indices(data(index)%id) = index
                     index = next_index
@@ -200,8 +200,8 @@ contains
             end if
 
             if (.not. index_moved) then
-                data(index) = buffer
-                indices(buffer%id) = index
+                data(index) = back
+                indices(back%id) = index
                 exit
             end if
         end do
@@ -213,8 +213,10 @@ contains
 
         integer :: source, destination
         real :: distance
-        character(128) :: string
+        character(256) :: line
+        integer :: line_length, line_spaces
         integer :: status
+        logical :: read_benchmarks, is_whitespace
 
         open(unit=10, iostat=status, file="dijkstra.txt", status="old", action="read")
         if (status /= 0) then
@@ -222,26 +224,49 @@ contains
             stop
         end if
 
-        read(10, *) string
-        do
-            read(10, *, iostat=status) source, destination, distance
-            source = source + 1
-            destination = destination + 1
+        ! Fortran implementation does not verify whether line contains any unused arguments
+        ! and therefore is inferior to all other implementations
+        read_benchmarks = .false.
+        do while (.true.)
+            read(10, '(A)', iostat=status) line
             if (status /= 0) exit
+            line_length = len_trim(line)
+            line_spaces = 0
+            do while ((line_spaces < line_length) .and. &
+                (line(line_spaces+1:line_spaces+1) == ' ' .or. line(line_spaces+1:line_spaces+1) == '\t'))
+                line_spaces = line_spaces + 1
+            end do
+            if (line_spaces /= 0) then
+                line = line(line_spaces+1:)
+            end if
 
-            call grow_ConnectionVectorVector(graph, max(source, destination))
-            call push_ConnectionVector(graph%array(source), Connection(destination, distance))
-            call push_ConnectionVector(graph%array(destination), Connection(source, distance))
-        end do
-
-        !read(10, *) string
-        do
-            read(10, *, iostat=status) source, destination
-            source = source + 1
-            destination = destination + 1
-            if (status /= 0) exit
-
-            call push_BenchmarkVector(benchmarks, Benchmark(source, destination))
+            if (line_spaces == line_length) then
+                ! Continue
+            else if (line(1:line_length-line_spaces) == "GRAPH") then
+                read_benchmarks = .false.
+            else if (line(1:line_length-line_spaces) == "BENCHMARK") then
+                read_benchmarks = .true.
+            else if (read_benchmarks) then
+                read(line, *, iostat=status) source, destination
+                if (status /= 0) then
+                    exit
+                end if
+                source = source + 1
+                destination = destination + 1
+                call push_BenchmarkVector(benchmarks, Benchmark(source, destination))
+            else
+                read(line, *, iostat=status) source, destination, distance
+                if (status /= 0) then
+                    exit
+                end if
+                !write (*,'(I0.1, A, I0.1, A, F0.4)') &
+                !    source, ' -> ', destination, ': ', distance
+                source = source + 1
+                destination = destination + 1
+                call grow_ConnectionVectorVector(graph, max(source, destination))
+                call push_ConnectionVector(graph%array(source), Connection(destination, distance))
+                call push_ConnectionVector(graph%array(destination), Connection(source, distance))
+            end if
         end do
 
         close(10)

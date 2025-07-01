@@ -169,29 +169,31 @@ async function parse_ver5()
     let reader = readline.createInterface({ input: fs.createReadStream("dijkstra.txt"), terminal: false });
     for await (line of reader)
     {
-        if (line.includes("GRAPH"))
+        split = line.split(/[ \t]/).filter(Boolean)
+        if (split.length == 0) {} //Whitespace
+        else if (split.length == 1 && split[0] == "GRAPH")
         {
             read_benchmarks = false;
         }
-        else if (line.includes("BENCHMARK"))
+        else if (split.length == 1 && split[0] == "BENCHMARK")
         {
             read_benchmarks = true;
         }
         else if (read_benchmarks)
         {
-            let split = line.split(' ');
+            if (split.length != 2) break; //Error
             let source = parseInt(split[0]);
             let destination = parseInt(split[1]);
-            if (isNaN(source) || isNaN(destination)) return;
+            if (isNaN(source) || isNaN(destination)) break;
             benchmarks.push({ source: source, destination: destination });
         }
         else
         {
-            let split = line.split(' ');
+            if (split.length != 3) break; //Error
             let source = parseInt(split[0]);
             let destination = parseInt(split[1]);
             let distance = parseFloat(split[2]);
-            if (isNaN(source) || isNaN(destination) || isNaN(distance)) return;
+            if (isNaN(source) || isNaN(destination) || isNaN(distance)) break;
             let extension = Math.max(source, destination) - graph.length + 1;
             if (extension > 0) graph = graph.concat(new Array(extension).fill().map(() => []));
             graph[source].push({ destination: destination, distance: distance });

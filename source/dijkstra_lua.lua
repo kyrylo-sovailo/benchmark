@@ -92,31 +92,30 @@ local function parse_ver2()
     end
 
     for line in file:lines() do
-        if line:find("GRAPH") then
+        local line_iterator = line:gmatch("%S+")
+        local source_or_keyword_str = line_iterator()
+        if source_or_keyword_str == nil then
+            -- Whitespace
+        elseif source_or_keyword_str == "GRAPH" then
             read_benchmarks = false
-        elseif line:find("BENCHMARK") then
+        elseif source_or_keyword_str == "BENCHMARK" then
             read_benchmarks = true
+        elseif read_benchmarks then
+            local source = tonumber(source_or_keyword_str) + 1
+            local destination = tonumber(line_iterator()) + 1
+            if line_iterator() ~= nil then break end --Error
+            table.insert(benchmarks, { source=source, destination=destination })
         else
-            local split = {}
-            for token in line:gmatch("%S+") do
-                table.insert(split, token)
+            local source = tonumber(source_or_keyword_str) + 1
+            local destination = tonumber(line_iterator()) + 1
+            local distance = tonumber(line_iterator())
+            if line_iterator() ~= nil then break end --Error
+            local max_index = math.max(source, destination)
+            for _ = #graph, max_index do
+                table.insert(graph, {})
             end
-
-            if read_benchmarks then
-                local source = tonumber(split[1]) + 1
-                local destination = tonumber(split[2]) + 1
-                table.insert(benchmarks, { source=source, destination=destination })
-            else
-                local source = tonumber(split[1]) + 1
-                local destination = tonumber(split[2]) + 1
-                local distance = tonumber(split[3])
-                local max_index = math.max(source, destination)
-                for _ = #graph, max_index do
-                    table.insert(graph, {})
-                end
-                graph[source][destination] = distance
-                graph[destination][source] = distance
-            end
+            graph[source][destination] = distance
+            graph[destination][source] = distance
         end
     end
     file:close()

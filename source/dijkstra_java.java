@@ -84,16 +84,11 @@ class IndexedPriorityQueue<T extends Indexed & Prioritized>
     {
         T top = data.get(0);
         indices[top.get_id()] = -2;
-
-        if (data.size() == 1)
-        {
-            data.remove(0);
-            return top;
-        }
-
         T back = data.get(data.size() - 1);
-        int index = 0;
+        data.remove(data.size() - 1);
+        if (data.size() == 0) return top; //If the front is the back, the algorithm no longer works
 
+        int index = 0;
         while (true)
         {
             int left_index = 2 * index + 1;
@@ -135,7 +130,6 @@ class IndexedPriorityQueue<T extends Indexed & Prioritized>
             {
                 data.set(index, back);
                 indices[back.get_id()] = index;
-                data.remove(data.size() - 1);
                 break;
             }
         }
@@ -150,7 +144,7 @@ class IndexedPriorityQueue<T extends Indexed & Prioritized>
         if (index == -1)
         {
             index = data.size();
-            data.add(item); //value used only when size == 0, otherwise only for allocation
+            data.add(null);
         }
         else if (index == -2)
         {
@@ -203,17 +197,21 @@ public class Dijkstra
         {
             String line = reader.readLine();
             if (line == null) break;
-            if (line.contains("GRAPH")) { read_benchmarks = false; continue; }
-            if (line.contains("BENCHMARK")) { read_benchmarks = true; continue; }
-            String[] split = line.split(" ");
+            line = line.trim();
+            if (line.isEmpty()) continue; //Whitespace
+            if (line.equals("GRAPH")) { read_benchmarks = false; continue; }
+            if (line.equals("BENCHMARK")) { read_benchmarks = true; continue; }
+            String[] split = line.split("\\s+");
             if (read_benchmarks)
             {
+                if (split.length != 2) break; //Error
                 int source = Integer.parseInt(split[0]);
                 int destination = Integer.parseInt(split[1]);
                 benchmarks.add(new Benchmark(source, destination));
             }
             else
             {
+                if (split.length != 3) break; //Error
                 int source = Integer.parseInt(split[0]);
                 int destination = Integer.parseInt(split[1]);
                 float distance = Float.parseFloat(split[2]);

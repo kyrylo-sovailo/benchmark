@@ -143,17 +143,26 @@ compile_release()
     fi
 }
 
+#cleanup()
+cleanup()
+{
+    rm "$CLEANUP"
+}
+
 #execute(source, destination, command, output)
 execute()
 {
     if [ "$1" -nt "$2" ]; then
-        if [ -z "$4" ]; then
+        CLEANUP="$2"
+        trap cleanup SIGINT RETURN
+        if [ -z "$4" ]; then 
             echo "$3"
             "$3" || exit 1
         else
             echo "$3 > $4"
             "$3" > "$4" || exit 1
         fi
+        trap - SIGINT RETURN
     fi
 }
 
@@ -161,8 +170,11 @@ execute()
 copy()
 {
     if [ "$1" -nt "$2" ]; then
+        CLEANUP="$2"
+        trap cleanup SIGINT RETURN
         echo cp "$1" "$2"
         cp "$1" "$2" || exit 1
+        trap - SIGINT RETURN
     fi
 }
 
@@ -171,12 +183,12 @@ if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
     compile_release g++ "$SOURCE/create_dijkstra.cpp" "$BUILD/create_dijkstra" || exit 1
     compile_release g++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_gcc_release" || exit 1
     execute "$BUILD/create_dijkstra" "$BUILD/dijkstra.txt" "$BUILD/create_dijkstra" || exit 1
-    #execute "$BUILD/dijkstra_cpp_gcc_release" "$BUILD/dijkstra_solution.txt" "$BUILD/dijkstra_cpp_gcc_release" "$BUILD/dijkstra_solution.txt" || exit 1
+    execute "$BUILD/create_dijkstra" "$BUILD/dijkstra_solution.txt" "$BUILD/dijkstra_cpp_gcc_release" "$BUILD/dijkstra_solution.txt" || exit 1
 elif [ $(type clang++ 2>/dev/null | wc -l) -gt 0 ]; then
     compile_release clang++ "$SOURCE/create_dijkstra.cpp" "$BUILD/create_dijkstra" || exit 1
     compile_release clang++ "$SOURCE/dijkstra_cpp.cpp" "$BUILD/dijkstra_cpp_clang_release" || exit 1
     execute "$BUILD/create_dijkstra" "$BUILD/dijkstra.txt" "$BUILD/create_dijkstra" || exit 1
-    #execute "$BUILD/dijkstra_cpp_clang_release" "$BUILD/dijkstra_solution.txt" "$BUILD/dijkstra_cpp_clang_release" "$BUILD/dijkstra_solution.txt" || exit 1
+    execute "$BUILD/create_dijkstra" "$BUILD/dijkstra_solution.txt" "$BUILD/dijkstra_cpp_clang_release" "$BUILD/dijkstra_solution.txt" || exit 1
 else
     echo "Either g++ or clang++ needs to be present" && exit 1
 fi
@@ -227,9 +239,9 @@ fi
 # C#
 if [ $(type mcs 2>/dev/null | wc -l) -gt 0 ]; then
     copy "$SOURCE/dijkstra_csharp.cs" "$BUILD/dijkstra_csharp_debug.cs" || exit 1
-    compile_debug "mcs -define:NON_NULLABLE_STRING" "$BUILD/dijkstra_csharp_debug.cs" "$BUILD/dijkstra_csharp_mcs_debug.exe" || exit 1
+    compile_debug "mcs -define:NO_NULLABLE_REFERENCES" "$BUILD/dijkstra_csharp_debug.cs" "$BUILD/dijkstra_csharp_mcs_debug.exe" || exit 1
     copy "$SOURCE/dijkstra_csharp.cs" "$BUILD/dijkstra_csharp_release.cs" || exit 1
-    compile_release "mcs -define:NON_NULLABLE_STRING" "$BUILD/dijkstra_csharp_release.cs" "$BUILD/dijkstra_csharp_mcs_release.exe" || exit 1
+    compile_release "mcs -define:NO_NULLABLE_REFERENCES" "$BUILD/dijkstra_csharp_release.cs" "$BUILD/dijkstra_csharp_mcs_release.exe" || exit 1
 fi
 if [ $(type dotnet 2>/dev/null | wc -l) -gt 0 ]; then
     compile_debug dotnet "$SOURCE/dijkstra_csharp.cs" "$BUILD/Dotnet/Debug/Dotnet.dll" dotnet || exit 1

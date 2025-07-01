@@ -123,36 +123,40 @@ sub parse_ver2
     while (my $line = $file->getline)
     {
         chomp $line;
-        if ($line =~ /GRAPH/)
+        my @split = grep { length } split(/\s+/, $line);
+        my $split_length = @split;
+        if ($split_length == 0)
+        {
+            #Whitespace
+        }
+        elsif ($split_length == 1 && $split[0] eq "GRAPH")
         {
             $read_benchmarks = 0;
         }
-        elsif ($line =~ /BENCHMARK/)
+        elsif ($split_length == 1 && $split[0] eq "BENCHMARK")
         {
             $read_benchmarks = 1;
         }
+        elsif ($read_benchmarks)
+        {
+            if ($split_length != 2) { last; } #Error
+            my $source = $split[0];
+            my $destination = $split[1];
+            push @benchmarks, { source => $source, destination => $destination };
+        }
         else
         {
-            my @split = grep { length } split(/\s+/, $line);
-            if ($read_benchmarks)
+            if ($split_length != 3) { last; } #Error
+            my $source = $split[0];
+            my $destination = $split[1];
+            my $distance = $split[2];
+            my $max_index = max($source, $destination);
+            while (scalar(@graph) <= $max_index)
             {
-                my $source = $split[0];
-                my $destination = $split[1];
-                push @benchmarks, { source => $source, destination => $destination };
+                push @graph, {};
             }
-            else
-            {
-                my $source = $split[0];
-                my $destination = $split[1];
-                my $distance = $split[2];
-                my $max_index = max($source, $destination);
-                while (scalar(@graph) <= $max_index)
-                {
-                    push @graph, {};
-                }
-                $graph[$source]->{$destination} = $distance;
-                $graph[$destination]->{$source} = $distance;
-            }
+            $graph[$source]->{$destination} = $distance;
+            $graph[$destination]->{$source} = $distance;
         }
     }
     $file->close;

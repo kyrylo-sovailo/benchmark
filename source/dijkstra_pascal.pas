@@ -184,8 +184,9 @@ end;
 procedure ParseVer5(var graph: TConnectionVectorVector; var benchmarks: TBenchmarkVector);
 var
     f: TextFile;
-    line: string;
-    split: TStringArray;
+    delimiters: set of Char;
+    line, keyword_or_source: string;
+    word_count: SizeInt;
     benchmark: TBenchmark;
     connection: TConnection;
     source, destination: Cardinal;
@@ -193,43 +194,38 @@ var
 begin
     Assign(f, 'dijkstra.txt');
     Reset(f);
-
+    delimiters := [' ', #9];
     read_benchmarks := False;
 
     while not Eof(f) do
     begin
         ReadLn(f, line);
-        
-        if Pos('GRAPH', line) > 0 then 
-        begin
-            read_benchmarks := False; 
-            Continue;
-        end
-        else if Pos('BENCHMARK', line) > 0 then 
-        begin
-            read_benchmarks := True; 
-            Continue;
-        end;
+        word_count := WordCount(line, delimiters);
 
-        split := SplitString(line, ' ');
-        if read_benchmarks then
+        if word_count = 0 then Continue;
+        keyword_or_source := ExtractWord(1, line, delimiters);
+        if (word_count = 1) and (keyword_or_source = 'GRAPH') then
+            read_benchmarks := False
+        else if (word_count = 1) and (keyword_or_source = 'BENCHMARK') then
+            read_benchmarks := True
+        else if read_benchmarks then
         begin
-            if TryStrToUInt(split[0], benchmark.source) and TryStrToUInt(split[1], benchmark.destination) then
-                PushBenchmarkVector(benchmarks, benchmark)
-            else
-                Break;
+            if word_count <> 2 then Break; // Error
+            if not TryStrToUInt(keyword_or_source, benchmark.source) then Break;
+            if not TryStrToUInt(ExtractWord(2, line, delimiters), benchmark.destination) then Break;
+            PushBenchmarkVector(benchmarks, benchmark);
         end
         else
         begin
-            if TryStrToUInt(split[0], source) and TryStrToUInt(split[1], destination) and TryStrToFloat(split[2], connection.distance) then
-            begin
-                GrowConnectionVectorVector(graph, Max(source, destination) + 1);
-                connection.destination := destination;
-                PushConnectionVector(graph.p[source], connection);
-                connection.destination := source;
-                PushConnectionVector(graph.p[destination], connection);
-            end
-            else Break;
+            if word_count <> 3 then Break; // Error
+            if not TryStrToUInt(keyword_or_source, source) then Break;
+            if not TryStrToUInt(ExtractWord(2, line, delimiters), destination) then Break;
+            if not TryStrToFloat(ExtractWord(3, line, delimiters), connection.distance) then Break;
+            GrowConnectionVectorVector(graph, Max(source, destination) + 1);
+            connection.destination := destination;
+            PushConnectionVector(graph.p[source], connection);
+            connection.destination := source;
+            PushConnectionVector(graph.p[destination], connection);
         end;
     end;
 
@@ -256,11 +252,11 @@ begin
     SetLength(candidates, graph.size);
     SetLength(candidate_indices, graph.size);
     
-    for benchmark_i := 0 to benchmarks.size - 1 do
+    if benchmarks.size > 0 then for benchmark_i := 0 to benchmarks.size - 1 do
     begin
         benchmark := benchmarks.p[benchmark_i];
         candidates_size := 0;
-        for candidate_i := 0 to graph.size - 1 do
+        if graph.size > 0 then for candidate_i := 0 to graph.size - 1 do
             candidate_indices[candidate_i] := Cardinal(-1);
         
         candidate.id := benchmark.source;

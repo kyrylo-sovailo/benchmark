@@ -465,20 +465,19 @@ static uint64_t push_indexed_heap(struct Candidate *data, uint64_t length, uint3
 
 static struct Candidate pop_indexed_heap(struct Candidate *data, uint64_t length, uint32_t *indices) //length should be reduced by 1
 {
-    const uint64_t length_minus_1 = length - 1;
     const struct Candidate top = data[0];
-    indices[top.id] = (uint32_t)-2;
-    if (length_minus_1 == 0) return top;
-    
-    struct Candidate buffer = data[length_minus_1];
-    uint64_t index = 0;
+    indices[top.id] = (unsigned int)-2;
+    const uint64_t length_minus_1 = length - 1;
+    if (length_minus_1 == 0) return top; //If the front is the back, the algorithm no longer works
+    const struct Candidate back = data[length_minus_1];
 
+    uint64_t index = 0;
     for (;;)
     {
         const uint64_t left_index = 2 * index + 1;
         const uint64_t right_index = 2 * index + 2;
-        const bool left_exists = left_index <= length_minus_1;
-        const bool right_exists = right_index <= length_minus_1; //implies left_exists
+        const bool left_exists = left_index < length_minus_1;
+        const bool right_exists = right_index < length_minus_1; //implies left_exists
 
         bool index_moved = 0;
         if (left_exists || right_exists)
@@ -500,7 +499,7 @@ static struct Candidate pop_indexed_heap(struct Candidate *data, uint64_t length
                 next_index = left_index;
             }
 
-            if (data[next_index].distance < buffer.distance)
+            if (data[next_index].distance < back.distance)
             {
                 data[index] = data[next_index];
                 indices[data[index].id] = (uint32_t)index;
@@ -511,8 +510,8 @@ static struct Candidate pop_indexed_heap(struct Candidate *data, uint64_t length
 
         if (!index_moved)
         {
-            data[index] = buffer;
-            indices[buffer.id] = (uint32_t)index;
+            data[index] = back;
+            indices[back.id] = (uint32_t)index;
             break;
         }
     }

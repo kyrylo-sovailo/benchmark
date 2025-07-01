@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -8,8 +9,12 @@
 VERSION 5 - indexed optimization, graph represented as vector of vectors
 VERSION 8 - indexed optimization, allocator optimization, graph represented as vector of pointers
 VERSION 9 - indexed optimization, copyless allocator optimization, graph represented as vector of pointers
+
+PARSING_METHOD 0 - scanf
+PARSING_METHOD 1 - strtoul/strtof
 */
 #define VERSION 5
+#define PARSING_METHOD 1
 
 #define MIN(A, B) (((A) < (B)) ? (A) : (B))
 #define MAX(A, B) (((A) > (B)) ? (A) : (B))
@@ -158,10 +163,10 @@ static void push_indexed_heap(Candidate *restrict data, unsigned int *restrict l
         if (element.distance >= data[index].distance) return;
     }
     
-    for (;;)
+    while (true)
     {
         const bool parent_exists = index != 0;
-        bool index_moved = 0;
+        bool index_moved = false;
         if (parent_exists)
         {
             const unsigned int parent_index = (index - 1) / 2;
@@ -170,7 +175,7 @@ static void push_indexed_heap(Candidate *restrict data, unsigned int *restrict l
                 data[index] = data[parent_index];
                 indices[data[index].id] = index;
                 index = parent_index;
-                index_moved = 1;
+                index_moved = true;
             }
         }
         if (!index_moved)
@@ -184,22 +189,21 @@ static void push_indexed_heap(Candidate *restrict data, unsigned int *restrict l
 
 static Candidate pop_indexed_heap(Candidate *restrict data, unsigned int *restrict length, unsigned int *restrict indices)
 {
-    (*length)--;
     const Candidate top = data[0];
     indices[top.id] = (unsigned int)-2;
-    if (*length == 0) return top;
+    (*length)--;
+    if (*length == 0) return top; //If the front is the back, the algorithm no longer works
+    const Candidate back = data[*length];
     
-    const Candidate buffer = data[*length];
     unsigned int index = 0;
-
-    for (;;)
+    while (true)
     {
         const unsigned int left_index = 2 * index + 1;
         const unsigned int right_index = 2 * index + 2;
-        const bool left_exists = left_index <= *length;
-        const bool right_exists = right_index <= *length;
+        const bool left_exists = left_index < *length;
+        const bool right_exists = right_index < *length;
 
-        bool index_moved = 0;
+        bool index_moved = false;
         if (left_exists || right_exists)
         {
             unsigned int next_index;
@@ -219,19 +223,19 @@ static Candidate pop_indexed_heap(Candidate *restrict data, unsigned int *restri
                 next_index = left_index;
             }
 
-            if (data[next_index].distance < buffer.distance)
+            if (data[next_index].distance < back.distance)
             {
                 data[index] = data[next_index];
                 indices[data[index].id] = index;
                 index = next_index;
-                index_moved = 1;
+                index_moved = true;
             }
         }
 
         if (!index_moved)
         {
-            data[index] = buffer;
-            indices[buffer.id] = index;
+            data[index] = back;
+            indices[back.id] = index;
             break;
         }
     }
@@ -250,21 +254,36 @@ static void parse_ver5(ConnectionVectorVector *graph, BenchmarkVector *benchmark
     while (true)
     {
         unsigned int line_size = 0;
+        bool eof = false;
         while (true)
         {
             char c;
-            if (fread(&c, 1, 1, file) == 0 || c == '\n' || c == '\r') break;
+            if (fread(&c, 1, 1, file) == 0) { eof = true; break; }
+            if (c == '\n') break;
             if (line_size + 2 > line_capacity) { line_capacity <<= 1; line = (char*)realloc(line, line_capacity); }
             line[line_size] = c;
             line_size++;
         }
+        if (line_size == 0 && eof) break;
         line[line_size] = '\0';
         if (strstr(line, "GRAPH") != NULL) { read_benchmarks = false; continue; }
         if (strstr(line, "BENCHMARK") != NULL) { read_benchmarks = true; continue; }
         if (read_benchmarks)
         {
             unsigned int source, destination;
-            if (sscanf(line, "%u %u", &source, &destination) != 2) break;
+            #if PARSING_METHOD == 0
+                char endline[2];
+                const int result = sscanf(line, "%u%u%1s", &source, &destination, endline);
+                if (result == EOF) continue; //Whitespace
+                if (result != 2) break; //Error
+            #elif PARSING_METHOD == 1
+                char *p = line;
+                while (*p != '\0' && isspace(*p)) p++;
+                if (*p == '\0') continue; //Whitespace
+                source = (unsigned int)strtoul(p, &p, 10);
+                destination = (unsigned int)strtoul(p, &p, 10);
+                if (*p != '\0' && !isspace(*p)) break; //Error
+            #endif
 
             Benchmark benchmark = { .source = source, .destination = destination };
             push_BenchmarkVector(benchmarks, benchmark);
@@ -273,7 +292,20 @@ static void parse_ver5(ConnectionVectorVector *graph, BenchmarkVector *benchmark
         {
             unsigned int source, destination;
             float distance;
-            if (sscanf(line, "%u %u %f", &source, &destination, &distance) != 3) break;
+            #if PARSING_METHOD == 0
+                char endline[2];
+                const int result = sscanf(line, "%u%u%f%1s", &source, &destination, &distance, endline);
+                if (result == EOF) continue; //Whitespace
+                if (result != 3) break; //Error
+            #elif PARSING_METHOD == 1
+                char *p = line;
+                while (*p != '\0' && isspace(*p)) p++;
+                if (*p == '\0') continue; //Whitespace
+                source = (unsigned int)strtoul(p, &p, 10);
+                destination = (unsigned int)strtoul(p, &p, 10);
+                distance = strtof(p, &p);
+                if (*p != '\0' && !isspace(*p)) break; //Error
+            #endif
 
             grow_ConnectionVectorVector(graph, MAX(source, destination) + 1);
             Connection forward = { .destination = destination, .distance = distance };

@@ -72,9 +72,10 @@ class PriorityQueue<T> where T: IPrioritized
     public T Dequeue()
     {
         T top = data[0];
-        if (data.Count == 1) { data.RemoveAt(0); return top; }
-
         T back = data[data.Count - 1];
+        data.RemoveAt(data.Count - 1);
+        if (data.Count == 0) return top; //If the front is the back, the algorithm no longer works
+        
         int index = 0;
         while (true)
         {
@@ -114,7 +115,6 @@ class PriorityQueue<T> where T: IPrioritized
             if (!index_moved)
             {
                 data[index] = back;
-                data.RemoveAt(data.Count - 1);
                 break;
             }
         }
@@ -125,7 +125,7 @@ class PriorityQueue<T> where T: IPrioritized
     public void Enqueue(T item)
     {
         int index = data.Count;
-        data.Add(item); //value used only when Count == 0, otherwise only for allocation
+        data.Add(item); //Value not important, we just can't pass null
         while (true)
         {
             bool parent_exists = index > 0;
@@ -174,9 +174,10 @@ class IndexedPriorityQueue<T> where T: IPrioritized, IIndexed
     {
         T top = data[0];
         indices[top.Id] = -2;
-        if (data.Count == 1) { data.RemoveAt(0); return top; }
-
         T back = data[data.Count - 1];
+        data.RemoveAt(data.Count - 1);
+        if (data.Count == 0) return top; //If the front is the back, the algorithm no longer works
+
         int index = 0;
         while (true)
         {
@@ -218,7 +219,6 @@ class IndexedPriorityQueue<T> where T: IPrioritized, IIndexed
             {
                 data[index] = back;
                 indices[back.Id] = index;
-                data.RemoveAt(data.Count - 1);
                 break;
             }
         }
@@ -232,7 +232,7 @@ class IndexedPriorityQueue<T> where T: IPrioritized, IIndexed
         if (index == -1)
         {
             index = data.Count;
-            data.Add(item); //value used only when Count == 0, otherwise only for allocation
+            data.Add(item); //Value not important, we just can't pass null
         }
         else if (index == -2)
         {
@@ -286,23 +286,36 @@ class Program
         bool read_benchmarks = false;
         while (true)
         {
-            #if NON_NULLABLE_STRING
+            #if NO_NULLABLE_REFERENCES
             string line = file.ReadLine();
             #else
             string? line = file.ReadLine();
             #endif
             if (line == null) break;
-            if (line.Contains("GRAPH")) { read_benchmarks = false; continue; }
-            if (line.Contains("BENCHMARK")) { read_benchmarks = true; continue; }
-            string[] split = line.Split(' ');
-            if (read_benchmarks)
+            #if NO_NULLABLE_REFERENCES
+            string[] split = line.Split((char[])null,  StringSplitOptions.RemoveEmptyEntries);
+            #else
+            string[] split = line.Split((char[]?)null,  StringSplitOptions.RemoveEmptyEntries);
+            #endif
+            if (split.Length == 0) {} //Whitespace
+            else if (split.Length == 1 && split[0] == "GRAPH")
             {
+                read_benchmarks = false;
+            }
+            else if (split.Length == 1 && split[0] == "BENCHMARK")
+            {
+                read_benchmarks = true;
+            }
+            else if (read_benchmarks)
+            {
+                if (split.Length != 2) break; //Error
                 if (!int.TryParse(split[0], integral, format, out int source)) break;
                 if (!int.TryParse(split[1], integral, format, out int destination)) break;
                 benchmarks.Add(new Benchmark(source, destination));
             }
             else
             {
+                if (split.Length != 3) break; //Error
                 if (!int.TryParse(split[0], integral, format, out int source)) break;
                 if (!int.TryParse(split[1], integral, format, out int destination)) break;
                 if (!float.TryParse(split[2], real, format, out float distance)) break;

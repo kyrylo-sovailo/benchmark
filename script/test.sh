@@ -7,6 +7,13 @@ cd "$BUILD"
 
 "$(dirname $(readlink -f $0))/build.sh" || exit 1
 
+#cleanup()
+cleanup()
+{
+    rm "$CLEANUP"
+    rm "$TEMPFILE"
+}
+
 #run_benchmark(executable, benchmark, log, cores, interpreter)
 run_benchmark()
 {
@@ -47,6 +54,8 @@ run_benchmark()
         else
             CORES="1"
         fi
+        CLEANUP="$3"
+        trap cleanup SIGINT RETURN
         if [ "$LAUNCH" == "matlab" ]; then
             echo 'stdbuf -oL -eL taskset -c '"${CORES}"' bash -c "for i in \$(seq 1 '"${WARMUP}"'); do bash -c \"time matlab -batch '\''m = dijkstra_matlab(); m.main();'\''; echo; done" > >(tee "'"${TEMPFILE}"'") 2> >(tee "'"$3"'" >&2)'
             stdbuf -oL -eL taskset -c ${CORES} bash -c "for i in \$(seq 1 ${WARMUP}); do bash -c \"time matlab -batch 'm = dijkstra_matlab(); m.main();'; echo; done" > >(tee "${TEMPFILE}") 2> >(tee "$3" >&2) || exit 1
@@ -65,6 +74,7 @@ run_benchmark()
             echo 'stdbuf -oL -eL taskset -c '"${CORES}"' bash -c "for i in \$(seq 1 '"${RUNS}"'); do bash -c \"time '"${LAUNCH}"' \\\"'"$1"'\\\"\"; echo; done" > >(tee "'"${TEMPFILE}"'") 2> >(tee "'"$3"'" >&2)'
             stdbuf -oL -eL taskset -c ${CORES} bash -c "for i in \$(seq 1 ${RUNS}); do bash -c \"time ${LAUNCH} \\\"$1\\\"\"; echo; done" > >(tee "${TEMPFILE}") 2> >(tee "$3" >&2) || exit 1
         fi
+        trap - SIGINT RETURN
         while read LINE; do
             IFS=":" read TASK _ <<< "$LINE"
             IFS="(" read _ SOLUTION <<< "$LINE"
@@ -80,9 +90,6 @@ run_benchmark()
         echo
     fi
 }
-
-run_benchmark "$BUILD/dijkstra_cpp_clang_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_cpp_clang_release.txt" || exit 1
-exit
 
 # C++
 if [ $(type g++ 2>/dev/null | wc -l) -gt 0 ]; then
@@ -105,10 +112,10 @@ if [ $(type clang 2>/dev/null | wc -l) -gt 0 ]; then
 fi
 
 # Assembly
-if [ $(uname -m) == "x86_64" -a $(type nasm 2>/dev/null | wc -l) -gt 0 -a $(type ld 2>/dev/null | wc -l) -gt 0 ]; then
-    run_benchmark "$BUILD/dijkstra_asm_nasm_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_asm_nasm_debug.txt" || exit 1
-    run_benchmark "$BUILD/dijkstra_asm_nasm_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_asm_nasm_release.txt" || exit 1
-fi
+#if [ $(uname -m) == "x86_64" -a $(type nasm 2>/dev/null | wc -l) -gt 0 -a $(type ld 2>/dev/null | wc -l) -gt 0 ]; then
+#    run_benchmark "$BUILD/dijkstra_asm_nasm_debug" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_asm_nasm_debug.txt" || exit 1
+#    run_benchmark "$BUILD/dijkstra_asm_nasm_release" "$BUILD/dijkstra.txt" "$BUILD/dijkstra_asm_nasm_release.txt" || exit 1
+#fi
 
 # Extras
 if [ $(type gcc 2>/dev/null | wc -l) -gt 0 ]; then

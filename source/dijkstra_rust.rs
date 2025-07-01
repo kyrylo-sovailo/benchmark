@@ -84,21 +84,18 @@ impl<T: Clone + PartialOrd + Indexed + Prioritized> IndexedPriorityQueue<T>
     fn push(&mut self, item: T) -> ()
     {
         let mut index: u32 = self.indices[item.get_id() as usize];
-        match index
+        if index == LABEL_NEW
         {
-            LABEL_NEW =>
-            {
-                index = self.data.len() as u32;
-                self.data.push(item.clone());
-            },
-            LABEL_DELETED =>
-            {
-                return;
-            }
-            _ =>
-            {
-                if item.get_priority() >= self.data[index as usize].get_priority() { return; }
-            }
+            index = self.data.len() as u32;
+            self.data.push(item.clone());
+        }
+        else if index == LABEL_DELETED
+        {
+            return;
+        }
+        else
+        {
+            if item.get_priority() >= self.data[index as usize].get_priority() { return; }
         }
 
         loop
@@ -137,12 +134,12 @@ impl<T: Clone + PartialOrd + Indexed + Prioritized> IndexedPriorityQueue<T>
 
     fn pop(&mut self) -> Option<T>
     {
-        if self.data.len() == 0 { return None; }
-        let top: T = self.data[0].clone();
+        let top: T = self.data.first()?.clone();
+        let back: T = self.data.last()?.clone();
         self.indices[top.get_id() as usize] = LABEL_DELETED;
-        if self.data.len() == 1 { self.data.pop(); return Some(top); }
+        self.data.pop();
+        if self.data.len() == 0 { return Some(top); } //If the front is the back, the algorithm no longer works
 
-        let back: T = self.data.last().unwrap().clone();
         let mut index: u32 = 0;
         loop
         {
@@ -196,7 +193,6 @@ impl<T: Clone + PartialOrd + Indexed + Prioritized> IndexedPriorityQueue<T>
             {
                 self.data[index as usize] = back.clone();
                 self.indices[back.get_id() as usize] = index;
-                self.data.pop();
                 return Some(top);
             }
         }
@@ -215,57 +211,63 @@ fn parse_ver3() -> Result<(Vec<Vec<Connection>>, Vec<Benchmark>), Box<dyn Error>
     {
         if let Ok(line) = option_line
         {
-            if line.contains("GRAPH")
+            let mut line_iterator = line.trim().split_whitespace();
+            if let Some(source_or_keyword_str) = line_iterator.next()
             {
-                read_benchmarks = false;
-            }
-            else if line.contains("BENCHMARK")
-            {
-                read_benchmarks = true;
-            }
-            else if read_benchmarks
-            {
-                let mut parts = line.trim().split_whitespace();
-                if let (Some(source_str), Some(destination_str)) = (parts.next(), parts.next())
+                if source_or_keyword_str == "GRAPH"
                 {
-                    if let (Ok(source), Ok(destination)) = (source_str.parse::<u32>(), destination_str.parse::<u32>())
+                    read_benchmarks = false;
+                }
+                else if source_or_keyword_str == "BENCHMARK"
+                {
+                    read_benchmarks = true;
+                }
+                else if read_benchmarks
+                {
+                    if let (Some(destination_str), None) = (line_iterator.next(), line_iterator.next())
                     {
-                        benchmarks.push(Benchmark{source:source, destination:destination});
+                        if let (Ok(source), Ok(destination)) = (source_or_keyword_str.parse::<u32>(), destination_str.parse::<u32>())
+                        {
+                            benchmarks.push(Benchmark{source:source, destination:destination});
+                        }
+                        else
+                        {
+                            break; //Error
+                        }
                     }
                     else
                     {
-                        break;
+                        break; //Error
                     }
                 }
                 else
                 {
-                    break;
+                    if let (Some(destination_str), Some(distance_str), None) = (line_iterator.next(), line_iterator.next(), line_iterator.next())
+                    {
+                        if let (Ok(source), Ok(destination), Ok(distance)) = (source_or_keyword_str.parse::<u32>(), destination_str.parse::<u32>(), distance_str.parse::<f32>())
+                        {
+                            let source_destination_max: usize = std::cmp::max(source as usize, destination as usize);
+                            if graph.len() <= source_destination_max
+                            {
+                                graph.resize(source_destination_max + 1, Vec::new());
+                            }
+                            graph[source as usize].push(Connection{destination:destination, distance:distance});
+                            graph[destination as usize].push(Connection{destination:source, distance:distance});
+                        }
+                        else
+                        {
+                            break; //Error
+                        }
+                    }
+                    else
+                    {
+                        break; //Error
+                    }
                 }
             }
             else
             {
-                let mut parts = line.trim().split_whitespace();
-                if let (Some(source_str), Some(destination_str), Some(distance_str)) = (parts.next(), parts.next(), parts.next())
-                {
-                    if let (Ok(source), Ok(destination), Ok(distance)) = (source_str.parse::<u32>(), destination_str.parse::<u32>(), distance_str.parse::<f32>())
-                    {
-                        let source_destination_max: usize = std::cmp::max(source as usize, destination as usize);
-                        if graph.len() <= source_destination_max
-                        {
-                            graph.resize(source_destination_max + 1, Vec::new());
-                        }
-                        graph[source as usize].push(Connection{destination:destination, distance:distance});
-                        graph[destination as usize].push(Connection{destination:source, distance:distance});
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    break;
-                }
+                //Whitespace
             }
         }
         else

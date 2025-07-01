@@ -184,31 +184,26 @@ function parse_ver5()
     while (($line = fgets($file)) !== false)
     {
         $line = trim($line);
-        if (strpos($line, "GRAPH") !== false)
+        if (!$line) continue;
+        if ($line == "GRAPH") { $read_benchmarks = false; continue; }
+        if ($line == "BENCHMARK") { $read_benchmarks = true; continue; }
+        
+        $split = preg_split('/\s+/', $line);
+        if ($read_benchmarks)
         {
-            $read_benchmarks = false;
-        }
-        elseif (strpos($line, "BENCHMARK") !== false)
-        {
-            $read_benchmarks = true;
-        }
-        elseif ($read_benchmarks)
-        {
-            $split = preg_split('/\s+/', $line);
-            if (count($split) < 2) continue;
+            if (count($split) != 2) break; //Error
             $source = intval($split[0]);
             $destination = intval($split[1]);
-            if (is_nan($source) || is_nan($destination)) continue;
+            if (is_nan($source) || is_nan($destination)) break;
             $benchmarks[] = new Benchmark($source, $destination);
         }
         else
         {
-            $split = preg_split('/\s+/', $line);
-            if (count($split) < 3) continue;
+            if (count($split) != 3) break; //Error
             $source = intval($split[0]);
             $destination = intval($split[1]);
             $distance = floatval($split[2]);
-            if (is_nan($source) || is_nan($destination) || is_nan($distance)) continue;
+            if (is_nan($source) || is_nan($destination) || is_nan($distance)) break;
 
             $max_index = max($source, $destination);
             while (count($graph) <= $max_index)

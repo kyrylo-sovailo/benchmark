@@ -29,7 +29,6 @@ float_add() {
         INT1=$(($INT1 + $INT2))
     fi
     FRAC1="${FRAC1:1}"
-    echo "$1 + $2 = $INT1.$FRAC1" >&2
     echo "$INT1.$FRAC1"
 }
 
@@ -37,11 +36,9 @@ float_cmp() {
     IFS="." read INT1 FRAC1 <<< "$1"
     IFS="." read INT2 FRAC2 <<< "$2"
     if [ $INT1 -lt $INT2 ]; then
-        echo "$1 <> $2 = -1" >&2
         echo -1
         return
     elif [ $INT1 -gt $INT2 ]; then
-        echo "$1 <> $2 = 1" >&2
         echo 1
         return
     fi
@@ -57,15 +54,12 @@ float_cmp() {
     FRAC1="1$FRAC1"
     FRAC2="1$FRAC2"
     if [ $FRAC1 -lt $FRAC2 ]; then
-        echo "$1 <> $2 = -1" >&2
         echo -1
         return
     elif [ $FRAC1 -gt $FRAC2 ]; then
-        echo "$1 <> $2 = 1" >&2
         echo 1
         return
     fi
-    echo "$1 <> $2 = 0" >&2
     echo 0
 }
 
@@ -90,11 +84,15 @@ while read LINE; do
         READ_BENCHMARKS=0
     elif [[ "$LINE" =~ ^[\s]*BENCHMARK[\s]*$ ]]; then
         READ_BENCHMARKS=1
+    elif [[ "$LINE" =~ ^[[:space:]]*$ ]]; then
+        :
     elif [ $READ_BENCHMARKS -ne 0 ]; then
-        read SOURCE DESTINATION <<< "$LINE"
+        read SOURCE DESTINATION REST <<< "$LINE"
+        [ -z "$REST" ] || break
         BENCHMARKS+=("$SOURCE $DESTINATION")
     else
-        read SOURCE DESTINATION DISTANCE <<< "$LINE"
+        read SOURCE DESTINATION DISTANCE REST <<< "$LINE"
+        [ -z "$REST" ] || break
         DISTANCE=$(float_round "$DISTANCE")
         while [ ${#GRAPH[@]} -lt $SOURCE ]; do
             GRAPH+=("")

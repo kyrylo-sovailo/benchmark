@@ -164,59 +164,55 @@ end;
 procedure ParseVer5(graph: TList<TConnections>; benchmarks: TList<TBenchmark>);
 var
     f: TextFile;
-    line: string;
-    split: TStringArray;
+    delimiters: set of Char;
+    line, keyword_or_source: string;
+    word_count: SizeInt;
     benchmark: TBenchmark;
     connection: TConnection;
     source, destination: Cardinal;
-    old_size, grow_i: Cardinal;
     read_benchmarks: Boolean;
+    old_size, grow_i: Cardinal;
 begin
     Assign(f, 'dijkstra.txt');
     Reset(f);
-
+    delimiters := [' ', #9];
     read_benchmarks := False;
 
     while not Eof(f) do
     begin
         ReadLn(f, line);
-        
-        if Pos('GRAPH', line) > 0 then 
-        begin
-            read_benchmarks := False; 
-            Continue;
-        end
-        else if Pos('BENCHMARK', line) > 0 then 
-        begin
-            read_benchmarks := True; 
-            Continue;
-        end;
+        word_count := WordCount(line, delimiters);
 
-        split := SplitString(line, ' ');
-        if read_benchmarks then
+        if word_count = 0 then Continue;
+        keyword_or_source := ExtractWord(1, line, delimiters);
+        if (word_count = 1) and (keyword_or_source = 'GRAPH') then
+            read_benchmarks := False
+        else if (word_count = 1) and (keyword_or_source = 'BENCHMARK') then
+            read_benchmarks := True
+        else if read_benchmarks then
         begin
-            if TryStrToUInt(split[0], benchmark.source) and TryStrToUInt(split[1], benchmark.destination) then
-                benchmarks.Add(benchmark)
-            else
-                Break;
+            if word_count <> 2 then Break; // Error
+            if not TryStrToUInt(keyword_or_source, benchmark.source) then Break;
+            if not TryStrToUInt(ExtractWord(2, line, delimiters), benchmark.destination) then Break;
+            benchmarks.Add(benchmark);
         end
         else
         begin
-            if TryStrToUInt(split[0], source) and TryStrToUInt(split[1], destination) and TryStrToFloat(split[2], connection.distance) then
+            if word_count <> 3 then Break; // Error
+            if not TryStrToUInt(keyword_or_source, source) then Break;
+            if not TryStrToUInt(ExtractWord(2, line, delimiters), destination) then Break;
+            if not TryStrToFloat(ExtractWord(3, line, delimiters), connection.distance) then Break;
+            if Max(source, destination) + 1 > graph.Count then
             begin
-                if Max(source, destination) + 1 > graph.Count then
-                begin
-                    old_size := graph.Count;
-                    graph.Count := Max(source, destination) + 1;
-                    for grow_i := old_size to graph.Count - 1 do
-                        graph[grow_i] := TConnections.Create;
-                end;
-                connection.destination := destination;
-                graph[source].Add(connection);
-                connection.destination := source;
-                graph[destination].Add(connection);
-            end
-            else Break;
+                old_size := graph.Count;
+                graph.Count := Max(source, destination) + 1;
+                for grow_i := old_size to graph.Count - 1 do
+                    graph[grow_i] := TConnections.Create;
+            end;
+            connection.destination := destination;
+            graph[source].Add(connection);
+            connection.destination := source;
+            graph[destination].Add(connection);
         end;
     end;
 

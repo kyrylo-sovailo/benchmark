@@ -576,26 +576,25 @@ static struct Candidate pop_indexed_heap(struct Candidate *data, uint64_t length
     //length - RSI
     //indices - RDX
 
-    const uint64_t length_minus_1 = length - 1; //RSI
     const struct Candidate top = data[0]; //XMM0, XMM1/RAX temporarily
-    indices[top.id] = (uint32_t)-2;
-    if (length_minus_1 == 0) return top;
+    indices[top.id] = (unsigned int)-2;
+    const uint64_t length_minus_1 = length - 1; //RSI
+    if (length_minus_1 == 0) return top; //If the front is the back, the algorithm no longer works
+    const struct Candidate back = data[length_minus_1]; //XMM1
     
-    struct Candidate buffer = data[length_minus_1]; //XMM1
     uint64_t index = 0; //RCX
     struct Candidate *index_pointer = &data[0]; //RAX
-
     for (;;)
     {
         const uint64_t left_index = 2 * index + 1; //R8
         const uint64_t right_index = 2 * index + 2;
-        //const bool left_exists = left_index <= length_minus_1;
-        //const bool right_exists = right_index <= length_minus_1; //implies left_exists
+        //const bool left_exists = left_index < length_minus_1;
+        //const bool right_exists = right_index < length_minus_1; //implies left_exists
 
         if (left_index > length_minus_1) // if (*!left_exists && !right_exists)
         {
-            *index_pointer = buffer;
-            indices[buffer.id] = (uint32_t)index;
+            *index_pointer = back;
+            indices[back.id] = (uint32_t)index;
             break;
         }
         
@@ -619,7 +618,7 @@ static struct Candidate pop_indexed_heap(struct Candidate *data, uint64_t length
             next_index = left_index;
         }
 
-        if (c->distance < buffer.distance)
+        if (c->distance < back.distance)
         {
             *index_pointer = *c;
             indices[index_pointer->id] = (uint32_t)index;
@@ -628,8 +627,8 @@ static struct Candidate pop_indexed_heap(struct Candidate *data, uint64_t length
         }
         else
         {
-            *index_pointer = buffer;
-            indices[buffer.id] = (uint32_t)index;
+            *index_pointer = back;
+            indices[back.id] = (uint32_t)index;
             break;
         }
     }

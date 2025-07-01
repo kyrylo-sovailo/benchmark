@@ -295,26 +295,36 @@ std::pair<std::map<unsigned int, std::map<unsigned int, float>>, std::vector<std
         {
             unsigned int source, destination;
             #if PARSING_METHOD == 0
-                const char *p = skip_spaces(string.c_str());
-                if (*p == '\0') continue;
-                const int result = sscanf(p, "%u%u", &source, &destination);
-                if (result != 2) break;
+                char endline[2];
+                const int result = sscanf(string.c_str(), "%u%u%1s", &source, &destination, endline);
+                if (result == EOF) continue; //Whitespace
+                if (result != 2) break; //Error
             #elif PARSING_METHOD == 1
-                char *p = &*string.begin();
+                char *p = skip_spaces(&string[0]);
+                if (*p == '\0') continue; //Whitespace
                 source = static_cast<unsigned int>(strtoul(p, &p, 10));
-                if (p == &string[0] && source == 0) continue;
                 destination = static_cast<unsigned int>(strtoul(p, &p, 10));
-                if (*p != ' ' && *p != '\t' && *p != '\0') break;
+                if (*p != '\0' && !std::isspace(*p)) break; //Error
             #elif PARSING_METHOD == 2
                 std::istringstream stream(string);
-                stream >> source >> destination;
-                if (stream.bad()) break;
+                stream >> source;
+                if (!stream) { if (stream.eof()) continue; else break; } //Continue if whitespace, break if error
+                stream >> destination;
+                if (!stream) break; //Error
+                char endline;
+                stream >> std::skipws >> endline;
+                if (stream) break; //Error
             #else
-                std::from_chars_result result = std::from_chars(&*string.cbegin(), &*string.cend(), source);
-                if (result.ec != std::errc()) break;
-                result.ptr = skip_spaces(result.ptr);
-                result = std::from_chars(result.ptr, &*string.cend(), destination);
-                if (result.ec != std::errc()) break;
+                const char *end = string.c_str() + string.size();
+                std::from_chars_result result;
+                result.ptr = skip_spaces(string.c_str(), end);
+                if (result.ptr == end) continue; //Whitespace
+                result = std::from_chars(result.ptr, end, source);
+                if (result.ec != std::errc()) break; //Error
+                result = std::from_chars(skip_spaces(result.ptr, end), end, destination);
+                if (result.ec != std::errc()) break; //Error
+                result.ptr = skip_spaces(result.ptr, end);
+                if (result.ptr != end) break; //Error
             #endif
             benchmarks.push_back({ source, destination });
         }
@@ -323,28 +333,40 @@ std::pair<std::map<unsigned int, std::map<unsigned int, float>>, std::vector<std
             unsigned int source, destination;
             float distance;
             #if PARSING_METHOD == 0
-                const char *p = skip_spaces(string.c_str());
-                if (*p == '\0') continue;
-                const int result = sscanf(string.c_str(), "%u%u%f", &source, &destination, &distance);
-                if (result != 3) break;
+                char endline[2];
+                const int result = sscanf(string.c_str(), "%u%u%f%1s", &source, &destination, &distance, endline);
+                if (result == EOF) continue; //Whitespace
+                if (result != 3) break; //Error
             #elif PARSING_METHOD == 1
-                char *p = &*string.begin();
+                char *p = skip_spaces(&string[0]);
+                if (*p == '\0') continue; //Whitespace
                 source = static_cast<unsigned int>(strtoul(p, &p, 10));
-                if (p == &string[0] && source == 0) continue;
                 destination = static_cast<unsigned int>(strtoul(p, &p, 10));
                 distance = strtof(p, &p);
-                if (*p != ' ' && *p != '\t' && *p != '\0') break;
+                if (*p != '\0' && !std::isspace(*p)) break; //Error
             #elif PARSING_METHOD == 2
                 std::istringstream stream(string);
-                stream >> source >> destination >> distance;
-                if (stream.bad()) break;
+                stream >> source;
+                if (!stream) { if (stream.eof()) continue; else break; } //Continue if whitespace, break if error
+                stream >> destination;
+                stream >> distance;
+                if (!stream) break; //Error
+                char endline;
+                stream >> std::skipws >> endline;
+                if (stream) break; //Error
             #else
-                std::from_chars_result result = std::from_chars(&*string.cbegin(), &*string.cend(), source);
-                if (result.ec != std::errc()) break;
-                result = std::from_chars(result.ptr, &*string.cend(), destination);
-                if (result.ec != std::errc()) break;
-                result = std::from_chars(result.ptr, &*string.cend(), distance);
-                if (result.ec != std::errc()) break;
+                const char *end = string.c_str() + string.size();
+                std::from_chars_result result;
+                result.ptr = skip_spaces(string.c_str(), end);
+                if (result.ptr == end) continue; //Whitespace
+                result = std::from_chars(result.ptr, end, source);
+                if (result.ec != std::errc()) break; //Error
+                result = std::from_chars(skip_spaces(result.ptr, end), end, destination);
+                if (result.ec != std::errc()) break; //Error
+                result = std::from_chars(skip_spaces(result.ptr, end), end, distance);
+                if (result.ec != std::errc()) break; //Error
+                result.ptr = skip_spaces(result.ptr, end);
+                if (result.ptr != end) break; //Error
             #endif
             auto source_connections = graph.find(source);
             if (source_connections == graph.cend()) source_connections = graph.insert({ source, std::map<unsigned int, float>() }).first;
@@ -376,25 +398,36 @@ std::pair<std::vector<std::map<unsigned int, float>>, std::vector<std::pair<unsi
         {
             unsigned int source, destination;
             #if PARSING_METHOD == 0
-                const char *p = skip_spaces(string.c_str());
-                if (*p == '\0') continue;
-                const int result = sscanf(p, "%u%u", &source, &destination);
-                if (result != 2) break;
+                char endline[2];
+                const int result = sscanf(string.c_str(), "%u%u%1s", &source, &destination, endline);
+                if (result == EOF) continue; //Whitespace
+                if (result != 2) break; //Error
             #elif PARSING_METHOD == 1
-                char *p = &*string.begin();
+                char *p = skip_spaces(&string[0]);
+                if (*p == '\0') continue; //Whitespace
                 source = static_cast<unsigned int>(strtoul(p, &p, 10));
-                if (p == &string[0] && source == 0) continue;
                 destination = static_cast<unsigned int>(strtoul(p, &p, 10));
-                if (*p != ' ' && *p != '\t' && *p != '\0') break;
+                if (*p != '\0' && !std::isspace(*p)) break; //Error
             #elif PARSING_METHOD == 2
                 std::istringstream stream(string);
-                stream >> source >> destination;
-                if (stream.bad()) break;
+                stream >> source;
+                if (!stream) { if (stream.eof()) continue; else break; } //Continue if whitespace, break if error
+                stream >> destination;
+                if (!stream) break; //Error
+                char endline;
+                stream >> std::skipws >> endline;
+                if (stream) break; //Error
             #else
-                std::from_chars_result result = std::from_chars(&*string.cbegin(), &*string.cend(), source);
-                if (result.ec != std::errc()) break;
-                result = std::from_chars(result.ptr, &*string.cend(), destination);
-                if (result.ec != std::errc()) break;
+                const char *end = string.c_str() + string.size();
+                std::from_chars_result result;
+                result.ptr = skip_spaces(string.c_str(), end);
+                if (result.ptr == end) continue; //Whitespace
+                result = std::from_chars(result.ptr, end, source);
+                if (result.ec != std::errc()) break; //Error
+                result = std::from_chars(skip_spaces(result.ptr, end), end, destination);
+                if (result.ec != std::errc()) break; //Error
+                result.ptr = skip_spaces(result.ptr, end);
+                if (result.ptr != end) break; //Error
             #endif
             benchmarks.push_back({ source, destination });
         }
@@ -403,28 +436,40 @@ std::pair<std::vector<std::map<unsigned int, float>>, std::vector<std::pair<unsi
             unsigned int source, destination;
             float distance;
             #if PARSING_METHOD == 0
-                const char *p = skip_spaces(string.c_str());
-                if (*p == '\0') continue;
-                const int result = sscanf(string.c_str(), "%u%u%f", &source, &destination, &distance);
-                if (result != 3) break;
+                char endline[2];
+                const int result = sscanf(string.c_str(), "%u%u%f%1s", &source, &destination, &distance, endline);
+                if (result == EOF) continue; //Whitespace
+                if (result != 3) break; //Error
             #elif PARSING_METHOD == 1
-                char *p = &*string.begin();
+                char *p = skip_spaces(&string[0]);
+                if (*p == '\0') continue; //Whitespace
                 source = static_cast<unsigned int>(strtoul(p, &p, 10));
-                if (p == &string[0] && source == 0) continue;
                 destination = static_cast<unsigned int>(strtoul(p, &p, 10));
                 distance = strtof(p, &p);
-                if (*p != ' ' && *p != '\t' && *p != '\0') break;
+                if (*p != '\0' && !std::isspace(*p)) break; //Error
             #elif PARSING_METHOD == 2
                 std::istringstream stream(string);
-                stream >> source >> destination >> distance;
-                if (stream.bad()) break;
+                stream >> source;
+                if (!stream) { if (stream.eof()) continue; else break; } //Continue if whitespace, break if error
+                stream >> destination;
+                stream >> distance;
+                if (!stream) break; //Error
+                char endline;
+                stream >> std::skipws >> endline;
+                if (stream) break; //Error
             #else
-                std::from_chars_result result = std::from_chars(&*string.cbegin(), &*string.cend(), source);
-                if (result.ec != std::errc()) break;
-                result = std::from_chars(result.ptr, &*string.cend(), destination);
-                if (result.ec != std::errc()) break;
-                result = std::from_chars(result.ptr, &*string.cend(), distance);
-                if (result.ec != std::errc()) break;
+                const char *end = string.c_str() + string.size();
+                std::from_chars_result result;
+                result.ptr = skip_spaces(string.c_str(), end);
+                if (result.ptr == end) continue; //Whitespace
+                result = std::from_chars(result.ptr, end, source);
+                if (result.ec != std::errc()) break; //Error
+                result = std::from_chars(skip_spaces(result.ptr, end), end, destination);
+                if (result.ec != std::errc()) break; //Error
+                result = std::from_chars(skip_spaces(result.ptr, end), end, distance);
+                if (result.ec != std::errc()) break; //Error
+                result.ptr = skip_spaces(result.ptr, end);
+                if (result.ptr != end) break; //Error
             #endif
             if (std::max(source, destination) >= graph.size()) graph.resize(std::max(source, destination) + 1);
             graph[source].insert({ destination, distance });

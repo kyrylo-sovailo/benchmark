@@ -18,18 +18,20 @@ def parse_ver1():
         benchmarks = []
         read_benchmarks = False
         for line in file:
-            if "GRAPH" in line:
-                read_benchmarks = False
-                continue
-            if "BENCHMARK" in line:
-                read_benchmarks = True
-                continue
             split = line.split()
-            if read_benchmarks:
+            if len(split) == 0:
+                pass #Whitespace
+            elif len(split) == 1 and split[0] == "GRAPH":
+                read_benchmarks = False
+            elif len(split) == 1 and split[0] == "BENCHMARK":
+                read_benchmarks = True
+            elif read_benchmarks:
+                if len(split) != 2: break #Error
                 source = int(split[0])
                 destination = int(split[1])
                 benchmarks.append((source, destination))
             else:
+                if len(split) != 3: break #Error
                 source = int(split[0])
                 destination = int(split[1])
                 distance = float(split[2])
@@ -49,18 +51,20 @@ def parse_ver2():
         benchmarks = []
         read_benchmarks = False
         for line in file:
-            if "GRAPH" in line:
-                read_benchmarks = False
-                continue
-            if "BENCHMARK" in line:
-                read_benchmarks = True
-                continue
             split = line.split()
-            if read_benchmarks:
+            if len(split) == 0:
+                pass #Whitespace
+            elif len(split) == 1 and split[0] == "GRAPH":
+                read_benchmarks = False
+            elif len(split) == 1 and split[0] == "BENCHMARK":
+                read_benchmarks = True
+            elif read_benchmarks:
+                if len(split) != 2: break #Error
                 source = int(split[0])
                 destination = int(split[1])
                 benchmarks.append((source, destination))
             else:
+                if len(split) != 3: break #Error
                 source = int(split[0])
                 destination = int(split[1])
                 distance = float(split[2])
@@ -78,18 +82,20 @@ def parse_ver3():
         benchmarks = []
         read_benchmarks = False
         for line in file:
-            if "GRAPH" in line:
-                read_benchmarks = False
-                continue
-            if "BENCHMARK" in line:
-                read_benchmarks = True
-                continue
             split = line.split()
-            if read_benchmarks:
+            if len(split) == 0:
+                pass #Whitespace
+            elif len(split) == 1 and split[0] == "GRAPH":
+                read_benchmarks = False
+            elif len(split) == 1 and split[0] == "BENCHMARK":
+                read_benchmarks = True
+            elif read_benchmarks:
+                if len(split) != 2: break #Error
                 source = int(split[0])
                 destination = int(split[1])
                 benchmarks.append((source, destination))
             else:
+                if len(split) != 3: break #Error
                 source = int(split[0])
                 destination = int(split[1])
                 distance = float(split[2])
