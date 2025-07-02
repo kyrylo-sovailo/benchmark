@@ -469,14 +469,40 @@ static float push_connection(struct ConnectionVector *connections, uint64_t dest
     return distance;
 }
 
-static float push_bi_connection(struct ConnectionVectorVector *connections, uint64_t source, uint64_t destination, float distance)
+//uint64 can represent integers up to 19'th order (inclusive) (10^19)
+//float32 can represent floats down to -45'th order (inclusive) (10^-45)
+static float order_table[20] = {
+    1.0f,
+    1e-1f, //1th
+    1e-2f,
+    1e-3f,
+    1e-4f,
+    1e-5f,
+    1e-6f,
+    1e-7f,
+    1e-8f,
+    1e-9f,
+    1e-10f,
+    1e-11f,
+    1e-12f,
+    1e-13f,
+    1e-14f,
+    1e-15f,
+    1e-16f,
+    1e-17f,
+    1e-18f,
+    1e-19f //19th
+};
+
+static float push_bi_connection(struct ConnectionVectorVector *connections, uint64_t source, uint64_t destination,
+    uint64_t distance_integral, uint64_t distance_fraction, uint64_t distance_order)
 {
     //subfunctions are relatively rarely called, prioritize scratch registers
 
     //connections - RAX
     //source - ESI, stack
     //destination - EDX, stack
-    //distance - XMM0
+    float distance; //XMM0
     uint32_t source_destination_max; //EDX
     uint32_t new_connections_length; //EDX
     struct ConnectionVector *connections_begin; //R8
@@ -486,6 +512,8 @@ static float push_bi_connection(struct ConnectionVectorVector *connections, uint
     struct ConnectionVector *src; //RSI
     struct ConnectionVector *dst; //RDI
     //i - RCX
+
+    distance = (float)distance_integral + (float)distance_fraction * order_table[distance_order];
 
     connections_begin = connections->begin; //borrow connections->begin
     source_destination_max = (uint32_t)((source > destination) ? source : destination);
@@ -652,19 +680,19 @@ enum state
 
 static void parse_ver5(struct ConnectionVectorVector *graph, struct BenchmarkVector *benchmarks)
 {
-    //graph - stack (R14?)
-    //benchmarks - stack (R15?)
+    //graph - R14
+    //benchmarks - stack [rsp]
 
     //I/O
     int64_t code; //RAX
-    int64_t file; //RAX, stack [rsp]
+    int64_t file; //RAX, stack [rsp + 8]
     char c; //AL
     char *p; //R12
     bool eof; //R13b, 0x80 mask
     #ifdef USE_MAPPING
     char *buffer;
     #else
-    char buffer[IO_BUFFER_SIZE]; //stack [rbp - 0x10000]==[rsp + 0x30] to [rbp]==[rsp + 0x10030]
+    char buffer[IO_BUFFER_SIZE]; //stack [rbp - 0x10000]==[rsp + 0x38] to [rbp]==[rsp + 0x10038]
     #endif
     char *buffer_end; //RBP
 
@@ -672,10 +700,11 @@ static void parse_ver5(struct ConnectionVectorVector *graph, struct BenchmarkVec
     enum state state; //RBX
     bool read_benchmarks; //R13b, 0x40 mask
     bool delayed_push; //R13b, 0x20 mask
-    uint64_t source; //RSI, stack [rsp + 8]
-    uint64_t destination; //RDX, stack [rsp + 16]
-    float distance; //XMM0, [rsp + 24], integer part in RCX, [rsp+32]
-    float order;    //XMM1, [rsp + 28]
+    uint64_t source; //RSI, stack [rsp + 16]
+    uint64_t destination; //RDX, stack [rsp + 24]
+    uint64_t distance_integral; //RCX, stack [rsp + 32]
+    uint64_t distance_fraction; //R8, stack [rsp + 40]
+    unsigned char distance_order; //R9, stack [rsp + 48]
     uint8_t keyword_check; //RSI
     
     //I/O
@@ -771,24 +800,24 @@ static void parse_ver5(struct ConnectionVectorVector *graph, struct BenchmarkVec
             if (eof) state = st_endfile; //EOF -> syntax error, end
             else if (c == ' ' || c == '\t') {} //space -> repeat
             else if (c == '\n' || c == '\r') state = st_endfile; //endline -> format error, end
-            else if (c >= '0' && c <= '9') { distance = (unsigned char)(c - '0'); state = st_search_distance_dot; } //number -> set distance, search distance dot
+            else if (c >= '0' && c <= '9') { distance_integral = (unsigned char)(c - '0'); state = st_search_distance_dot; } //number -> set distance, search distance dot
             else state = st_endfile; //else -> format error, end
             break;
 
         case st_search_distance_dot:
-            if (eof) { push_bi_connection(graph, source, destination, distance); state = st_endfile; } //EOF -> push connection, end
-            else if (c == ' ' || c == '\t') { delayed_push = 1; state = st_search_endline; } //space -> delayed push connection, search endline
-            else if (c == '\n' || c == '\r') { push_bi_connection(graph, source, destination, distance); state = st_search_source_begin; } //endline -> push connection, start over
-            else if (c >= '0' && c <= '9') distance = 10 * distance + (unsigned char)(c - '0'); //number -> modify distance, repeat
-            else if (c == '.') { order = 1; state = st_search_distance_end; } //dot -> set order, search distance end
+            if (eof) { push_bi_connection(graph, source, destination, distance_integral, 0, 0); state = st_endfile; } //EOF -> push connection, end
+            else if (c == ' ' || c == '\t') { distance_fraction = 0; distance_order = 0; delayed_push = 1; state = st_search_endline; } //space -> delayed push connection, search endline
+            else if (c == '\n' || c == '\r') { push_bi_connection(graph, source, destination, distance_integral, 0, 0); state = st_search_source_begin; } //endline -> push connection, start over
+            else if (c >= '0' && c <= '9') distance_integral = 10 * distance_integral + (unsigned char)(c - '0'); //number -> modify distance, repeat
+            else if (c == '.') { distance_fraction = 0; distance_order = 0; state = st_search_distance_end; } //dot -> set order, search distance end
             else state = st_endfile; //else -> format error, end
             break;
 
         case st_search_distance_end:
-            if (eof) { push_bi_connection(graph, source, destination, distance); state = st_endfile; } //EOF -> push connection, end
+            if (eof) { push_bi_connection(graph, source, destination, distance_integral, distance_fraction, distance_order); state = st_endfile; } //EOF -> push connection, end
             else if (c == ' ' || c == '\t') { delayed_push = 1; state = st_search_endline; } //space -> delayed push connection, search endline
-            else if (c == '\n' || c == '\r') { push_bi_connection(graph, source, destination, distance); state = st_search_source_begin; } //endline -> push connection, start over
-            else if (c >= '0' && c <= '9') { order /= 10; distance += order * (unsigned char)(c - '0'); } //number -> modify distance, repeat
+            else if (c == '\n' || c == '\r') { push_bi_connection(graph, source, destination, distance_integral, distance_fraction, distance_order); state = st_search_source_begin; } //endline -> push connection, start over
+            else if (c >= '0' && c <= '9') { distance_fraction += 10 * distance_fraction + (unsigned char)(c - '0'); distance_order++; } //number -> modify distance, repeat
             else state = st_endfile; //else -> format error, end
             break;
         
@@ -816,14 +845,14 @@ static void parse_ver5(struct ConnectionVectorVector *graph, struct BenchmarkVec
             if (eof) //EOF -> end
             {
                 if (delayed_push && read_benchmarks) push_benchmark(benchmarks, source, destination);
-                else if (delayed_push && !read_benchmarks) push_bi_connection(graph, source, destination, distance);
+                else if (delayed_push && !read_benchmarks) push_bi_connection(graph, source, destination, distance_integral, distance_fraction, distance_order);
                 state = st_endfile;
             }
             else if (c == ' ' || c == '\t') {} //space -> repeat
             else if (c == '\n' || c == '\r') //endline -> start over
             {
                 if (delayed_push && read_benchmarks) { push_benchmark(benchmarks, source, destination); delayed_push = 0; }
-                else if (delayed_push && !read_benchmarks) { push_bi_connection(graph, source, destination, distance); delayed_push = 0; }
+                else if (delayed_push && !read_benchmarks) { push_bi_connection(graph, source, destination, distance_integral, distance_fraction, distance_order); delayed_push = 0; }
                 state = st_search_source_begin;
             }
             else state = st_endfile; //else -> format error, end
