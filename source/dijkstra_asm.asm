@@ -143,7 +143,7 @@ __malloc:
         add rsi, 0xFFFF
         and rsi, 0xFFFFFFFFFFFF0000             ; bytes_to_request = (bytes_to_request + CHUNK_SIZE - 1) & ~(CHUNK_SIZE - 1);
         add rdx, rsi                            ; memory_capacity_end = (char*)memory_capacity_end + bytes_to_request;
-        sub rsp, 24         ; 24 = 32 - 8
+        sub rsp, 24         ; 24 % 16 == 8
         mov [rsp], rdi      ; size
         mov [rsp+8], rcx    ; memory_end
         mov [rsp+16], rdx   ; memory_capacity_end
@@ -216,7 +216,7 @@ push_benchmark:
         push_benchmark_dont_set_1:
         mov [rax + 12], edi                     ; benchmarks->capacity = benchmarks_capacity;
         shl rdi, 3
-        sub rsp, 40         ; 40 = 32 + 8
+        sub rsp, 40         ; 40 % 16 == 8
         mov [rsp], rax      ; benchmarks
         mov [rsp+8], rdx    ; source/destination
         mov [rsp+16], r9d   ; benchmarks_length
@@ -247,7 +247,7 @@ push_benchmark:
 
 ;  void push_bi_connection(struct ConnectionVectorVector *connections, uint64_t source, uint64_t destination, float distance)
 push_bi_connection:
-    sub rsp, 40 ; 40 = 32 + 8
+    sub rsp, 40 ; 40 % 16 == 8
     mov rax, rdi                                ; connections
     mov [rsp], rax
     mov r8, [rax]                               ; connections_begin = connections->begin;
@@ -440,7 +440,7 @@ parse_ver5:
     mov r15, rsi
     push rbp
     mov rbp, rsp                                ; buffer_end = buffer + sizeof(buffer);
-    sub rsp, 0x10030
+    sub rsp, 0x10038 ; 0x10038 % 0x10 == 0x08
 
     mov rax, 2
     mov rdi, string_file_name
@@ -871,7 +871,7 @@ parse_ver5:
         syscall                                 ; __exit(7);
     parse_ver5_close_success:
 
-    add rsp, 0x10030
+    add rsp, 0x10038
     pop rbp
     ret
 
@@ -879,7 +879,7 @@ parse_ver5:
 solve_ver5:
     push rbp
     mov rbp, rsp
-    sub rsp, 328
+    sub rsp, 328 ; 328 % 16 == 8
 
     mov rax, [rsi]                                  ; Storing benchmarks at stack
     mov [rsp+24], rax
