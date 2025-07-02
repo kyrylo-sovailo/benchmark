@@ -458,7 +458,7 @@ parse_ver5:
     parse_ver5_open_success:
     mov [rsp], rax
     mov r12, rbp                                ; p = buffer_end;
-    xor r13b, r13b                              ; eof = 0; read_benchmarks = 0;
+    xor r13b, r13b                              ; eof = 0; read_benchmarks = 0; delayed_push = 0;
 
     parse_ver5_switch_search_source_begin:
     lea rbx, [parse_ver5_search_source_begin]
@@ -508,7 +508,7 @@ parse_ver5:
             sub r12, rax                            ; p = buffer
             cmp rax, 0
             jg parse_ver5_file_not_empty
-                or r13b, 0x01                       ; eof = (buffer_size == 0);
+                or r13b, 0x80                       ; eof = (buffer_size == 0);
                 jmp parse_ver5_restore_read
             parse_ver5_file_not_empty:
             cmp rax, 0x10000
@@ -573,7 +573,7 @@ parse_ver5:
         jmp rbx                                     ; switch (state)
 
         parse_ver5_search_source_begin:
-            test r13b, 0x01
+            test r13b, 0x80
             jnz parse_ver5_loop_end                 ; if (eof) state = st_endfile;
             cmp al, '0'
             jb parse_ver5_search_source_begin_below
@@ -608,7 +608,7 @@ parse_ver5:
                 jmp parse_ver5_switch_search_benchmark_end
         
         parse_ver5_search_source_end:
-            test r13b, 0x01
+            test r13b, 0x80
             jnz parse_ver5_loop_end                 ; if (eof) state = st_endfile;
             cmp al, '0'
             jb parse_ver5_search_source_end_below
@@ -629,7 +629,7 @@ parse_ver5:
             jmp parse_ver5_loop_end                 ; state = st_endfile;
 
         parse_ver5_search_destination_begin:
-            test r13b, 0x01
+            test r13b, 0x80
             jnz parse_ver5_loop_end                 ; if (eof) state = st_endfile;
             cmp al, '0'
             jb parse_ver5_search_destination_begin_below
@@ -647,14 +647,8 @@ parse_ver5:
             jmp parse_ver5_loop_end                 ; state = st_endfile;
 
         parse_ver5_search_destination_end:
-            cmp r13b, 0x01
-            je parse_ver5_loop_end                  ; state = st_endfile;
-            cmp r13b, 0x03
-            jne parse_ver5_search_destination_end_skip_call
-            mov rdi, r15
-            call push_benchmark                     ; push_benchmark(benchmarks, source, destination);
-            jmp parse_ver5_loop_end                 ; state = st_endfile;
-            parse_ver5_search_destination_end_skip_call:
+            test r13b, 0x80
+            jnz parse_ver5_search_destination_end_eof; state = st_endfile;
             cmp al, '0'
             jb parse_ver5_search_destination_end_below
             cmp al, '9'
@@ -678,20 +672,25 @@ parse_ver5:
             jmp parse_ver5_loop_end
             
             parse_ver5_search_destination_end_space:
-            test r13b, 0x02
-            jz parse_ver5_switch_search_distance_begin
-            mov rdi, r15
-            call push_benchmark                     ; push_benchmark(benchmarks, source, destination);
+            test r13b, 0x40
+            jz parse_ver5_switch_search_distance_begin; state = st_search_distance_begin;
+            or r13b, 0x20                           ; delayed_push = 1;
             jmp parse_ver5_switch_search_endline    ; state = st_search_endline;
             parse_ver5_search_destination_end_line:
-            test r13b, 0x02
+            test r13b, 0x40
             jz parse_ver5_switch_search_endline     ; state = st_search_endline;
             mov rdi, r15
             call push_benchmark                     ; push_benchmark(benchmarks, source, destination);
             jmp parse_ver5_switch_search_source_begin; state = st_search_source_begin;
+            parse_ver5_search_destination_end_eof:
+            test r13b, 0x40
+            jz parse_ver5_loop_end                  ; state = st_endfile;
+            mov rdi, r15
+            call push_benchmark                     ; push_benchmark(benchmarks, source, destination);
+            jmp parse_ver5_loop_end                 ; state = st_endfile;
 
         parse_ver5_search_distance_begin:
-            test r13b, 0x01
+            test r13b, 0x80
             jnz parse_ver5_loop_end                 ; if (eof) state = st_endfile;
             cmp al, '0'
             jb parse_ver5_search_distance_begin_below
@@ -709,7 +708,7 @@ parse_ver5:
             jmp parse_ver5_loop_end
 
         parse_ver5_search_distance_dot:
-            test r13b, 0x01
+            test r13b, 0x80
             jnz parse_ver5_search_distance_dot_call1
             cmp al, '0'
             jb parse_ver5_search_distance_dot_below
@@ -745,20 +744,18 @@ parse_ver5:
             mov rdi, r14
             cvtsi2ss xmm0, rcx
             call push_bi_connection                 ; push_bi_connection(graph, source, destination, distance);
-            jmp parse_ver5_loop_end
+            jmp parse_ver5_loop_end                 ; state = st_endfile;
             parse_ver5_search_distance_dot_call2:
-            mov rdi, r14
-            cvtsi2ss xmm0, rcx
-            call push_bi_connection                 ; push_bi_connection(graph, source, destination, distance);
-            jmp parse_ver5_switch_search_endline
+            or r13b, 0x20                           ; delayed_push = 1;
+            jmp parse_ver5_switch_search_endline    ; state = st_search_endline;
             parse_ver5_search_distance_dot_call3:
             mov rdi, r14
             cvtsi2ss xmm0, rcx
             call push_bi_connection                 ; push_bi_connection(graph, source, destination, distance);
-            jmp parse_ver5_switch_search_source_begin
+            jmp parse_ver5_switch_search_source_begin; state = st_search_source_begin;
 
         parse_ver5_search_distance_end:
-            test r13b, 0x01
+            test r13b, 0x80
             jnz parse_ver5_search_distance_end_call1
             cmp al, '0'
             jb parse_ver5_search_distance_end_below
@@ -786,55 +783,83 @@ parse_ver5:
             parse_ver5_search_distance_end_call1:
             mov rdi, r14
             call push_bi_connection                 ; push_bi_connection(graph, source, destination, distance);
-            jmp parse_ver5_loop_end
+            jmp parse_ver5_loop_end                 ; state = st_endfile;
             parse_ver5_search_distance_end_call2:
-            mov rdi, r14
-            call push_bi_connection                 ; push_bi_connection(graph, source, destination, distance);
-            jmp parse_ver5_switch_search_endline
+            or r13b, 0x20                           ; delayed_push = 1;
+            jmp parse_ver5_switch_search_endline    ; state = st_search_endline;
             parse_ver5_search_distance_end_call3:
             mov rdi, r14
             call push_bi_connection                 ; push_bi_connection(graph, source, destination, distance);
-            jmp parse_ver5_switch_search_source_begin
+            jmp parse_ver5_switch_search_source_begin; state = st_search_source_begin;
 
         parse_ver5_search_graph_end:
-            test r13b, 0x01
+            test r13b, 0x80
             jnz parse_ver5_loop_end                 ; state = st_endfile;
             cmp al, [ string_graph + rsi ]
             jne parse_ver5_loop_end                 ; if (c == "GRAPH"[keyword_check])
             inc rsi                                 ; keyword_check++;
             cmp rsi, 5
             jne parse_ver5_loop                     ; if (keyword_check == 5)
-            and r13b, 0xFD                          ; read_benchmarks = 0;
+            and r13b, 0xBF                          ; read_benchmarks = 0;
             jmp parse_ver5_switch_search_endline    ; state = st_search_endline;
 
         parse_ver5_search_benchmark_end:
-            test r13b, 0x01
+            test r13b, 0x80
             jnz parse_ver5_loop_end                 ; state = st_endfile;
             cmp al, [ string_benchmark + rsi ]
             jne parse_ver5_loop_end                 ; if (c == "BENCHMARK"[keyword_check])
             inc rsi                                 ; keyword_check++;
             cmp rsi, 9
             jne parse_ver5_loop                     ; if (keyword_check == 9)
-            or r13b, 0x02                           ; read_benchmarks = 1;
+            or r13b, 0x40                           ; read_benchmarks = 1;
             jmp parse_ver5_switch_search_endline    ; state = st_search_endline;
 
         parse_ver5_search_endline:
-            test r13b, 0x01
-            jnz parse_ver5_loop_end                 ; state = st_endfile;
+            test r13b, 0x80
+            jnz parse_ver5_search_endline_eof
             cmp al, ' '
             je parse_ver5_loop                      ; {}
             cmp al, 9
             je parse_ver5_loop                      ; {}
             cmp al, 10
-            je parse_ver5_switch_search_source_begin; state = st_search_source_begin;
+            je parse_ver5_search_endline_line
             cmp al, 13
-            je parse_ver5_switch_search_source_begin; state = st_search_source_begin;
+            je parse_ver5_search_endline_line
+            jmp parse_ver5_loop_end                 ; state = st_endfile;
+
+            parse_ver5_search_endline_line:
+            test r13b, 0x20
+            jz parse_ver5_switch_search_source_begin; state = st_search_source_begin;
+            test r13b, 0x40
+            jnz parse_ver5_search_endline_line_benchmark
+            mov rdi, r14
+            call push_bi_connection                 ; push_bi_connection(graph, source, destination, distance);
+            and r13b, 0xDF                          ; delayed_push = 0;
+            jmp parse_ver5_switch_search_source_begin; state = st_search_source_begin;
+            parse_ver5_search_endline_line_benchmark:
+            mov rdi, r15
+            call push_benchmark                     ; push_benchmark(benchmarks, source, destination);
+            and r13b, 0xDF                          ; delayed_push = 0;
+            jmp parse_ver5_switch_search_source_begin; state = st_search_source_begin;
+            
+            parse_ver5_search_endline_eof:
+            test r13b, 0x20
+            jz parse_ver5_loop_end                  ; state = st_endfile;
+            test r13b, 0x40
+            jnz parse_ver5_search_endline_eof_benchmark
+            mov rdi, r14
+            call push_bi_connection                 ; push_bi_connection(graph, source, destination, distance);
+            jmp parse_ver5_loop_end                 ; state = st_endfile;
+            parse_ver5_search_endline_eof_benchmark:
+            mov rdi, r15
+            call push_benchmark                     ; push_benchmark(benchmarks, source, destination);
             jmp parse_ver5_loop_end                 ; state = st_endfile;
     
     parse_ver5_loop_end:
     mov rax, 3
     mov rdi, [rsp]
     syscall                                     ; code = __close(file);
+    cmp rax, 0
     jge parse_ver5_close_success
         mov rax, 1
         mov rdi, 1

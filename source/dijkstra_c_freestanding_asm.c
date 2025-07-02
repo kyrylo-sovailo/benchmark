@@ -660,7 +660,7 @@ static void parse_ver5(struct ConnectionVectorVector *graph, struct BenchmarkVec
     int64_t file; //RAX, stack [rsp]
     char c; //AL
     char *p; //R12
-    bool eof; //R13b, 0x01 mask
+    bool eof; //R13b, 0x80 mask
     #ifdef USE_MAPPING
     char *buffer;
     #else
@@ -670,7 +670,8 @@ static void parse_ver5(struct ConnectionVectorVector *graph, struct BenchmarkVec
 
     //State
     enum state state; //RBX
-    bool read_benchmarks; //R13, 0x02 mask
+    bool read_benchmarks; //R13b, 0x40 mask
+    bool delayed_push; //R13b, 0x20 mask
     uint64_t source; //RSI, stack [rsp + 8]
     uint64_t destination; //RDX, stack [rsp + 16]
     float distance; //XMM0, [rsp + 24], integer part in RCX, [rsp+32]
@@ -700,6 +701,7 @@ static void parse_ver5(struct ConnectionVectorVector *graph, struct BenchmarkVec
     //State
     state = st_search_source_begin;
     read_benchmarks = 0;
+    delayed_push = 0;
 
     for (;;)
     {
@@ -753,7 +755,7 @@ static void parse_ver5(struct ConnectionVectorVector *graph, struct BenchmarkVec
             }
             else if (c == ' ' || c == '\t')
             {
-                if (read_benchmarks) { push_benchmark(benchmarks, source, destination); state = st_search_endline; } //space -> push benchmark, search for endline
+                if (read_benchmarks) { delayed_push = 1; state = st_search_endline; } //space -> delayed push benchmark, search for endline
                 else state = st_search_distance_begin; //space -> search distance begin
             }
             else if (c == '\n' || c == '\r')
@@ -775,7 +777,7 @@ static void parse_ver5(struct ConnectionVectorVector *graph, struct BenchmarkVec
 
         case st_search_distance_dot:
             if (eof) { push_bi_connection(graph, source, destination, distance); state = st_endfile; } //EOF -> push connection, end
-            else if (c == ' ' || c == '\t') { push_bi_connection(graph, source, destination, distance); state = st_search_endline; } //space -> push connection, search endline
+            else if (c == ' ' || c == '\t') { delayed_push = 1; state = st_search_endline; } //space -> delayed push connection, search endline
             else if (c == '\n' || c == '\r') { push_bi_connection(graph, source, destination, distance); state = st_search_source_begin; } //endline -> push connection, start over
             else if (c >= '0' && c <= '9') distance = 10 * distance + (unsigned char)(c - '0'); //number -> modify distance, repeat
             else if (c == '.') { order = 1; state = st_search_distance_end; } //dot -> set order, search distance end
@@ -784,7 +786,7 @@ static void parse_ver5(struct ConnectionVectorVector *graph, struct BenchmarkVec
 
         case st_search_distance_end:
             if (eof) { push_bi_connection(graph, source, destination, distance); state = st_endfile; } //EOF -> push connection, end
-            else if (c == ' ' || c == '\t') { push_bi_connection(graph, source, destination, distance); state = st_search_endline; } //space -> push connection, search endline
+            else if (c == ' ' || c == '\t') { delayed_push = 1; state = st_search_endline; } //space -> delayed push connection, search endline
             else if (c == '\n' || c == '\r') { push_bi_connection(graph, source, destination, distance); state = st_search_source_begin; } //endline -> push connection, start over
             else if (c >= '0' && c <= '9') { order /= 10; distance += order * (unsigned char)(c - '0'); } //number -> modify distance, repeat
             else state = st_endfile; //else -> format error, end
@@ -811,9 +813,19 @@ static void parse_ver5(struct ConnectionVectorVector *graph, struct BenchmarkVec
             break;
 
         case st_search_endline:
-            if (eof) state = st_endfile; //EOF -> enf
+            if (eof) //EOF -> end
+            {
+                if (delayed_push && read_benchmarks) push_benchmark(benchmarks, source, destination);
+                else if (delayed_push && !read_benchmarks) push_bi_connection(graph, source, destination, distance);
+                state = st_endfile;
+            }
             else if (c == ' ' || c == '\t') {} //space -> repeat
-            else if (c == '\n' || c == '\r') state = st_search_source_begin; //endline -> start over
+            else if (c == '\n' || c == '\r') //endline -> start over
+            {
+                if (delayed_push && read_benchmarks) { push_benchmark(benchmarks, source, destination); delayed_push = 0; }
+                else if (delayed_push && !read_benchmarks) { push_bi_connection(graph, source, destination, distance); delayed_push = 0; }
+                state = st_search_source_begin;
+            }
             else state = st_endfile; //else -> format error, end
             break;
         
